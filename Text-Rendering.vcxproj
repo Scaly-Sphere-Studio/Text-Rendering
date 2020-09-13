@@ -23,9 +23,21 @@
     <None Include="scripts\local_install.ps1" />
     <None Include="scripts\local_remove.ps1" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\SSS\Text-Rendering.h" />
+    <ClInclude Include="inc\SSS\Text-Rendering\includes.h" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.h" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Font.h" />
+    <ClInclude Include="inc\SSS\Text-Rendering\TextArea.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Buffer.cpp" />
+    <ClCompile Include="src\Font.cpp" />
+    <ClCompile Include="src\TextArea.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{BB4BA2CA-32FE-4E5C-8830-112AFD36FA41}</ProjectGuid>
+    <ProjectGuid>{61906663-BCC1-4C79-BCF9-FFE326041193}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Debug</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -79,25 +91,25 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>.\obj\$(Configuration)\</IntDir>
     <OutDir>$(Configuration)\</OutDir>
-    <TargetName>sss-untitled</TargetName>
+    <TargetName>sss-text-rendering</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>.\obj\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(Platform)\$(Configuration)\</OutDir>
-    <TargetName>sss-untitled</TargetName>
+    <TargetName>sss-text-rendering</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>.\obj\$(Configuration)\</IntDir>
     <OutDir>$(Configuration)\</OutDir>
-    <TargetName>sss-untitled</TargetName>
+    <TargetName>sss-text-rendering</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>.\obj\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(Platform)\$(Configuration)\</OutDir>
-    <TargetName>sss-untitled</TargetName>
+    <TargetName>sss-text-rendering</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
