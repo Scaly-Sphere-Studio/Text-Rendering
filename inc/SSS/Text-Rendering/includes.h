@@ -23,3 +23,12 @@
 // SSS libs
 #include <SSS/log.h>
 #include <SSS/color.h>
+
+// Define log and throw macros
+#define LOG_FT_ERROR_AND_RETURN__(X, Y) if (error) { \
+    LOG_METHOD_ERR__(get_error(X, FT_Error_String(error))); \
+    return Y; \
+}
+#define THROW_IF_FT_ERROR__(X) if (error) { \
+    throw_exc(get_error(X, FT_Error_String(error))); \
+}

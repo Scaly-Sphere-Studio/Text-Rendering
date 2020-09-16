@@ -28,11 +28,13 @@
     <ClInclude Include="inc\SSS\Text-Rendering\includes.h" />
     <ClInclude Include="inc\SSS\Text-Rendering\Buffer.h" />
     <ClInclude Include="inc\SSS\Text-Rendering\Font.h" />
+    <ClInclude Include="inc\SSS\Text-Rendering\pointers.h" />
     <ClInclude Include="inc\SSS\Text-Rendering\TextArea.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Buffer.cpp" />
     <ClCompile Include="src\Font.cpp" />
+    <ClCompile Include="src\pointers.cpp" />
     <ClCompile Include="src\TextArea.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

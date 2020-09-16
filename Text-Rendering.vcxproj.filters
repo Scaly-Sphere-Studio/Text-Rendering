@@ -31,6 +31,9 @@
     <ClInclude Include="inc\SSS\Text-Rendering.h">
       <Filter>inc</Filter>
     </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\pointers.h">
+      <Filter>inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Buffer.cpp">
@@ -40,6 +43,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\TextArea.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pointers.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,27 +1,15 @@
 #pragma once
 
 #include <SSS/Text-Rendering/includes.h>
+#include <SSS/Text-Rendering/pointers.h>
 
 SSS_TR_BEGIN__
-
-// unique_ptr aliases
-using FT_Library_Ptr = std::unique_ptr<FT_LibraryRec_, FT_Error(*)(FT_Library)>;
-using FT_Face_Ptr = std::unique_ptr<FT_FaceRec_, FT_Error(*)(FT_Face)>;
-using FT_Glyph_Ptr = std::unique_ptr<FT_GlyphRec_, void(*)(FT_Glyph)>;
-using FT_BitmapGlyph_Ptr = std::unique_ptr<FT_BitmapGlyphRec_, void(*)(FT_BitmapGlyph)>;
-using FT_Stroker_Ptr = std::unique_ptr<FT_StrokerRec_, void(*)(FT_Stroker)>;
-using HB_Font_Ptr = std::unique_ptr<hb_font_t, void(*)(hb_font_t*)>;
 
 // Necesary for FT_BitmapGlyph_Ptr destructor.
 // Simply calls FT_Done_Glyph with a cast
 void FT_Done_BitmapGlyph(FT_BitmapGlyph glyph) noexcept;
 
 struct Bitmaps {
-    // Constructor, specifies the bitmaps destructors
-    Bitmaps() noexcept :
-        original(nullptr, FT_Done_BitmapGlyph), // Specify FT_BitmapGlyph destructor
-        stroked(nullptr, FT_Done_BitmapGlyph)   // Specify FT_BitmapGlyph destructor
-    {};
     FT_BitmapGlyph_Ptr original;
     FT_BitmapGlyph_Ptr stroked;
 };
