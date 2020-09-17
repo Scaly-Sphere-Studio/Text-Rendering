@@ -1,4 +1,4 @@
-#include "SSS/Text-Rendering/Buffer.h"
+#include "SSS/Text-Rendering/Buffer.hpp"
 
 SSS_TR_BEGIN__
 

@@ -27,22 +27,22 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.h">
+    <ClInclude Include="inc\SSS\Text-Rendering\includes.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Font.h">
+    <ClInclude Include="inc\SSS\Text-Rendering\Font.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\TextArea.h">
+    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\includes.h">
+    <ClInclude Include="inc\SSS\Text-Rendering\pointers.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering.h">
+    <ClInclude Include="inc\SSS\Text-Rendering\TextArea.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\pointers.h">
+    <ClInclude Include="inc\SSS\Text-Rendering.hpp">
       <Filter>inc</Filter>
     </ClInclude>
   </ItemGroup>

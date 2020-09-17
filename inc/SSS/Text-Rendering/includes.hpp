@@ -21,8 +21,8 @@
 #include <memory>
 
 // SSS libs
-#include <SSS/log.h>
-#include <SSS/color.h>
+#include <SSS/log.hpp>
+#include <SSS/color.hpp>
 
 // Define log and throw macros
 #define LOG_FT_ERROR_AND_RETURN__(X, Y) if (error) { \

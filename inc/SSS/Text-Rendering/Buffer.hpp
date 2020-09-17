@@ -1,7 +1,7 @@
 #pragma once
 
-#include <SSS/Text-Rendering/includes.h>
-#include <SSS/Text-Rendering/Font.h>
+#include <SSS/Text-Rendering/includes.hpp>
+#include <SSS/Text-Rendering/Font.hpp>
 
 SSS_TR_BEGIN__
 

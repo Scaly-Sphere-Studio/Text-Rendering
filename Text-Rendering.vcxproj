@@ -26,12 +26,12 @@
     <None Include="vcpkg_scripts\local_remove.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\SSS\Text-Rendering.h" />
-    <ClInclude Include="inc\SSS\Text-Rendering\includes.h" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.h" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Font.h" />
-    <ClInclude Include="inc\SSS\Text-Rendering\pointers.h" />
-    <ClInclude Include="inc\SSS\Text-Rendering\TextArea.h" />
+    <ClInclude Include="inc\SSS\Text-Rendering.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\includes.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Font.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\pointers.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\TextArea.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Buffer.cpp" />

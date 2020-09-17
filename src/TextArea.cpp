@@ -1,4 +1,4 @@
-#include "SSS/Text-Rendering/TextArea.h"
+#include "SSS/Text-Rendering/TextArea.hpp"
 
 SSS_TR_BEGIN__
 
