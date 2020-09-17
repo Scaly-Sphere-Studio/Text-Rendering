@@ -19,9 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <None Include="scripts\export.ps1" />
-    <None Include="scripts\local_install.ps1" />
-    <None Include="scripts\local_remove.ps1" />
+    <None Include="CONTROL" />
+    <None Include="InstallScripts.ps1" />
+    <None Include="vcpkg_scripts\export.ps1" />
+    <None Include="vcpkg_scripts\local_install.ps1" />
+    <None Include="vcpkg_scripts\local_remove.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\SSS\Text-Rendering.h" />

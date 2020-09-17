@@ -9,11 +9,22 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="vcpkg_scripts">
+      <UniqueIdentifier>{2e9304bf-d336-4a17-b008-b6aeacc0770b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="scripts\export.ps1" />
-    <None Include="scripts\local_install.ps1" />
-    <None Include="scripts\local_remove.ps1" />
+    <None Include="InstallScripts.ps1" />
+    <None Include="CONTROL" />
+    <None Include="vcpkg_scripts\export.ps1">
+      <Filter>vcpkg_scripts</Filter>
+    </None>
+    <None Include="vcpkg_scripts\local_install.ps1">
+      <Filter>vcpkg_scripts</Filter>
+    </None>
+    <None Include="vcpkg_scripts\local_remove.ps1">
+      <Filter>vcpkg_scripts</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\SSS\Text-Rendering\Buffer.h">

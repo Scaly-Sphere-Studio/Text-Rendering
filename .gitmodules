@@ -1,0 +1,3 @@
+[submodule "vcpkg_scripts"]
+	path = vcpkg_scripts
+	url = ../vcpkg_scripts
