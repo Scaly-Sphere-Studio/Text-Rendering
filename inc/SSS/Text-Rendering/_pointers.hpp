@@ -1,10 +1,11 @@
 #pragma once
 
-#include <SSS/Text-Rendering/includes.hpp>
+#include "SSS/Text-Rendering/_includes.hpp"
 
 SSS_TR_BEGIN__
 
-// FT_Library
+    // --- FT_Library ---
+
 class FT_Library_Ptr
     : public std::unique_ptr<FT_LibraryRec_, FT_Error(*)(FT_Library)> {
 #ifndef NDEBUG
@@ -19,7 +20,8 @@ public:
     ~FT_Library_Ptr() noexcept;
 };
 
-// FT_Face
+    // --- FT_Face ---
+
 class FT_Face_Ptr
     : public std::unique_ptr<FT_FaceRec_, FT_Error(*)(FT_Face)> {
 #ifndef NDEBUG
@@ -32,9 +34,11 @@ public:
     FT_Face_Ptr() noexcept : FT_Face_Ptr(nullptr) {};
     FT_Face_Ptr(FT_Face ptr) noexcept;
     ~FT_Face_Ptr() noexcept;
+    void create(FT_Library_Ptr const& lib, std::string const& path);
 };
 
-// FT_Glyph
+    // --- FT_Glyph ---
+
 class FT_Glyph_Ptr
     : public std::unique_ptr<FT_GlyphRec_, void(*)(FT_Glyph)> {
 #ifndef NDEBUG
@@ -49,7 +53,8 @@ public:
     ~FT_Glyph_Ptr() noexcept;
 };
 
-// FT_BitmapGlyph
+    // --- FT_BitmapGlyph ---
+
 class FT_BitmapGlyph_Ptr
     : public std::unique_ptr<FT_BitmapGlyphRec_, void(*)(FT_BitmapGlyph)> {
 #ifndef NDEBUG
@@ -64,7 +69,8 @@ public:
     ~FT_BitmapGlyph_Ptr() noexcept;
 };
 
-// FT_Stroker
+    // --- FT_Stroker ---
+
 class FT_Stroker_Ptr
     : public std::unique_ptr<FT_StrokerRec_, void(*)(FT_Stroker)> {
 #ifndef NDEBUG
@@ -77,9 +83,11 @@ public:
     FT_Stroker_Ptr() noexcept : FT_Stroker_Ptr(nullptr) {};
     FT_Stroker_Ptr(FT_Stroker ptr) noexcept;
     ~FT_Stroker_Ptr() noexcept;
+    void create(FT_Library_Ptr const& lib);
 };
 
-// hb_font_t
+    // --- hb_font_t ---
+
 class HB_Font_Ptr
     : public std::unique_ptr<hb_font_t, void(*)(hb_font_t*)> {
 #ifndef NDEBUG
@@ -92,6 +100,22 @@ public:
     HB_Font_Ptr() noexcept : HB_Font_Ptr(nullptr) {};
     HB_Font_Ptr(hb_font_t *ptr) noexcept;
     ~HB_Font_Ptr() noexcept;
+};
+
+    // --- hb_buffer_t ---
+
+class HB_Buffer_Ptr
+    : public std::unique_ptr<hb_buffer_t, void(*)(hb_buffer_t*)> {
+#ifndef NDEBUG
+private:
+    static constexpr bool log_constructor_ = true;
+    static constexpr bool log_destructor_ = true;
+#endif // NDEBUG
+
+public:
+    HB_Buffer_Ptr() noexcept : HB_Buffer_Ptr(nullptr) {};
+    HB_Buffer_Ptr(hb_buffer_t*ptr) noexcept;
+    ~HB_Buffer_Ptr() noexcept;
 };
 
 SSS_TR_END__

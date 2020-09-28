@@ -2,54 +2,108 @@
 
 SSS_TR_BEGIN__
 
-// Init static variables
-FT_Library_Ptr Font::lib_{ nullptr };
+    // --- Static variables ---
+
+// FreeType init
+FT_Library_Ptr Font::lib_{
+    // Init FreeType
+    []()->FT_Library {
+        FT_Library lib;
+        FT_Error error = FT_Init_FreeType(&lib);
+        THROW_IF_FT_ERROR__("FT_Init_FreeType()");
+        LOG_MSG__("FreeType library initialized");
+        return lib;
+    }()
+};
+// Search for local font directories
+_StringDeque Font::font_dirs_{
+    // Get the local font directories based on the OS
+    []()->_StringDeque {
+        // Retrieve the environment variable
+        auto copyEnv = [](std::string varname)->std::string
+        {
+            std::string ret;
+            char* buffer;
+            _dupenv_s(&buffer, NULL, varname.c_str());
+            if (buffer != nullptr) {
+                ret = buffer;
+                free(buffer);
+            }
+            return ret;
+        };
+        // Checks that the path is a directory
+        auto isDir = [](std::string path)->bool
+        {
+            struct stat s;
+            return stat(path.c_str(), &s) == 0 && (s.st_mode & S_IFDIR) != 0;
+        };
+        // Return value
+        _StringDeque ret;
+
+        #if defined(_WIN32)
+        // Windows has a single font directory located in WINDIR
+        std::string windir(copyEnv("WINDIR"));
+        if (!windir.empty()) {
+            std::string font_dir = windir + "\\Fonts\\";
+            if (isDir(font_dir)) {
+                ret.push_front(font_dir);
+            }
+        }
+        #elif defined(_APPLE_) && defined(_MACH_)
+        LOG_ERR__("WARNING: The local font directories of this OS aren't listed yet."));
+        #elif defined(linux) || defined(__linux)
+        LOG_ERR__("WARNING: The local font directories of this OS aren't listed yet."));
+        #endif
+        if (ret.empty()) {
+            LOG_ERR__("WARNING: No local font directory could be found.");
+        }
+        return ret;
+    }()
+};
 size_t Font::instances_{ 0 };
 FT_UInt Font::hdpi_{ 96 };
 FT_UInt Font::vdpi_{ 0 };
 
-// Constructor, inits FreeType if called for the first time.
-// Creates a FreeType font face & a HarfBuzz font.
-Font::Font(std::string const& path, int charsize, int outline_size) try
+    // --- Static functions ---
+
+// Sets screen DPI for all instances (default: 96x96).
+void Font::setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept
 {
-    FT_Error error;
+    hdpi_ = hdpi;
+    vdpi_ = vdpi;
+}
 
-    // Init FreeType if needed
-    if (instances_ == 0) {
-        FT_Library lib;
-        error = FT_Init_FreeType(&lib);
-        THROW_IF_FT_ERROR__("FT_Init_FreeType()");
-        lib_.reset(lib);
-        LOG_MSG__("FreeType library initialized");
+    // --- Constructor & Destructor ---
+
+// Constructor, inits FreeType if called for the first time.
+// Creates a FreeType font face.
+Font::Font(std::string const& font_file) try
+{
+    // Find the first occurence of the font in font_dirs_
+    std::string font_path;
+    for (std::string const& dir : font_dirs_) {
+        std::string path = dir + font_file;
+        struct stat s;
+        if (stat(path.c_str(), &s) == 0 && (s.st_mode & S_IFREG) != 0) {
+            font_path = path;
+            break;
+        }
     }
-
+    // Ensure that we found a valid path
+    if (font_path.empty()) {
+        throw_exc("Could not find '" + font_file + "' anywhere.");
+    }
+    
     // Create FreeType font face.
-    FT_Face face;
-    error = FT_New_Face(lib_.get(), path.c_str(), 0, &face);
-    THROW_IF_FT_ERROR__("FT_New_Face()");
-    face_.reset(face);
+    face_.create(lib_, font_path);
 
-    // Create FreeType outline stroker.
-    FT_Stroker stroker;
-    error = FT_Stroker_New(lib_.get(), &stroker);
-    THROW_IF_FT_ERROR__("FT_Stroker_New()");
-    stroker_.reset(stroker);
-
-    // Set character & outline sizes
-    outline_size_ = outline_size;
-    setCharsize(charsize);
-
-    // Create HarfBuzz font from FreeType font face.
-    hb_font_.reset(hb_ft_font_create_referenced(face_.get()));
-    // Increment instances_
     ++instances_;
-
     LOG_CONSTRUCTOR__
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Destructor, quits FreeType if called from last remaining instance.
-// Destroys the FreeType font face & the HarfBuzz font.
+// Destroys the FreeType font face.
 Font::~Font() noexcept
 {
     --instances_;
@@ -59,117 +113,52 @@ Font::~Font() noexcept
     LOG_DESTRUCTOR__
 }
 
-// Loads corresponding glyph.
-bool Font::loadGlyph(FT_UInt index) try
+    // --- Glyph functions ---
+
+// Call this function whenever changing charsize
+void Font::useCharsize(int charsize) try
 {
-    Bitmaps& bitmaps = bitmaps_[index];
-    // Skip if already fully loaded
-    if (bitmaps.original && (outline_size_ <= 0 || bitmaps.stroked)) {
-        return false;
+    // Create font size if needed
+    if (font_sizes_.count(charsize) == 0) {
+        font_sizes_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(charsize),        // Key
+            std::forward_as_tuple(face_, charsize)  // Value
+        );
     }
+}
+CATCH_AND_RETHROW_METHOD_EXC__
 
-    // Load glyph
-    FT_Error error(FT_Load_Glyph(face_.get(), index, FT_LOAD_DEFAULT));
-    LOG_FT_ERROR_AND_RETURN__("FT_Load_Glyph()", true);
-    
-    // Retrieve glyph
-    FT_Glyph glyph;
-    error = FT_Get_Glyph(face_->glyph, &glyph);
-    LOG_FT_ERROR_AND_RETURN__("FT_Get_Glyph()", true);
-    FT_Glyph_Ptr glyph_ptr(glyph);
-
-    // Convert the glyph to bitmap
-    error = FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, false);
-    LOG_FT_ERROR_AND_RETURN__("FT_Glyph_To_Bitmap()", true);
-
-    // Store bitmap
-    bitmaps.original.reset((FT_BitmapGlyph)glyph);
-
-    // Store its stroked variant if needed
-    if (outline_size_ > 0) {
-        // Create a stroked variant of the glyph
-        FT_Glyph stroked(glyph_ptr.get());
-        error = FT_Glyph_Stroke(&stroked, stroker_.get(), false);
-        LOG_FT_ERROR_AND_RETURN__("FT_Glyph_Stroke()", true);
-
-        // Convert the stroked variant to bitmap
-        error = FT_Glyph_To_Bitmap(&stroked, FT_RENDER_MODE_NORMAL, nullptr, true);
-        LOG_FT_ERROR_AND_RETURN__("FT_Glyph_To_Bitmap()", true);
-        
-        // Store bitmap
-        bitmaps.stroked.reset((FT_BitmapGlyph)stroked);
-    }
-
-    return false;
+// Loads corresponding glyph.
+bool Font::loadGlyph(FT_UInt glyph_index, int charsize, int outline_size) try
+{
+    return font_sizes_.at(charsize).loadGlyph(glyph_index, outline_size);
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Clears out the internal glyph cache.
 void Font::unloadGlyphs() noexcept
 {
-    bitmaps_.clear();
+    font_sizes_.clear();
 }
 
-// Sets screen DPI for all instances (default: 96x96).
-void Font::setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept
-{
-    hdpi_ = hdpi;
-    vdpi_ = vdpi;
-}
+    // --- Get functions ---
 
-// Changes character size and recreates glyph cache.
-void Font::setCharsize(int charsize) try
+// Returns corresponding glyph as a bitmap
+FT_BitmapGlyph_Ptr const&
+Font::getGlyphBitmap(FT_UInt glyph_index, int charsize) const try
 {
-    // Change FT face charsize
-    FT_Error error(FT_Set_Char_Size(face_.get(), charsize << 6, 0, hdpi_, vdpi_));
-    THROW_IF_FT_ERROR__("FT_Set_Char_Size()");
-    charsize_ = charsize;
-    // Update HB font (if out of constructor).
-    if (hb_font_) {
-        hb_ft_font_changed(hb_font_.get());
-    }
-    // Update stroker & recreate glyph cache
-    setOutline(outline_size_);
+    throw_if_bad_charsize_(charsize);
+    return font_sizes_.at(charsize).getGlyphBitmap(glyph_index);
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
-// Changes outline size and recreates glyph cache.
-void Font::setOutline(int size) try
+// Returns corresponding glyph outline as a bitmap
+FT_BitmapGlyph_Ptr const&
+Font::getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) const try
 {
-    // Ensure size stays in the 0 - 100 range
-    if (size < 0) {
-        size = 0;
-    }
-    else if (size > 100) {
-        size = 100;
-    }
-    outline_size_ = size;
-
-    // Update stroker if needed
-    if (outline_size_ > 0) {
-        FT_Stroker_Set(stroker_.get(), ((charsize_ * outline_size_) << 6) / 300,
-            FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
-    }
-    // Recreate glyph cache
-    for (auto it(bitmaps_.begin()); it != bitmaps_.end(); ++it) {
-        // Free old glyphs
-        it->second.original.reset();
-        it->second.stroked.reset();
-        // Create new glyph
-        loadGlyph(it->first);
-    }
-}
-CATCH_AND_RETHROW_METHOD_EXC__
-
-// Returns corresponding loaded glyph.
-// Throws exception if none corresponds to passed index.
-Bitmaps const& Font::getBitmaps(FT_UInt index) const try
-{
-    if (bitmaps_.count(index) == 0) {
-        throw_exc(NOTHING_FOUND);
-    }
-    // Retrieve glyph from cache
-    return bitmaps_.at(index);
+    throw_if_bad_charsize_(charsize);
+    return font_sizes_.at(charsize).getOutlineBitmap(glyph_index, outline_size);
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
@@ -179,22 +168,22 @@ FT_Face_Ptr const& Font::getFTFace() const noexcept
     return face_;
 }
 
-// Returns the internal HarfBuzz font.
-HB_Font_Ptr const& Font::getHBFont() const noexcept
+// Returns the corresponding internal HarfBuzz font.
+HB_Font_Ptr const& Font::getHBFont(int charsize) const try
 {
-    return hb_font_;
+    throw_if_bad_charsize_(charsize);
+    return font_sizes_.at(charsize).getHBFont();
 }
+CATCH_AND_RETHROW_METHOD_EXC__
 
-// Returns current character size.
-int Font::getCharsize() const noexcept
-{
-    return charsize_;
-}
+    // --- Private functions ---
 
-// Returns current outline size.
-int Font::getOutline() const noexcept
+// Ensures the given charsize has been initialized
+void Font::throw_if_bad_charsize_(int charsize) const
 {
-    return outline_size_;
+    if (font_sizes_.count(charsize) == 0) {
+        throw_exc(NOTHING_FOUND);
+    }
 }
 
 SSS_TR_END__

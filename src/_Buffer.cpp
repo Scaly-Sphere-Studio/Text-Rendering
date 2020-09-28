@@ -1,10 +1,12 @@
-#include "SSS/Text-Rendering/Buffer.hpp"
+#include "SSS/Text-Rendering/_Buffer.hpp"
 
 SSS_TR_BEGIN__
 
+    // --- Constructor & Destructor ---
+
 // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-Buffer::Buffer(Font_Shared font, std::u32string const& str, BufferOpt const& opt) try
-    : buffer_(nullptr, hb_buffer_destroy)
+_Buffer::_Buffer(std::u32string const& str, TextOpt const& opt) try
+    : opt_(opt)
 {
     // Create buffer (and reference it to prevent early deletion)
     buffer_.reset(hb_buffer_reference(hb_buffer_create()));
@@ -13,26 +15,24 @@ Buffer::Buffer(Font_Shared font, std::u32string const& str, BufferOpt const& opt
     }
 
     // Fill contents
-    changeContents(font, str, opt);
-    
+    changeContents(str, opt);
+
     LOG_CONSTRUCTOR__
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Destructor
-Buffer::~Buffer() noexcept
+_Buffer::~_Buffer() noexcept
 {
     LOG_DESTRUCTOR__
 }
 
+    // --- Basic functions ---
+
 // Reshapes the buffer with given parameters
-void Buffer::changeContents(Font_Shared font, std::u32string const& str,
-    BufferOpt const& opt) try
+void _Buffer::changeContents(std::u32string const& str, TextOpt const& opt) try
 {
-    line_spacing_ = opt.line_spacing * 1.5f;
-    style_ = opt.style;
-    color_ = opt.color;
-    font_ = font;
+    opt_ = opt;
 
     // Convert string to uint32 vector, as HarfBuzz only handles that
     indexes_.clear();
@@ -47,11 +47,11 @@ void Buffer::changeContents(Font_Shared font, std::u32string const& str,
     properties_.language = hb_language_from_string(opt.lng.language.c_str(), -1);
 
     // Convert word dividers to glyph indexes
-    word_dividers_.clear();
-    word_dividers_.reserve(opt.word_dividers.length());
-    for (char32_t const& c : opt.word_dividers) {
-        FT_UInt const index(FT_Get_Char_Index(font->getFTFace().get(), c));
-        word_dividers_.push_back(index);
+    wd_indexes_.clear();
+    wd_indexes_.reserve(opt.lng.word_dividers.size());
+    for (char32_t const& c : opt.lng.word_dividers) {
+        FT_UInt const index(FT_Get_Char_Index(opt.font->getFTFace().get(), c));
+        wd_indexes_.push_back(index);
     }
 
     // Shape glyphs
@@ -60,22 +60,23 @@ void Buffer::changeContents(Font_Shared font, std::u32string const& str,
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Reshapes the buffer. To be called when the font charsize changes, for example
-void Buffer::reshape() try
+void _Buffer::reshape() try
 {
     shape_();
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
+    // --- Get functions ---
 
 // Returns the number of glyphs in the buffer
-size_t Buffer::size() const noexcept
+size_t _Buffer::size() const noexcept
 {
     return static_cast<size_t>(glyph_count_);
 }
 
 // Returns a structure filled with informations of a given glyph.
 // Throws an exception if cursor is out of bound.
-GlyphInfo Buffer::at(size_t cursor) const try
+_GlyphInfo _Buffer::at(size_t cursor) const try
 {
     // Ensure the range of given argument is correct
     if (cursor > glyph_count_) {
@@ -83,16 +84,15 @@ GlyphInfo Buffer::at(size_t cursor) const try
     }
 
     // Fill glyph info
-    GlyphInfo ret(
+    _GlyphInfo ret(
         glyph_info_.at(cursor),
         glyph_pos_.at(cursor),
-        line_spacing_,
-        style_,
-        color_,
-        font_
+        opt_.style,
+        opt_.color,
+        opt_.font
     );
     // Check if the glyph is a word divider
-    for (hb_codepoint_t index : word_dividers_) {
+    for (hb_codepoint_t index : wd_indexes_) {
         if (ret.info.codepoint == index) {
             ret.is_word_divider = true;
             break;
@@ -103,8 +103,10 @@ GlyphInfo Buffer::at(size_t cursor) const try
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
+    // --- Private Functions ---
 
-void Buffer::shape_() try
+// Shapes the buffer and retrieve its informations
+void _Buffer::shape_() try
 {
     // Add string to buffer
     hb_buffer_add_utf32(buffer_.get(), &indexes_.at(0),
@@ -112,7 +114,7 @@ void Buffer::shape_() try
     // Set properties
     hb_buffer_set_segment_properties(buffer_.get(), &properties_);
     // Shape buffer and retrieve informations
-    hb_shape(font_->getHBFont().get(), buffer_.get(), nullptr, 0);
+    hb_shape(opt_.font->getHBFont(opt_.style.charsize).get(), buffer_.get(), nullptr, 0);
 
     // Retrieve glyph informations
     hb_glyph_info_t* info = hb_buffer_get_glyph_infos(buffer_.get(), &glyph_count_);

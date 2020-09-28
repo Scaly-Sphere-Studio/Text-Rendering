@@ -27,16 +27,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\SSS\Text-Rendering\includes.hpp">
-      <Filter>inc</Filter>
-    </ClInclude>
     <ClInclude Include="inc\SSS\Text-Rendering\Font.hpp">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\pointers.hpp">
       <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="inc\SSS\Text-Rendering\TextArea.hpp">
@@ -45,18 +36,42 @@
     <ClInclude Include="inc\SSS\Text-Rendering.hpp">
       <Filter>inc</Filter>
     </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\TextOpt.hpp">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\_FontSize.hpp">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\_Buffer.hpp">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\_includes.hpp">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\_pointers.hpp">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\Fps.hpp">
+      <Filter>inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Buffer.cpp">
+    <ClCompile Include="src\TextArea.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\Font.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\TextArea.cpp">
+    <ClCompile Include="src\_FontSize.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\pointers.cpp">
+    <ClCompile Include="src\_Buffer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\_pointers.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fps.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

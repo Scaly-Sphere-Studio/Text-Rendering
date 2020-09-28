@@ -26,17 +26,22 @@
     <None Include="vcpkg_scripts\local_remove.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\SSS\Text-Rendering\Fps.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\includes.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_FontSize.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_includes.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_Buffer.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\Font.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\pointers.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_pointers.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\TextArea.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\TextOpt.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Buffer.cpp" />
+    <ClCompile Include="src\Fps.cpp" />
+    <ClCompile Include="src\_FontSize.cpp" />
+    <ClCompile Include="src\_Buffer.cpp" />
     <ClCompile Include="src\Font.cpp" />
-    <ClCompile Include="src\pointers.cpp" />
+    <ClCompile Include="src\_pointers.cpp" />
     <ClCompile Include="src\TextArea.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
