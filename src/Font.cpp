@@ -5,7 +5,7 @@ SSS_TR_BEGIN__
     // --- Static variables ---
 
 // FreeType init
-FT_Library_Ptr Font::lib_{
+_internal::FT_Library_Ptr Font::lib_{
     // Init FreeType
     []()->FT_Library {
         FT_Library lib;
@@ -16,9 +16,9 @@ FT_Library_Ptr Font::lib_{
     }()
 };
 // Search for local font directories
-_StringDeque Font::font_dirs_{
+_internal::StringDeque Font::font_dirs_{
     // Get the local font directories based on the OS
-    []()->_StringDeque {
+    []()->_internal::StringDeque {
         // Retrieve the environment variable
         auto copyEnv = [](std::string varname)->std::string
         {
@@ -38,7 +38,7 @@ _StringDeque Font::font_dirs_{
             return stat(path.c_str(), &s) == 0 && (s.st_mode & S_IFDIR) != 0;
         };
         // Return value
-        _StringDeque ret;
+        _internal::StringDeque ret;
 
         #if defined(_WIN32)
         // Windows has a single font directory located in WINDIR
@@ -94,8 +94,10 @@ Font::Font(std::string const& font_file) try
         throw_exc("Could not find '" + font_file + "' anywhere.");
     }
     
-    // Create FreeType font face.
-    face_.create(lib_, font_path);
+    FT_Face face;
+    FT_Error error = FT_New_Face(lib_.get(), font_path.c_str(), 0, &face);
+    THROW_IF_FT_ERROR__("FT_New_Face()");
+    face_.reset(face);
 
     ++instances_;
     LOG_CONSTRUCTOR__
@@ -145,7 +147,7 @@ void Font::unloadGlyphs() noexcept
     // --- Get functions ---
 
 // Returns corresponding glyph as a bitmap
-FT_BitmapGlyph_Ptr const&
+_internal::FT_BitmapGlyph_Ptr const&
 Font::getGlyphBitmap(FT_UInt glyph_index, int charsize) const try
 {
     throw_if_bad_charsize_(charsize);
@@ -154,7 +156,7 @@ Font::getGlyphBitmap(FT_UInt glyph_index, int charsize) const try
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Returns corresponding glyph outline as a bitmap
-FT_BitmapGlyph_Ptr const&
+_internal::FT_BitmapGlyph_Ptr const&
 Font::getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) const try
 {
     throw_if_bad_charsize_(charsize);
@@ -163,13 +165,13 @@ Font::getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) cons
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Returns the internal FreeType font face.
-FT_Face_Ptr const& Font::getFTFace() const noexcept
+_internal::FT_Face_Ptr const& Font::getFTFace() const noexcept
 {
     return face_;
 }
 
 // Returns the corresponding internal HarfBuzz font.
-HB_Font_Ptr const& Font::getHBFont(int charsize) const try
+_internal::HB_Font_Ptr const& Font::getHBFont(int charsize) const try
 {
     throw_if_bad_charsize_(charsize);
     return font_sizes_.at(charsize).getHBFont();
@@ -182,7 +184,7 @@ CATCH_AND_RETHROW_METHOD_EXC__
 void Font::throw_if_bad_charsize_(int charsize) const
 {
     if (font_sizes_.count(charsize) == 0) {
-        throw_exc(NOTHING_FOUND);
+        throw_exc(ERR_MSG::NOTHING_FOUND);
     }
 }
 

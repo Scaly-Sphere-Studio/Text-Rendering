@@ -1,29 +1,30 @@
 #pragma once
 
-#include <SSS/Text-Rendering/_includes.hpp>
-#include <SSS/Text-Rendering/_pointers.hpp>
-#include <SSS/Text-Rendering/_FontSize.hpp>
+#include "SSS/Text-Rendering/_includes.hpp"
+#include "SSS/Text-Rendering/_pointers.hpp"
+#include "SSS/Text-Rendering/_FontSize.hpp"
 
 SSS_TR_BEGIN__
 
-using _StringDeque = std::deque<std::string>;
+INTERNAL_BEGIN__
+class FontSize;
+using StringDeque = std::deque<std::string>;
+INTERNAL_END__
 
 class Font {
-#ifndef NDEBUG
-private:
-    static constexpr bool log_constructor_ = true;
-    static constexpr bool log_destructor_ = true;
-#endif // NDEBUG
 
-    friend class _FontSize;
+    friend class _internal::FontSize;
 
 private:
-    // Static variables
-    static FT_Library_Ptr lib_;     // FreeType lib pointer
-    static _StringDeque font_dirs_; // Font directories
-    static size_t instances_;       // Number of object instances
-    static FT_UInt hdpi_;           // Screen's horizontal dpi
-    static FT_UInt vdpi_;           // Screen's vertical dpi
+// --- Static variables ---
+
+    // Internals
+    static _internal::FT_Library_Ptr lib_;      // FreeType lib pointer
+    static _internal::StringDeque font_dirs_;   // Font directories
+    // Simple uints
+    static size_t instances_;   // Number of object instances
+    static FT_UInt hdpi_;       // Screen's horizontal dpi
+    static FT_UInt vdpi_;       // Screen's vertical dpi
 
 
 public:
@@ -57,23 +58,23 @@ public:
 // --- Get functions ---
 
     // Returns corresponding glyph as a bitmap
-    FT_BitmapGlyph_Ptr const&
+    _internal::FT_BitmapGlyph_Ptr const&
         getGlyphBitmap(FT_UInt glyph_index, int charsize) const;
     // Returns corresponding glyph outline as a bitmap
-    FT_BitmapGlyph_Ptr const&
+    _internal::FT_BitmapGlyph_Ptr const&
         getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) const;
     // Returns the internal FreeType font face.
-    FT_Face_Ptr const& getFTFace() const noexcept;
+    _internal::FT_Face_Ptr const& getFTFace() const noexcept;
     // Returns the corresponding internal HarfBuzz font.
-    HB_Font_Ptr const& getHBFont(int charsize) const;
+    _internal::HB_Font_Ptr const& getHBFont(int charsize) const;
 
 private:
 // --- Private Variables ---
 
     // Font face
-    FT_Face_Ptr face_;
+    _internal::FT_Face_Ptr face_;
     // Map of different font charsizes
-    std::map<int, _FontSize> font_sizes_;
+    std::map<int, _internal::FontSize> font_sizes_;
 
 // --- Private functions ---
 

@@ -1,11 +1,12 @@
 #include "SSS/Text-Rendering/_Buffer.hpp"
 
 SSS_TR_BEGIN__
+INTERNAL_BEGIN__
 
     // --- Constructor & Destructor ---
 
 // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-_Buffer::_Buffer(std::u32string const& str, TextOpt const& opt) try
+Buffer::Buffer(std::u32string const& str, TextOpt const& opt) try
     : opt_(opt)
 {
     // Create buffer (and reference it to prevent early deletion)
@@ -22,7 +23,7 @@ _Buffer::_Buffer(std::u32string const& str, TextOpt const& opt) try
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Destructor
-_Buffer::~_Buffer() noexcept
+Buffer::~Buffer() noexcept
 {
     LOG_DESTRUCTOR__
 }
@@ -30,7 +31,7 @@ _Buffer::~_Buffer() noexcept
     // --- Basic functions ---
 
 // Reshapes the buffer with given parameters
-void _Buffer::changeContents(std::u32string const& str, TextOpt const& opt) try
+void Buffer::changeContents(std::u32string const& str, TextOpt const& opt) try
 {
     opt_ = opt;
 
@@ -60,7 +61,7 @@ void _Buffer::changeContents(std::u32string const& str, TextOpt const& opt) try
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Reshapes the buffer. To be called when the font charsize changes, for example
-void _Buffer::reshape() try
+void Buffer::reshape() try
 {
     shape_();
 }
@@ -69,22 +70,22 @@ CATCH_AND_RETHROW_METHOD_EXC__
     // --- Get functions ---
 
 // Returns the number of glyphs in the buffer
-size_t _Buffer::size() const noexcept
+size_t Buffer::size() const noexcept
 {
     return static_cast<size_t>(glyph_count_);
 }
 
 // Returns a structure filled with informations of a given glyph.
 // Throws an exception if cursor is out of bound.
-_GlyphInfo _Buffer::at(size_t cursor) const try
+GlyphInfo Buffer::at(size_t cursor) const try
 {
     // Ensure the range of given argument is correct
     if (cursor > glyph_count_) {
-        throw_exc(get_error(METHOD__, OUT_OF_BOUND));
+        throw_exc(get_error(METHOD__, ERR_MSG::OUT_OF_BOUND));
     }
 
     // Fill glyph info
-    _GlyphInfo ret(
+    GlyphInfo ret(
         glyph_info_.at(cursor),
         glyph_pos_.at(cursor),
         opt_.style,
@@ -106,7 +107,7 @@ CATCH_AND_RETHROW_METHOD_EXC__
     // --- Private Functions ---
 
 // Shapes the buffer and retrieve its informations
-void _Buffer::shape_() try
+void Buffer::shape_() try
 {
     // Add string to buffer
     hb_buffer_add_utf32(buffer_.get(), &indexes_.at(0),
@@ -133,4 +134,5 @@ void _Buffer::shape_() try
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
+INTERNAL_END__
 SSS_TR_END__

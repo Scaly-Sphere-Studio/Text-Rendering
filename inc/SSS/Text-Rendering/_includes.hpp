@@ -1,8 +1,5 @@
 #pragma once
 
-#define SSS_TR_BEGIN__ namespace SSS { namespace TR {
-#define SSS_TR_END__ }}
-
     // --- Includes ---
 
 // FreeType2
@@ -28,11 +25,13 @@
 #include <memory>
 #include <chrono>
 
-// SSS libs
-#include <SSS/log.hpp>
-#include <SSS/color.hpp>
+// SSS
+#include <SSS/Commons.hpp>
 
     // --- Defines ---
+
+#define SSS_TR_BEGIN__ SSS_BEGIN__ namespace TR {
+#define SSS_TR_END__ SSS_END__ }
 
 // Define log and throw macros
 #define LOG_FT_ERROR_AND_RETURN__(X, Y) if (error) { \

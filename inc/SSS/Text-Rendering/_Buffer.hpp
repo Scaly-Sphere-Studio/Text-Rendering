@@ -4,13 +4,14 @@
 #include "SSS/Text-Rendering/TextOpt.hpp"
 
 SSS_TR_BEGIN__
+INTERNAL_BEGIN__
 
     // --- Structures ---
 
 // A structure filled with informations of a given glyph
-struct _GlyphInfo {
+struct GlyphInfo {
 // --- Constructor ---
-    _GlyphInfo(
+    GlyphInfo(
         hb_glyph_info_t const& info_,
         hb_glyph_position_t const& pos_,
         TextStyle const& style_,
@@ -36,27 +37,22 @@ struct _GlyphInfo {
     // --- Class ---
 
 // Simplified HarfBuzz buffer
-class _Buffer {
-#ifndef NDEBUG
-private:
-    static constexpr bool log_constructor_ = true;
-    static constexpr bool log_destructor_ = true;
-#endif // NDEBUG
+class Buffer {
 
 public:
 // --- Aliases ---
 
-    using Ptr       = std::unique_ptr<_Buffer>;         // Unique ptr
-    using vector    = std::vector<_Buffer::Ptr>;        // Vector
-    using it        = _Buffer::vector::iterator;        // Iterator
-    using cit       = _Buffer::vector::const_iterator;  // Const iterator
+    using Ptr       = std::unique_ptr<Buffer>;         // Unique ptr
+    using vector    = std::vector<Buffer::Ptr>;        // Vector
+    using it        = Buffer::vector::iterator;        // Iterator
+    using cit       = Buffer::vector::const_iterator;  // Const iterator
 
 // --- Constructor & Destructor ---
 
     // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-    _Buffer(std::u32string const& str, TextOpt const& opt);
+    Buffer(std::u32string const& str, TextOpt const& opt);
     // Destructor
-    ~_Buffer() noexcept;
+    ~Buffer() noexcept;
 
 // --- Basic functions ---
 
@@ -71,7 +67,7 @@ public:
     size_t size() const noexcept;
     // Returns a structure filled with informations of a given glyph.
     // Throws an exception if cursor is out of bound.
-    _GlyphInfo at(size_t cursor) const;
+    GlyphInfo at(size_t cursor) const;
 
 private:
 // --- Private Functions ---
@@ -85,7 +81,7 @@ private:
     // This is because HB doesn't handle CPP types,
     // and handles UTF32 with uint32_t arrays
     std::vector<uint32_t> indexes_;
-    // _Buffer options
+    // Buffer options
     TextOpt opt_;
     
 // --- HarfBuzz variables ---
@@ -100,4 +96,5 @@ private:
     std::vector<hb_glyph_position_t> glyph_pos_;    // Glpyhs relative position
 };
 
+INTERNAL_END__
 SSS_TR_END__

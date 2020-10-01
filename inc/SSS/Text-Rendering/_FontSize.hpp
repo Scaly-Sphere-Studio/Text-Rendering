@@ -3,15 +3,18 @@
 #include "SSS/Text-Rendering/Font.hpp"
 
 SSS_TR_BEGIN__
+INTERNAL_BEGIN__
 
 // This class aims to be used within the Font class to load, store,
 // and access glyphs (and their possible outlines) of a given charsize.
-class _FontSize {
+class FontSize {
 public:
-// --- Constructor ---
+// --- Constructor & Destructor ---
 
     // Constructor, throws if invalid charsize
-    _FontSize(FT_Face_Ptr const& ft_face, int charsize);
+    FontSize(FT_Face_Ptr const& ft_face, int charsize);
+    // Destructor. Logs
+    ~FontSize();
 
 // --- Glyph functions ---
 
@@ -63,4 +66,5 @@ private:
     bool storeBitmaps_(FT_UInt glyph_index, int outline_size);
 };
 
+INTERNAL_END__
 SSS_TR_END__

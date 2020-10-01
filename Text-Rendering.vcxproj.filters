@@ -68,10 +68,10 @@
     <ClCompile Include="src\_Buffer.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\_pointers.cpp">
+    <ClCompile Include="src\Fps.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fps.cpp">
+    <ClCompile Include="src\_pointers.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

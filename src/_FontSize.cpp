@@ -1,25 +1,37 @@
 #include "SSS/Text-Rendering/_FontSize.hpp"
 
 SSS_TR_BEGIN__
+INTERNAL_BEGIN__
 
-    // --- Constructor ---
+    // --- Constructor & Destructor ---
 
 // Constructor, throws if invalid charsize
-_FontSize::_FontSize(FT_Face_Ptr const& ft_face, int charsize) try
+FontSize::FontSize(FT_Face_Ptr const& ft_face, int charsize) try
     : charsize_(charsize), ft_face_(ft_face)
 {
     setCharsize_();
     // Create HarfBuzz font from FreeType font face.
     hb_font_.reset(hb_ft_font_create_referenced(ft_face.get()));
     // Create Stroker
-    stroker_.create(Font::lib_);
+    FT_Stroker stroker;
+    FT_Error error = FT_Stroker_New(Font::lib_.get(), &stroker);
+    THROW_IF_FT_ERROR__("FT_Stroker_New()");
+    stroker_.reset(stroker);
+
+    LOG_CONSTRUCTOR__
 }
 CATCH_AND_RETHROW_METHOD_EXC__
+
+// Destructor. Logs
+FontSize::~FontSize()
+{
+    LOG_DESTRUCTOR__
+}
 
     // --- Glyph functions ---
 
 // Loads the given glyph, and its ouline if outline_size > 0
-bool _FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
+bool FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
 {
     setCharsize_();
     // Load glyph
@@ -37,10 +49,10 @@ CATCH_AND_RETHROW_METHOD_EXC__
 
 // Returns the corresponding glyph's bitmap. Throws if not found.
 FT_BitmapGlyph_Ptr const&
-_FontSize::getGlyphBitmap(FT_UInt glyph_index) const try
+FontSize::getGlyphBitmap(FT_UInt glyph_index) const try
 {
     if (originals_.count(glyph_index) == 0) {
-        throw_exc(NOTHING_FOUND);
+        throw_exc(ERR_MSG::NOTHING_FOUND);
     }
     // Retrieve bitmap from cache
     return originals_.at(glyph_index).bitmap;
@@ -49,11 +61,11 @@ CATCH_AND_RETHROW_METHOD_EXC__
 
 // Returns the corresponding glyph outline's bitmap. Throws if not found.
 FT_BitmapGlyph_Ptr const&
-_FontSize::getOutlineBitmap(FT_UInt glyph_index, int outline_size) const try
+FontSize::getOutlineBitmap(FT_UInt glyph_index, int outline_size) const try
 {
     if (outlined_.count(outline_size) == 0
         || outlined_.at(outline_size).count(glyph_index) == 0) {
-        throw_exc(NOTHING_FOUND);
+        throw_exc(ERR_MSG::NOTHING_FOUND);
     }
     // Retrieve bitmap from cache
     return outlined_.at(outline_size).at(glyph_index).bitmap;
@@ -63,7 +75,7 @@ CATCH_AND_RETHROW_METHOD_EXC__
     // --- Get functions ---
 
 // Returns the corresponding HarfBuzz font
-HB_Font_Ptr const& _FontSize::getHBFont() const noexcept
+HB_Font_Ptr const& FontSize::getHBFont() const noexcept
 {
     return hb_font_;
 }
@@ -71,7 +83,7 @@ HB_Font_Ptr const& _FontSize::getHBFont() const noexcept
     // --- Static functions ---
 
 // Change FT face charsize
-void _FontSize::setCharsize_()
+void FontSize::setCharsize_()
 {
     FT_Error error = FT_Set_Char_Size(ft_face_.get(), charsize_ << 6, 0,
         Font::hdpi_, Font::vdpi_);
@@ -79,7 +91,7 @@ void _FontSize::setCharsize_()
 }
 
 // Loads the original glyph. Returns true on error
-bool _FontSize::loadOriginal_(FT_UInt glyph_index) try
+bool FontSize::loadOriginal_(FT_UInt glyph_index) try
 {
     FT_Glyph_Ptr& glyph = originals_[glyph_index].glyph;
     // Skip if already loaded
@@ -102,7 +114,7 @@ bool _FontSize::loadOriginal_(FT_UInt glyph_index) try
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Loads the glyph's outline. Returns true on error
-bool _FontSize::loadOutlined_(FT_UInt glyph_index, int outline_size) try
+bool FontSize::loadOutlined_(FT_UInt glyph_index, int outline_size) try
 {
     // Skip if no outline is needed
     if (outline_size <= 0) {
@@ -133,7 +145,7 @@ bool _FontSize::loadOutlined_(FT_UInt glyph_index, int outline_size) try
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Stores the glyph and its ouline's bitmaps. Returns true on error
-bool _FontSize::storeBitmaps_(FT_UInt glyph_index, int outline_size) try
+bool FontSize::storeBitmaps_(FT_UInt glyph_index, int outline_size) try
 {
     // Retrieve the loaded glyph
     _Glyph& original = originals_.at(glyph_index);
@@ -160,4 +172,5 @@ bool _FontSize::storeBitmaps_(FT_UInt glyph_index, int outline_size) try
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
+INTERNAL_END__
 SSS_TR_END__

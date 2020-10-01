@@ -10,14 +10,16 @@ TextArea::TextArea(int width, int height) try
     : w_(width), h_(height)
 {
     if (w_ <= 0 || h_ <= 0) {
-        throw_exc(INVALID_ARGUMENT);
+        throw_exc(ERR_MSG::INVALID_ARGUMENT);
     }
+    LOG_CONSTRUCTOR__
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
 // Destructor, clears out buffer cache.
 TextArea::~TextArea() noexcept
 {
+    LOG_DESTRUCTOR__
 }
 
 // Resets the object to newly constructed state
@@ -55,9 +57,9 @@ void TextArea::loadString(std::u32string const& str, TextOpt const& opt) try
     }
     // Else, create & fill new buffer ptr & add it to the buffers_ vector
     else {
-        buffers_.emplace_back(std::make_unique<_Buffer>(str, opt));
+        buffers_.emplace_back(std::make_unique<_internal::Buffer>(str, opt));
     }
-    _Buffer::Ptr const& buffer(buffers_.at(buffer_count_));
+    _internal::Buffer::Ptr const& buffer(buffers_.at(buffer_count_));
 
     // Load glyphs retrieved by the buffer
     int const outline_size = opt.style.has_outline ? opt.style.outline_size : 0;
@@ -88,7 +90,7 @@ void TextArea::renderTo(void* ptr)
 {
     drawIfNeeded_();
     if (ptr == nullptr) {
-        LOG_METHOD_ERR__(INVALID_ARGUMENT)
+        LOG_METHOD_ERR__(ERR_MSG::INVALID_ARGUMENT)
         return;
     }
     memcpy(ptr, &pixels_.at(scrolling_ * w_), (size_t)(4 * w_ * h_));
@@ -100,7 +102,7 @@ void TextArea::renderTo(void* ptr)
 void TextArea::updateFormat() try
 {
     // Reshape all buffers
-    for (_Buffer::Ptr& buffer : buffers_) {
+    for (_internal::Buffer::Ptr& buffer : buffers_) {
         buffer->reshape();
     }
     // Update global format
@@ -151,7 +153,7 @@ bool TextArea::incrementCursor() noexcept
     }
 
     ++tw_next_cursor_;
-    _Line::cit line = which_Line_(tw_next_cursor_);
+    _internal::Line::cit line = which_Line_(tw_next_cursor_);
     if (line->first_glyph == tw_next_cursor_) {
         if (line->scrolling - scrolling_ > static_cast<int>(h_)) {
             --tw_next_cursor_;
@@ -165,16 +167,16 @@ bool TextArea::incrementCursor() noexcept
     // --- Static functions ---
 
 // Calls the at(); function from corresponding Buffer
-_GlyphInfo TextArea::at_(size_t cursor) const try
+_internal::GlyphInfo TextArea::at_(size_t cursor) const try
 {
     for (size_t i(0); i < buffer_count_; ++i) {
-        _Buffer::Ptr const& buffer = buffers_.at(i);
+        _internal::Buffer::Ptr const& buffer = buffers_.at(i);
         if (buffer->size() > cursor) {
             return buffer->at(cursor);
         }
         cursor -= buffer->size();
     }
-    throw_exc(OUT_OF_BOUND);
+    throw_exc(ERR_MSG::OUT_OF_BOUND);
 }
 CATCH_AND_RETHROW_METHOD_EXC__
 
@@ -197,7 +199,7 @@ void TextArea::update_Lines_()
     // Reset lines_
     lines_.clear();
     lines_.emplace_back();
-    _Line::it line = lines_.begin();
+    _internal::Line::it line = lines_.begin();
     size_t cursor = 0;
 
     // Place pen at (0, 0), we don't take scrolling into account
@@ -205,7 +207,7 @@ void TextArea::update_Lines_()
     FT_Vector pen({ 0, 0 });
     while (cursor < glyph_count_) {
         // Retrieve glyph infos
-        _GlyphInfo const glyph(at_(cursor));
+        _internal::GlyphInfo const glyph(at_(cursor));
         // Update max_size
         int const charsize = glyph.style.charsize;
         if (line->charsize < charsize) {
@@ -261,10 +263,10 @@ void TextArea::update_Lines_()
     draw_ = true;
 }
 
-// Returns corresponding _Line iterator, or cend()
-_Line::cit TextArea::which_Line_(size_t cursor) const noexcept
+// Returns corresponding _internal::Line iterator, or cend()
+_internal::Line::cit TextArea::which_Line_(size_t cursor) const noexcept
 {
-    _Line::cit line = lines_.cbegin();
+    _internal::Line::cit line = lines_.cbegin();
     while (line != lines_.cend() - 1) {
         if (line->last_glyph >= cursor) {
             break;
@@ -295,30 +297,39 @@ void TextArea::drawIfNeeded_()
     }
 
     // Determine draw parameters
-    _DrawParameters param(prepareDraw_());
+    _internal::DrawParameters param(prepareDraw_());
 
     if (param.first_glyph > param.last_glyph || param.last_glyph > glyph_count_) {
-        LOG_ERR__(get_error(METHOD__, INVALID_ARGUMENT));
+        LOG_ERR__(get_error(METHOD__, ERR_MSG::INVALID_ARGUMENT));
         return;
     }
 
-    // Render glyphs to pixels
-    param.type = _DrawParameters::_Outline_Shadow(true, true);
-    drawGlyphs_(param); // Border shadows
-    param.type = _DrawParameters::_Outline_Shadow(false, true);
-    drawGlyphs_(param); // Text shadows
-    param.type = _DrawParameters::_Outline_Shadow(true, false);
-    drawGlyphs_(param); // Borders
-    param.type = _DrawParameters::_Outline_Shadow(false, false);
-    drawGlyphs_(param); // Text
+    // Draw Outline shadows
+    param.type.is_shadow = true;
+    param.type.is_outline = true;
+    drawGlyphs_(param);
+
+    // Draw Text shadows
+    param.type.is_outline = false;
+    drawGlyphs_(param);
+
+    // Draw Outlines
+    param.type.is_shadow = false;
+    param.type.is_outline = true;
+    drawGlyphs_(param);
+
+    // Draw Text
+    param.type.is_outline = false;
+    drawGlyphs_(param);
+
     // Update draw statement
     draw_ = false;
 }
 
 // Prepares drawing parameters, which will be used multiple times per draw
-_DrawParameters TextArea::prepareDraw_()
+_internal::DrawParameters TextArea::prepareDraw_()
 {
-    _DrawParameters param;
+    _internal::DrawParameters param;
     // Determine range of glyphs to render
     // If typewriter_ is set to false, this means all glyphs
     if (!typewriter_) {
@@ -361,11 +372,11 @@ _DrawParameters TextArea::prepareDraw_()
 }
 
 // Draws shadows, outlines, or plain glyphs
-void TextArea::drawGlyphs_(_DrawParameters param)
+void TextArea::drawGlyphs_(_internal::DrawParameters param)
 {
     // Draw the glyphs
     for (size_t cursor = param.first_glyph; cursor < param.last_glyph; ++cursor) {
-        _GlyphInfo const glyph(at_(cursor));
+        _internal::GlyphInfo const glyph(at_(cursor));
         drawGlyph_(param, glyph);
         // Handle line breaks. Return true if pen goes out of bound
         if (cursor == param.line->last_glyph && param.line != lines_.end() - 1) {
@@ -383,7 +394,7 @@ void TextArea::drawGlyphs_(_DrawParameters param)
 
 // Loads (if needed) and renders the corresponding glyph to the
 // pixels pointer at the given pen's coordinates.
-void TextArea::drawGlyph_(_DrawParameters param, _GlyphInfo const& glyph_info)
+void TextArea::drawGlyph_(_internal::DrawParameters param, _internal::GlyphInfo const& glyph_info)
 {
     // Skip if the glyph alpha is zero, or if a outline is asked but not available
     if (glyph_info.color.alpha == 0
@@ -393,7 +404,7 @@ void TextArea::drawGlyph_(_DrawParameters param, _GlyphInfo const& glyph_info)
     }
 
     // Get corresponding loaded glyph bitmap
-    FT_BitmapGlyph_Ptr const& bmp_glyph(!param.type.is_outline
+    _internal::FT_BitmapGlyph_Ptr const& bmp_glyph(!param.type.is_outline
         ? glyph_info.font->getGlyphBitmap(glyph_info.info.codepoint, glyph_info.style.charsize)
         : glyph_info.font->getOutlineBitmap(glyph_info.info.codepoint, glyph_info.style.charsize, glyph_info.style.outline_size));
     FT_Bitmap const& bitmap(bmp_glyph->bitmap);
@@ -418,10 +429,10 @@ void TextArea::drawGlyph_(_DrawParameters param, _GlyphInfo const& glyph_info)
 
     // Retrieve the color to use : either a plain one, or a function to call
     args.bitmap = bitmap;
-    args.alpha = glyph_info.color.alpha;
     args.color = param.type.is_shadow ?
         glyph_info.color.shadow : param.type.is_outline ?
             glyph_info.color.outline : glyph_info.color.text;
+    args.alpha = glyph_info.color.alpha;
 
     copyBitmap_(args);
 }

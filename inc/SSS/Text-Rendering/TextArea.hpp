@@ -4,10 +4,12 @@
 
 SSS_TR_BEGIN__
 
-    // --- Structures ---
+    // --- Internal structures ---
+
+INTERNAL_BEGIN__
 
 // Stores line informations
-struct _Line {
+struct Line {
     // Variables
     size_t first_glyph{ 0 }; // First glyph of the line
     size_t last_glyph{ 0 };  // Line break after rendering glyph
@@ -15,31 +17,29 @@ struct _Line {
     int charsize{ 0 };       // The highest charsize on the line
     int scrolling{ 0 };      // Total scrolling for this line to be above the top
     // Aliases
-    using vector = std::vector<_Line>;
+    using vector = std::vector<Line>;
     using it = vector::iterator;
     using cit = vector::const_iterator;
 };
 
 // Draw parameters
-struct _DrawParameters {
+struct DrawParameters {
     // Variables
     size_t first_glyph{ 0 }; // First glyph to draw
     size_t last_glyph{ 0 };  // Last glyph to draw (excluded)
     FT_Vector pen{ 0, 0 };      // Pen on the canvas
-    _Line::cit line;      // _Line of the cursor
+    Line::cit line;      // _internal::Line of the cursor
+    
     // Draw type : { false, false } would draw simple text,
     // and { true, true } would draw the shadows of the outlines
-    struct _Outline_Shadow {
-        // Constructors
-        _Outline_Shadow() {};
-        _Outline_Shadow(bool is_outline_, bool is_shadow_) noexcept
-            : is_outline(is_outline_), is_shadow(is_shadow_) {};
+    struct {
         // Variables
-        bool is_outline{ true };    // Draw glyphs or their outlines
         bool is_shadow{ true };     // Draw text or its shadow
-    };
-    _Outline_Shadow type;   // Glyph type
+        bool is_outline{ true };    // Draw glyphs or their outlines
+    } type;     // Glyph type
 };
+
+INTERNAL_END__
 
     // --- Class ---
 
@@ -107,22 +107,22 @@ private:
     bool draw_{ true };         // True -> (re)draw pixels_
     bool typewriter_{ false };  // True -> display characters one by one
 
-    BGRA32_Pixels pixels_;  // Pixels vector
+    BGRA32::Pixels pixels_;  // Pixels vector
 
-    _Buffer::vector buffers_;   // Buffer array for multiple layouts
+    _internal::Buffer::vector buffers_;   // Buffer array for multiple layouts
     size_t buffer_count_{ 0 };  // Number of ACTIVE buffers, != buffers_.size()
     size_t glyph_count_{ 0 };   // Total number of glyphs in all ACTIVE buffers
     size_t tw_cursor_{ 0 };     // TypeWriter -> Current character position
     size_t tw_next_cursor_{ 0}; // TypeWriter -> Next character position
 
-    _Line::vector lines_;   // Indexes of line breaks & charsizes
+    _internal::Line::vector lines_;   // Indexes of line breaks & charsizes
 
 // --- Private functions ---
 
     // Calls the at(); function from corresponding Buffer
-    _GlyphInfo at_(size_t cursor) const;
-    // Returns corresponding _Line iterator, or cend()
-    _Line::cit which_Line_(size_t cursor) const noexcept;
+    _internal::GlyphInfo at_(size_t cursor) const;
+    // Returns corresponding _internal::Line iterator, or cend()
+    _internal::Line::cit which_Line_(size_t cursor) const noexcept;
     // Updates scrolling_
     void scrollingChanged_() noexcept;
     // Updates lines_
@@ -133,20 +133,20 @@ private:
     // Draws current area if draw_ is set to true
     void drawIfNeeded_();
     // Prepares drawing parameters, which will be used multiple times per draw
-    _DrawParameters prepareDraw_();
+    _internal::DrawParameters prepareDraw_();
     // Draws shadows, outlines, or plain glyphs
-    void drawGlyphs_(_DrawParameters param);
+    void drawGlyphs_(_internal::DrawParameters param);
     // Draws a single shadow, outline, or plain glyph
-    void drawGlyph_(_DrawParameters param, _GlyphInfo const& glyph);
+    void drawGlyph_(_internal::DrawParameters param, _internal::GlyphInfo const& glyph);
 
     struct _CopyBitmapArgs {
         // Coords
-        FT_Int x0;  // pixels_ -> x origin
-        FT_Int y0;  // pixels_ -> y origin
+        FT_Int x0{ 0 };  // pixels_ -> x origin
+        FT_Int y0{ 0 };  // pixels_ -> y origin
         // Bitmap
-        FT_Bitmap bitmap;   // Bitmap structure
-        uint8_t alpha;      // Bitmap's opacity
-        BGR24_s color;      // Bitmap's color
+        FT_Bitmap bitmap{ 0 };   // Bitmap structure
+        BGR24::s color;     // Bitmap's color
+        uint8_t alpha{ 0 };      // Bitmap's opacity
     };
     // Copies a bitmap with given coords and color in pixels_
     void copyBitmap_(_CopyBitmapArgs& coords);

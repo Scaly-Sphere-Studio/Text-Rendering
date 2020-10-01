@@ -41,8 +41,8 @@
     <ClCompile Include="src\_FontSize.cpp" />
     <ClCompile Include="src\_Buffer.cpp" />
     <ClCompile Include="src\Font.cpp" />
-    <ClCompile Include="src\_pointers.cpp" />
     <ClCompile Include="src\TextArea.cpp" />
+    <ClCompile Include="src\_pointers.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
