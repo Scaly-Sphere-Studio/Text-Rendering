@@ -19,27 +19,7 @@ _internal::FT_Library_Ptr Font::lib_{
 _internal::StringDeque Font::font_dirs_{
     // Get the local font directories based on the OS
     []()->_internal::StringDeque {
-        // Retrieve the environment variable
-        auto copyEnv = [](std::string varname)->std::string
-        {
-            std::string ret;
-            char* buffer;
-            _dupenv_s(&buffer, NULL, varname.c_str());
-            if (buffer != nullptr) {
-                ret = buffer;
-                free(buffer);
-            }
-            return ret;
-        };
-        // Checks that the path is a directory
-        auto isDir = [](std::string path)->bool
-        {
-            struct stat s;
-            return stat(path.c_str(), &s) == 0 && (s.st_mode & S_IFDIR) != 0;
-        };
-        // Return value
         _internal::StringDeque ret;
-
         #if defined(_WIN32)
         // Windows has a single font directory located in WINDIR
         std::string windir(copyEnv("WINDIR"));
@@ -60,6 +40,7 @@ _internal::StringDeque Font::font_dirs_{
         return ret;
     }()
 };
+std::map<std::string, Font::Weak> Font::shared_{ };
 size_t Font::instances_{ 0 };
 FT_UInt Font::hdpi_{ 96 };
 FT_UInt Font::vdpi_{ 0 };
@@ -73,6 +54,23 @@ void Font::setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept
     vdpi_ = vdpi;
 }
 
+Font::Shared Font::getShared(std::string const& font_file)
+{
+    // Retrieve or create corresponding weak_ptr
+    Weak& weak = shared_[font_file];
+    // Retrieve linked shared_ptr
+    Shared shared = weak.lock();
+    // If the shared_ptr is empty, create a new Font
+    if (!shared) {
+        // Create new Font
+        shared = std::make_shared<Font>(font_file);
+        // Reference Font in our map
+        Weak tmp(shared);
+        weak.swap(tmp);
+    }
+    return shared;
+}
+
     // --- Constructor & Destructor ---
 
 // Constructor, inits FreeType if called for the first time.
@@ -82,9 +80,8 @@ Font::Font(std::string const& font_file) try
     // Find the first occurence of the font in font_dirs_
     std::string font_path;
     for (std::string const& dir : font_dirs_) {
-        std::string path = dir + font_file;
-        struct stat s;
-        if (stat(path.c_str(), &s) == 0 && (s.st_mode & S_IFREG) != 0) {
+        std::string const path = dir + font_file;
+        if (isReg(path)) {
             font_path = path;
             break;
         }

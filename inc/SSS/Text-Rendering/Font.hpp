@@ -15,28 +15,31 @@ class Font {
 
     friend class _internal::FontSize;
 
+public:
+// --- Aliases ---
+
+    using Ptr = std::unique_ptr<Font>;
+    using Shared = std::shared_ptr<Font>;
+    using Weak = std::weak_ptr<Font>;
+
 private:
 // --- Static variables ---
 
     // Internals
     static _internal::FT_Library_Ptr lib_;      // FreeType lib pointer
     static _internal::StringDeque font_dirs_;   // Font directories
+    static std::map<std::string, Weak> shared_; // Shared Fonts
     // Simple uints
     static size_t instances_;   // Number of object instances
     static FT_UInt hdpi_;       // Screen's horizontal dpi
     static FT_UInt vdpi_;       // Screen's vertical dpi
 
-
 public:
-// --- Aliases ---
-
-    using Ptr = std::unique_ptr<Font>;
-    using Shared = std::shared_ptr<Font>;
-
 // --- Static functions ---
 
     // Sets screen DPI for all instances (default: 96x96).
     static void setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept;
+    static Shared getShared(std::string const& font_file);
 
 // --- Constructor & Destructor ---
 
