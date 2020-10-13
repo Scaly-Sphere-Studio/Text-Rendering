@@ -3,8 +3,8 @@
 #include "SSS/Text-Rendering/Font.hpp"
 #include "SSS/Text-Rendering/TextOpt.hpp"
 
-SSS_TR_BEGIN__
-INTERNAL_BEGIN__
+__SSS_TR_BEGIN
+__INTERNAL_BEGIN
 
     // --- Structures ---
 
@@ -42,10 +42,10 @@ class Buffer {
 public:
 // --- Aliases ---
 
-    using Ptr       = std::unique_ptr<Buffer>;         // Unique ptr
-    using vector    = std::vector<Buffer::Ptr>;        // Vector
-    using it        = Buffer::vector::iterator;        // Iterator
-    using cit       = Buffer::vector::const_iterator;  // Const iterator
+    using Ptr       = std::unique_ptr<Buffer>;  // Unique Buffer ptr
+    using vector    = std::vector<Ptr>;         // Vector of Buffer ptr
+    using it        = vector::iterator;         // Iterator of Vector
+    using cit       = vector::const_iterator;   // Const iterator of Vector
 
 // --- Constructor & Destructor ---
 
@@ -73,28 +73,28 @@ private:
 // --- Private Functions ---
 
     // Shapes the buffer and retrieve its informations
-    void shape_();
+    void _shape();
 
 // --- Constructor arguments ---
     
     // Original string converted in uint32 vector
     // This is because HB doesn't handle CPP types,
     // and handles UTF32 with uint32_t arrays
-    std::vector<uint32_t> indexes_;
+    std::vector<uint32_t> _indexes;
     // Buffer options
-    TextOpt opt_;
+    TextOpt _opt;
     
 // --- HarfBuzz variables ---
 
-    HB_Buffer_Ptr buffer_;      // HarfBuzz buffer
-    unsigned int glyph_count_;  // Total number of glyphs
+    HB_Buffer_Ptr _buffer;      // HarfBuzz buffer
+    unsigned int _glyph_count;  // Total number of glyphs
 
-    hb_segment_properties_t properties_;    // HB presets : lng, script, direction
-    std::vector<uint32_t> wd_indexes_;      // Word dividers as glyph indexes
+    hb_segment_properties_t _properties;    // HB presets : lng, script, direction
+    std::vector<uint32_t> _wd_indexes;      // Word dividers as glyph indexes
 
-    std::vector<hb_glyph_info_t> glyph_info_;       // Glyphs informations
-    std::vector<hb_glyph_position_t> glyph_pos_;    // Glpyhs relative position
+    std::vector<hb_glyph_info_t> _glyph_info;       // Glyphs informations
+    std::vector<hb_glyph_position_t> _glyph_pos;    // Glpyhs relative position
 };
 
-INTERNAL_END__
-SSS_TR_END__
+__INTERNAL_END
+__SSS_TR_END

@@ -2,7 +2,7 @@
 
 #include "SSS/Text-Rendering/_includes.hpp"
 
-SSS_TR_BEGIN__
+__SSS_TR_BEGIN
 
 // --- Style options ---
 struct TextStyle {
@@ -49,14 +49,14 @@ struct TextColors {
 // --- Language options ---
 struct TextLanguage {
 private:
-    using c32Vector = std::vector<char32_t>;
+    using _c32Vector = std::vector<char32_t>;
 
 public:
     TextLanguage(
         std::string const& language_ = "en",            // English
         std::string const& script_ = "Latn",            // Latin script
         std::string const& direction_ = "ltr",          // Left to right
-        c32Vector const& word_dividers_ = { U' ' }   // Single word divider: space
+        _c32Vector const& word_dividers_ = { U' ' }   // Single word divider: space
     ) noexcept :
         language(language_),
         script(script_),
@@ -66,13 +66,11 @@ public:
     std::string language;           // Language ("en", "fr", "ar", ...)
     std::string script;             // Script ("Latn", "Arab", ...)
     std::string direction;          // Text direction ("ltr", "rtl")
-    c32Vector word_dividers;   // Word dividers (spaces, most of the time)
+    _c32Vector word_dividers;   // Word dividers (spaces, most of the time)
 };
 
 // --- All text options put together ---
 struct TextOpt {
-
-public:
     // --- Constructor ---
     TextOpt(
         Font::Shared font_,  // Used font
@@ -93,4 +91,4 @@ public:
     TextLanguage lng;   // Language
 };
 
-SSS_TR_END__
+__SSS_TR_END

@@ -1,14 +1,18 @@
 #pragma once
 
-#include "SSS/Text-Rendering/Font.hpp"
+#include "SSS/Text-Rendering/_includes.hpp"
+#include "SSS/Text-Rendering/_pointers.hpp"
 
-SSS_TR_BEGIN__
-INTERNAL_BEGIN__
+__SSS_TR_BEGIN
+__INTERNAL_BEGIN
 
 // This class aims to be used within the Font class to load, store,
 // and access glyphs (and their possible outlines) of a given charsize.
 class FontSize {
 public:
+// --- Aliases ---
+    using Map = std::map<int, FontSize>;
+
 // --- Constructor & Destructor ---
 
     // Constructor, throws if invalid charsize
@@ -37,11 +41,11 @@ public:
 private:
 // --- Private Variables ---
 
-    int charsize_;                  // Charsize
-    int last_outline_size_{ 0 };    // Last outline size used with this charsize
-    HB_Font_Ptr hb_font_;           // HarfBuzz font, created here
-    FT_Stroker_Ptr stroker_;        // FreeType stroker, created here
-    FT_Face_Ptr const& ft_face_;    // FreeType font face, given
+    int _charsize;                  // Charsize
+    int _last_outline_size{ 0 };    // Last outline size used with this charsize
+    HB_Font_Ptr _hb_font;           // HarfBuzz font, created here
+    FT_Stroker_Ptr _stroker;        // FreeType stroker, created here
+    FT_Face_Ptr const& _ft_face;    // FreeType font face, given
 
     struct _Glyph {
         // Variables
@@ -51,20 +55,20 @@ private:
         using Map = std::map<FT_UInt, _Glyph>;
         using Map2D = std::map<FT_UInt, _Glyph::Map>;
     };
-    _Glyph::Map originals_;     // Map of glyphs
-    _Glyph::Map2D outlined_;    // Map of outline map of glyphs
+    _Glyph::Map _originals;     // Map of glyphs
+    _Glyph::Map2D _outlined;    // Map of outline map of glyphs
 
 // --- Private Functions ---
 
     // Change FT face charsize
-    void setCharsize_();
+    void _setCharsize();
     // Loads the original glyph. Returns true on error
-    bool loadOriginal_(FT_UInt glyph_index);
+    bool _loadOriginal(FT_UInt glyph_index);
     // Loads the glyph's outline. Returns true on error
-    bool loadOutlined_(FT_UInt glyph_index, int outline_size);
+    bool _loadOutlined(FT_UInt glyph_index, int outline_size);
     // Stores the glyph and its ouline's bitmaps. Returns true on error
-    bool storeBitmaps_(FT_UInt glyph_index, int outline_size);
+    bool _storeBitmaps(FT_UInt glyph_index, int outline_size);
 };
 
-INTERNAL_END__
-SSS_TR_END__
+__INTERNAL_END
+__SSS_TR_END

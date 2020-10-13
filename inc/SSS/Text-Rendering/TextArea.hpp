@@ -2,11 +2,11 @@
 
 #include "SSS/Text-Rendering/_Buffer.hpp"
 
-SSS_TR_BEGIN__
+__SSS_TR_BEGIN
 
     // --- Internal structures ---
 
-INTERNAL_BEGIN__
+__INTERNAL_BEGIN
 
 // Stores line informations
 struct Line {
@@ -39,7 +39,7 @@ struct DrawParameters {
     } type;     // Glyph type
 };
 
-INTERNAL_END__
+__INTERNAL_END
 
     // --- Class ---
 
@@ -97,59 +97,59 @@ private:
 
 // --- Object info ---
     
-    size_t w_;              // Width of area
-    size_t h_;              // Height of area
-    size_t pixels_h_{ 0 };  // Height of pixels_ -> must NEVER be lower than h_
-    int scrolling_{ 0 };    // Scrolling index, in pixels
+    size_t _w;              // Width of area
+    size_t _h;              // Height of area
+    size_t _pixels_h{ 0 };  // Height of _pixels -> must NEVER be lower than _h
+    int _scrolling{ 0 };    // Scrolling index, in pixels
     
-    bool clear_{ true };        // True -> clear pixels_ before drawing
-    bool resize_{ true };       // True -> resize pixels_ before drawing
-    bool draw_{ true };         // True -> (re)draw pixels_
-    bool typewriter_{ false };  // True -> display characters one by one
+    bool _clear{ true };        // True -> clear _pixels before drawing
+    bool _resize{ true };       // True -> resize _pixels before drawing
+    bool _draw{ true };         // True -> (re)draw _pixels
+    bool _typewriter{ false };  // True -> display characters one by one
 
-    BGRA32::Pixels pixels_;  // Pixels vector
+    BGRA32::Pixels _pixels;  // Pixels vector
 
-    _internal::Buffer::vector buffers_;   // Buffer array for multiple layouts
-    size_t buffer_count_{ 0 };  // Number of ACTIVE buffers, != buffers_.size()
-    size_t glyph_count_{ 0 };   // Total number of glyphs in all ACTIVE buffers
-    size_t tw_cursor_{ 0 };     // TypeWriter -> Current character position
-    size_t tw_next_cursor_{ 0}; // TypeWriter -> Next character position
+    _internal::Buffer::vector _buffers;   // Buffer array for multiple layouts
+    size_t _buffer_count{ 0 };  // Number of ACTIVE buffers, != _buffers.size()
+    size_t _glyph_count{ 0 };   // Total number of glyphs in all ACTIVE buffers
+    size_t _tw_cursor{ 0 };     // TypeWriter -> Current character position
+    size_t _tw_next_cursor{ 0}; // TypeWriter -> Next character position
 
-    _internal::Line::vector lines_;   // Indexes of line breaks & charsizes
+    _internal::Line::vector _lines;   // Indexes of line breaks & charsizes
 
 // --- Private functions ---
 
     // Calls the at(); function from corresponding Buffer
-    _internal::GlyphInfo at_(size_t cursor) const;
+    _internal::GlyphInfo _at(size_t cursor) const;
     // Returns corresponding _internal::Line iterator, or cend()
-    _internal::Line::cit which_Line_(size_t cursor) const noexcept;
-    // Updates scrolling_
-    void scrollingChanged_() noexcept;
-    // Updates lines_
-    void update_Lines_();
+    _internal::Line::cit _which_Line(size_t cursor) const noexcept;
+    // Updates _scrolling
+    void _scrollingChanged() noexcept;
+    // Updates _lines
+    void _update_Lines();
 
 // --- Private functions -> Draw functions ---
 
-    // Draws current area if draw_ is set to true
-    void drawIfNeeded_();
+    // Draws current area if _draw is set to true
+    void _drawIfNeeded();
     // Prepares drawing parameters, which will be used multiple times per draw
-    _internal::DrawParameters prepareDraw_();
+    _internal::DrawParameters _prepareDraw();
     // Draws shadows, outlines, or plain glyphs
-    void drawGlyphs_(_internal::DrawParameters param);
+    void _drawGlyphs(_internal::DrawParameters param);
     // Draws a single shadow, outline, or plain glyph
-    void drawGlyph_(_internal::DrawParameters param, _internal::GlyphInfo const& glyph);
+    void _drawGlyph(_internal::DrawParameters param, _internal::GlyphInfo const& glyph);
 
     struct _CopyBitmapArgs {
         // Coords
-        FT_Int x0{ 0 };  // pixels_ -> x origin
-        FT_Int y0{ 0 };  // pixels_ -> y origin
+        FT_Int x0{ 0 };  // _pixels -> x origin
+        FT_Int y0{ 0 };  // _pixels -> y origin
         // Bitmap
         FT_Bitmap bitmap{ 0 };   // Bitmap structure
         BGR24::s color;     // Bitmap's color
         uint8_t alpha{ 0 };      // Bitmap's opacity
     };
-    // Copies a bitmap with given coords and color in pixels_
-    void copyBitmap_(_CopyBitmapArgs& coords);
+    // Copies a bitmap with given coords and color in _pixels
+    void _copyBitmap(_CopyBitmapArgs& coords);
 };
 
-SSS_TR_END__
+__SSS_TR_END

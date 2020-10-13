@@ -4,17 +4,9 @@
 #include "SSS/Text-Rendering/_pointers.hpp"
 #include "SSS/Text-Rendering/_FontSize.hpp"
 
-SSS_TR_BEGIN__
-
-INTERNAL_BEGIN__
-class FontSize;
-using StringDeque = std::deque<std::string>;
-INTERNAL_END__
+__SSS_TR_BEGIN
 
 class Font {
-
-    friend class _internal::FontSize;
-
 public:
 // --- Aliases ---
 
@@ -26,13 +18,12 @@ private:
 // --- Static variables ---
 
     // Internals
-    static _internal::FT_Library_Ptr lib_;      // FreeType lib pointer
-    static _internal::StringDeque font_dirs_;   // Font directories
-    static std::map<std::string, Weak> shared_; // Shared Fonts
+    static _internal::FT_Library_Ptr _lib;      // FreeType library pointer
+    static std::deque<std::string> _font_dirs;  // Font directories (partly user defined)
+    static std::map<std::string, Weak> _shared; // Shared Fonts (see getShared();)
     // Simple uints
-    static size_t instances_;   // Number of object instances
-    static FT_UInt hdpi_;       // Screen's horizontal dpi
-    static FT_UInt vdpi_;       // Screen's vertical dpi
+    static FT_UInt _hdpi;   // Screen's horizontal dpi
+    static FT_UInt _vdpi;   // Screen's vertical dpi
 
 public:
 // --- Static functions ---
@@ -43,6 +34,13 @@ public:
     static void addFontDir(std::string const& font_dir);
     // Creates a shared Font instance to be used & re-used everywhere
     static Shared getShared(std::string const& font_file);
+
+    // Returns static internal library
+    static _internal::FT_Library_Ptr const& getFTLib() noexcept;
+    // Returns static internal horizontal DPI (dots per inches)
+    static FT_UInt const& getHDPI() noexcept;
+    // Returns static internal vertical DPI (dots per inches)
+    static FT_UInt const& getVDPI() noexcept;
 
 // --- Constructor & Destructor ---
 
@@ -78,15 +76,15 @@ private:
 // --- Private Variables ---
 
     // Font face
-    _internal::FT_Face_Ptr face_;
+    _internal::FT_Face_Ptr _face;
     // Map of different font charsizes
-    std::map<int, _internal::FontSize> font_sizes_;
+    _internal::FontSize::Map _font_sizes;
 
 // --- Private functions ---
 
     // Ensures the given charsize has been initialized
-    void throw_if_bad_charsize_(int charsize) const;
+    void _throw_if_bad_charsize(int charsize) const;
 };
 
 
-SSS_TR_END__
+__SSS_TR_END

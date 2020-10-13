@@ -23,21 +23,21 @@
 #include <deque>
 #include <string>
 #include <memory>
-#include <chrono>
 
 // SSS
 #include <SSS/Commons.hpp>
 
     // --- Defines ---
 
-#define SSS_TR_BEGIN__ SSS_BEGIN__ namespace TR {
-#define SSS_TR_END__ SSS_END__ }
+#define __SSS_TR_BEGIN __SSS_BEGIN namespace TR {
+#define __SSS_TR_END __SSS_END }
 
-// Define log and throw macros
-#define LOG_FT_ERROR_AND_RETURN__(X, Y) if (error) { \
-    LOG_METHOD_ERR__(get_error(X, FT_Error_String(error))); \
+// Logs FT_Error if there is one, then return given value
+#define __LOG_FT_ERROR_AND_RETURN(X, Y) if (error) { \
+    __LOG_METHOD_ERR(get_error(X, FT_Error_String(error))); \
     return Y; \
 }
-#define THROW_IF_FT_ERROR__(X) if (error) { \
+// Throws FT_Error if there is one
+#define __THROW_IF_FT_ERROR(X) if (error) { \
     throw_exc(get_error(X, FT_Error_String(error))); \
 }

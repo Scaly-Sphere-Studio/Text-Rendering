@@ -2,8 +2,8 @@
 
 #include "SSS/Text-Rendering/_includes.hpp"
 
-SSS_TR_BEGIN__
-INTERNAL_BEGIN__
+__SSS_TR_BEGIN
+__INTERNAL_BEGIN
 
 using FT_Library_Ptr = C_Ptr
     <FT_LibraryRec_, FT_Error(*)(FT_Library), FT_Done_FreeType>;
@@ -13,8 +13,6 @@ using FT_Face_Ptr = C_Ptr
 
 using FT_Glyph_Ptr = C_Ptr
     <FT_GlyphRec_, void(*)(FT_Glyph), FT_Done_Glyph>;
-
-auto lambda = [](FT_BitmapGlyph bmp) noexcept { FT_Done_Glyph((FT_Glyph)bmp); };
 
 void FT_Done_BitmapGlyph(FT_BitmapGlyph glyph);
 
@@ -30,5 +28,5 @@ using HB_Font_Ptr = C_Ptr
 using HB_Buffer_Ptr = C_Ptr
     <hb_buffer_t, void(*)(hb_buffer_t*), hb_buffer_destroy>;
 
-INTERNAL_END__
-SSS_TR_END__
+__INTERNAL_END
+__SSS_TR_END

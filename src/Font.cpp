@@ -1,25 +1,24 @@
 #include "SSS/Text-Rendering/Font.hpp"
 
-SSS_TR_BEGIN__
+__SSS_TR_BEGIN
 
     // --- Static variables ---
 
-// FreeType init
-_internal::FT_Library_Ptr Font::lib_{
-    // Init FreeType
+// FreeType library initialization
+_internal::FT_Library_Ptr Font::_lib{
+    // Init FreeType lib
     []()->FT_Library {
         FT_Library lib;
         FT_Error error = FT_Init_FreeType(&lib);
-        THROW_IF_FT_ERROR__("FT_Init_FreeType()");
-        LOG_MSG__("FreeType library initialized");
+        __THROW_IF_FT_ERROR("FT_Init_FreeType()");
         return lib;
     }()
 };
 // Search for local font directories
-_internal::StringDeque Font::font_dirs_{
+std::deque<std::string> Font::_font_dirs{
     // Get the local font directories based on the OS
-    []()->_internal::StringDeque {
-        _internal::StringDeque ret;
+    []()->std::deque<std::string> {
+        std::deque<std::string> ret;
         #if defined(_WIN32)
         // Windows has a single font directory located in WINDIR
         std::string windir(copyEnv("WINDIR"));
@@ -30,48 +29,47 @@ _internal::StringDeque Font::font_dirs_{
             }
         }
         #elif defined(_APPLE_) && defined(_MACH_)
-        LOG_ERR__("WARNING: The local font directories of this OS aren't listed yet."));
+        __LOG_FUNC_WRN("The local font directories of this OS aren't listed yet."));
         #elif defined(linux) || defined(__linux)
-        LOG_ERR__("WARNING: The local font directories of this OS aren't listed yet."));
+        __LOG_FUNC_WRN("The local font directories of this OS aren't listed yet."));
         #endif
         if (ret.empty()) {
-            LOG_ERR__("WARNING: No local font directory could be found.");
+            __LOG_FUNC_WRN("No local font directory could be found.");
         }
         return ret;
     }()
 };
-std::map<std::string, Font::Weak> Font::shared_{ };
-size_t Font::instances_{ 0 };
-FT_UInt Font::hdpi_{ 96 };
-FT_UInt Font::vdpi_{ 0 };
+std::map<std::string, Font::Weak> Font::_shared{ };
+FT_UInt Font::_hdpi{ 96 };
+FT_UInt Font::_vdpi{ 0 };
 
     // --- Static functions ---
 
 // Sets screen DPI for all instances (default: 96x96).
 void Font::setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept
 {
-    hdpi_ = hdpi;
-    vdpi_ = vdpi;
+    _hdpi = hdpi;
+    _vdpi = vdpi;
 }
 
 // Adds a font directory to the system ones. To be called before creating a font.
 void Font::addFontDir(std::string const& font_dir) try
 {
     if (isDir(font_dir)) {
-        font_dirs_.push_front(font_dir);
+        _font_dirs.push_front(font_dir);
     }
     else {
-        LOG_FUNC_ERR__(get_error(
+        __LOG_FUNC_ERR(get_error(
             "WARNING: Given path does not exist or is not a directory.", font_dir));
     }
 }
-CATCH_AND_RETHROW_FUNC_EXC__
+__CATCH_AND_RETHROW_FUNC_EXC
 
 // Creates a shared Font instance to be used & re-used everywhere
 Font::Shared Font::getShared(std::string const& font_file) try
 {
     // Retrieve or create corresponding weak_ptr
-    Weak& weak = shared_[font_file];
+    Weak& weak = _shared[font_file];
     // Retrieve linked shared_ptr
     Shared shared = weak.lock();
     // If the shared_ptr is empty, create a new Font
@@ -84,7 +82,25 @@ Font::Shared Font::getShared(std::string const& font_file) try
     }
     return shared;
 }
-CATCH_AND_RETHROW_FUNC_EXC__
+__CATCH_AND_RETHROW_FUNC_EXC
+
+// Returns static internal library
+_internal::FT_Library_Ptr const& Font::getFTLib() noexcept
+{
+    return _lib;
+}
+
+// Returns static internal horizontal DPI (dots per inches)
+FT_UInt const& Font::getHDPI() noexcept
+{
+    return _hdpi;
+}
+
+// Returns static internal vertical DPI (dots per inches)
+FT_UInt const& Font::getVDPI() noexcept
+{
+    return _vdpi;
+}
 
     // --- Constructor & Destructor ---
 
@@ -92,9 +108,9 @@ CATCH_AND_RETHROW_FUNC_EXC__
 // Creates a FreeType font face.
 Font::Font(std::string const& font_file) try
 {
-    // Find the first occurence of the font in font_dirs_
+    // Find the first occurence of the font in _font_dirs
     std::string font_path;
-    for (std::string const& dir : font_dirs_) {
+    for (std::string const& dir : _font_dirs) {
         std::string const path = dir + font_file;
         if (isReg(path)) {
             font_path = path;
@@ -107,24 +123,19 @@ Font::Font(std::string const& font_file) try
     }
     
     FT_Face face;
-    FT_Error error = FT_New_Face(lib_.get(), font_path.c_str(), 0, &face);
-    THROW_IF_FT_ERROR__("FT_New_Face()");
-    face_.reset(face);
+    FT_Error error = FT_New_Face(_lib.get(), font_path.c_str(), 0, &face);
+    __THROW_IF_FT_ERROR("FT_New_Face()");
+    _face.reset(face);
 
-    ++instances_;
-    LOG_CONSTRUCTOR__
+    __LOG_CONSTRUCTOR
 }
-CATCH_AND_RETHROW_METHOD_EXC__
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Destructor, quits FreeType if called from last remaining instance.
 // Destroys the FreeType font face.
 Font::~Font() noexcept
 {
-    --instances_;
-    if (instances_ == 0) {
-        LOG_MSG__("FreeType library quit");
-    }
-    LOG_DESTRUCTOR__
+    __LOG_DESTRUCTOR
 }
 
     // --- Glyph functions ---
@@ -133,27 +144,27 @@ Font::~Font() noexcept
 void Font::useCharsize(int charsize) try
 {
     // Create font size if needed
-    if (font_sizes_.count(charsize) == 0) {
-        font_sizes_.emplace(
+    if (_font_sizes.count(charsize) == 0) {
+        _font_sizes.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(charsize),        // Key
-            std::forward_as_tuple(face_, charsize)  // Value
+            std::forward_as_tuple(_face, charsize)  // Value
         );
     }
 }
-CATCH_AND_RETHROW_METHOD_EXC__
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Loads corresponding glyph.
 bool Font::loadGlyph(FT_UInt glyph_index, int charsize, int outline_size) try
 {
-    return font_sizes_.at(charsize).loadGlyph(glyph_index, outline_size);
+    return _font_sizes.at(charsize).loadGlyph(glyph_index, outline_size);
 }
-CATCH_AND_RETHROW_METHOD_EXC__
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Clears out the internal glyph cache.
 void Font::unloadGlyphs() noexcept
 {
-    font_sizes_.clear();
+    _font_sizes.clear();
 }
 
     // --- Get functions ---
@@ -162,42 +173,42 @@ void Font::unloadGlyphs() noexcept
 _internal::FT_BitmapGlyph_Ptr const&
 Font::getGlyphBitmap(FT_UInt glyph_index, int charsize) const try
 {
-    throw_if_bad_charsize_(charsize);
-    return font_sizes_.at(charsize).getGlyphBitmap(glyph_index);
+    _throw_if_bad_charsize(charsize);
+    return _font_sizes.at(charsize).getGlyphBitmap(glyph_index);
 }
-CATCH_AND_RETHROW_METHOD_EXC__
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Returns corresponding glyph outline as a bitmap
 _internal::FT_BitmapGlyph_Ptr const&
 Font::getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) const try
 {
-    throw_if_bad_charsize_(charsize);
-    return font_sizes_.at(charsize).getOutlineBitmap(glyph_index, outline_size);
+    _throw_if_bad_charsize(charsize);
+    return _font_sizes.at(charsize).getOutlineBitmap(glyph_index, outline_size);
 }
-CATCH_AND_RETHROW_METHOD_EXC__
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Returns the internal FreeType font face.
 _internal::FT_Face_Ptr const& Font::getFTFace() const noexcept
 {
-    return face_;
+    return _face;
 }
 
 // Returns the corresponding internal HarfBuzz font.
 _internal::HB_Font_Ptr const& Font::getHBFont(int charsize) const try
 {
-    throw_if_bad_charsize_(charsize);
-    return font_sizes_.at(charsize).getHBFont();
+    _throw_if_bad_charsize(charsize);
+    return _font_sizes.at(charsize).getHBFont();
 }
-CATCH_AND_RETHROW_METHOD_EXC__
+__CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Private functions ---
 
 // Ensures the given charsize has been initialized
-void Font::throw_if_bad_charsize_(int charsize) const
+void Font::_throw_if_bad_charsize(int charsize) const
 {
-    if (font_sizes_.count(charsize) == 0) {
+    if (_font_sizes.count(charsize) == 0) {
         throw_exc(ERR_MSG::NOTHING_FOUND);
     }
 }
 
-SSS_TR_END__
+__SSS_TR_END
