@@ -26,7 +26,6 @@
     <None Include="vcpkg_scripts\local_remove.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\SSS\Text-Rendering\Fps.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\_FontSize.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\_includes.hpp" />
@@ -37,7 +36,6 @@
     <ClInclude Include="inc\SSS\Text-Rendering\TextOpt.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Fps.cpp" />
     <ClCompile Include="src\_FontSize.cpp" />
     <ClCompile Include="src\_Buffer.cpp" />
     <ClCompile Include="src\Font.cpp" />

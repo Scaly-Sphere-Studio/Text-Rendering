@@ -39,6 +39,9 @@ public:
 
     // Sets screen DPI for all instances (default: 96x96).
     static void setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept;
+    // Adds a font directory to the system ones. To be called before creating a font.
+    static void addFontDir(std::string const& font_dir);
+    // Creates a shared Font instance to be used & re-used everywhere
     static Shared getShared(std::string const& font_file);
 
 // --- Constructor & Destructor ---

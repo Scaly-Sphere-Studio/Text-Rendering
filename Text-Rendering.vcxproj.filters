@@ -51,9 +51,6 @@
     <ClInclude Include="inc\SSS\Text-Rendering\_pointers.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Fps.hpp">
-      <Filter>inc</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\TextArea.cpp">
@@ -66,9 +63,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\_Buffer.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Fps.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\_pointers.cpp">

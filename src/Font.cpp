@@ -54,7 +54,21 @@ void Font::setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept
     vdpi_ = vdpi;
 }
 
-Font::Shared Font::getShared(std::string const& font_file)
+// Adds a font directory to the system ones. To be called before creating a font.
+void Font::addFontDir(std::string const& font_dir) try
+{
+    if (isDir(font_dir)) {
+        font_dirs_.push_front(font_dir);
+    }
+    else {
+        LOG_FUNC_ERR__(get_error(
+            "WARNING: Given path does not exist or is not a directory.", font_dir));
+    }
+}
+CATCH_AND_RETHROW_FUNC_EXC__
+
+// Creates a shared Font instance to be used & re-used everywhere
+Font::Shared Font::getShared(std::string const& font_file) try
 {
     // Retrieve or create corresponding weak_ptr
     Weak& weak = shared_[font_file];
@@ -70,6 +84,7 @@ Font::Shared Font::getShared(std::string const& font_file)
     }
     return shared;
 }
+CATCH_AND_RETHROW_FUNC_EXC__
 
     // --- Constructor & Destructor ---
 
