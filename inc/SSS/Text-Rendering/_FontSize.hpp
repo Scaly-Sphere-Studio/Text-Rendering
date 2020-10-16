@@ -36,7 +36,7 @@ public:
 // --- Get functions ---
 
     // Returns the corresponding HarfBuzz font
-    HB_Font_Ptr const& getHBFont() const noexcept;
+    inline HB_Font_Ptr const& getHBFont() const noexcept { return _hb_font; }
 
 private:
 // --- Private Variables ---

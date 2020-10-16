@@ -34,10 +34,10 @@
 
 // Logs FT_Error if there is one, then return given value
 #define __LOG_FT_ERROR_AND_RETURN(X, Y) if (error) { \
-    __LOG_METHOD_ERR(get_error(X, FT_Error_String(error))); \
+    __LOG_METHOD_ERR(SSS::context_msg(X, FT_Error_String(error))); \
     return Y; \
 }
 // Throws FT_Error if there is one
 #define __THROW_IF_FT_ERROR(X) if (error) { \
-    throw_exc(get_error(X, FT_Error_String(error))); \
+    SSS::throw_exc(SSS::context_msg(X, FT_Error_String(error))); \
 }

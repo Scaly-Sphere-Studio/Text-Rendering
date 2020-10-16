@@ -48,6 +48,7 @@ FT_UInt Font::_vdpi{ 0 };
 // Sets screen DPI for all instances (default: 96x96).
 void Font::setDPI(FT_UInt hdpi, FT_UInt vdpi) noexcept
 {
+    // TODO: reload all cache if DPIs changed
     _hdpi = hdpi;
     _vdpi = vdpi;
 }
@@ -59,8 +60,8 @@ void Font::addFontDir(std::string const& font_dir) try
         _font_dirs.push_front(font_dir);
     }
     else {
-        __LOG_FUNC_ERR(get_error(
-            "WARNING: Given path does not exist or is not a directory.", font_dir));
+        __LOG_FUNC_WRN(context_msg(
+            "Given path does not exist or is not a directory", font_dir));
     }
 }
 __CATCH_AND_RETHROW_FUNC_EXC
@@ -83,24 +84,6 @@ Font::Shared Font::getShared(std::string const& font_file) try
     return shared;
 }
 __CATCH_AND_RETHROW_FUNC_EXC
-
-// Returns static internal library
-_internal::FT_Library_Ptr const& Font::getFTLib() noexcept
-{
-    return _lib;
-}
-
-// Returns static internal horizontal DPI (dots per inches)
-FT_UInt const& Font::getHDPI() noexcept
-{
-    return _hdpi;
-}
-
-// Returns static internal vertical DPI (dots per inches)
-FT_UInt const& Font::getVDPI() noexcept
-{
-    return _vdpi;
-}
 
     // --- Constructor & Destructor ---
 
@@ -169,6 +152,14 @@ void Font::unloadGlyphs() noexcept
 
     // --- Get functions ---
 
+// Returns the corresponding internal HarfBuzz font.
+_internal::HB_Font_Ptr const& Font::getHBFont(int charsize) const try
+{
+    _throw_if_bad_charsize(charsize);
+    return _font_sizes.at(charsize).getHBFont();
+}
+__CATCH_AND_RETHROW_METHOD_EXC
+
 // Returns corresponding glyph as a bitmap
 _internal::FT_BitmapGlyph_Ptr const&
 Font::getGlyphBitmap(FT_UInt glyph_index, int charsize) const try
@@ -184,20 +175,6 @@ Font::getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) cons
 {
     _throw_if_bad_charsize(charsize);
     return _font_sizes.at(charsize).getOutlineBitmap(glyph_index, outline_size);
-}
-__CATCH_AND_RETHROW_METHOD_EXC
-
-// Returns the internal FreeType font face.
-_internal::FT_Face_Ptr const& Font::getFTFace() const noexcept
-{
-    return _face;
-}
-
-// Returns the corresponding internal HarfBuzz font.
-_internal::HB_Font_Ptr const& Font::getHBFont(int charsize) const try
-{
-    _throw_if_bad_charsize(charsize);
-    return _font_sizes.at(charsize).getHBFont();
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 

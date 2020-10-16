@@ -75,14 +75,6 @@ FontSize::getOutlineBitmap(FT_UInt glyph_index, int outline_size) const try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-    // --- Get functions ---
-
-// Returns the corresponding HarfBuzz font
-HB_Font_Ptr const& FontSize::getHBFont() const noexcept
-{
-    return _hb_font;
-}
-
     // --- Private functions ---
 
 // Change FT face charsize

@@ -64,7 +64,7 @@ public:
 // --- Get functions ---
 
     // Returns the number of glyphs in the buffer
-    size_t size() const noexcept;
+    inline size_t size() const noexcept { return static_cast<size_t>(_glyph_count); }
     // Returns a structure filled with informations of a given glyph.
     // Throws an exception if cursor is out of bound.
     GlyphInfo at(size_t cursor) const;

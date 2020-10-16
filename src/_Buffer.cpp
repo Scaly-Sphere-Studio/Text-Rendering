@@ -69,12 +69,6 @@ __CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Get functions ---
 
-// Returns the number of glyphs in the buffer
-size_t Buffer::size() const noexcept
-{
-    return static_cast<size_t>(_glyph_count);
-}
-
 // Returns a structure filled with informations of a given glyph.
 // Throws an exception if cursor is out of bound.
 GlyphInfo Buffer::at(size_t cursor) const try

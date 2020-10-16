@@ -36,11 +36,11 @@ public:
     static Shared getShared(std::string const& font_file);
 
     // Returns static internal library
-    static _internal::FT_Library_Ptr const& getFTLib() noexcept;
+    static inline _internal::FT_Library_Ptr const& getFTLib() noexcept { return _lib; }
     // Returns static internal horizontal DPI (dots per inches)
-    static FT_UInt const& getHDPI() noexcept;
+    static inline FT_UInt const& getHDPI() noexcept { return _hdpi; }
     // Returns static internal vertical DPI (dots per inches)
-    static FT_UInt const& getVDPI() noexcept;
+    static inline FT_UInt const& getVDPI() noexcept { return _vdpi; }
 
 // --- Constructor & Destructor ---
 
@@ -61,16 +61,16 @@ public:
 
 // --- Get functions ---
 
+    // Returns the internal FreeType font face.
+    inline _internal::FT_Face_Ptr const& getFTFace() const noexcept { return _face; };
+    // Returns the corresponding internal HarfBuzz font.
+    _internal::HB_Font_Ptr const& getHBFont(int charsize) const;
     // Returns corresponding glyph as a bitmap
     _internal::FT_BitmapGlyph_Ptr const&
         getGlyphBitmap(FT_UInt glyph_index, int charsize) const;
     // Returns corresponding glyph outline as a bitmap
     _internal::FT_BitmapGlyph_Ptr const&
         getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) const;
-    // Returns the internal FreeType font face.
-    _internal::FT_Face_Ptr const& getFTFace() const noexcept;
-    // Returns the corresponding internal HarfBuzz font.
-    _internal::HB_Font_Ptr const& getHBFont(int charsize) const;
 
 private:
 // --- Private Variables ---

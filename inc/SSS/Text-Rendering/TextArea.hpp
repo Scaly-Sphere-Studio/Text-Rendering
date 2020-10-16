@@ -7,7 +7,6 @@ __SSS_TR_BEGIN
     // --- Internal structures ---
 
 __INTERNAL_BEGIN
-
 // Stores line informations
 struct Line {
     // Variables
@@ -38,7 +37,6 @@ struct DrawParameters {
         bool is_outline{ true };    // Draw glyphs or their outlines
     } type;     // Glyph type
 };
-
 __INTERNAL_END
 
     // --- Class ---
@@ -144,9 +142,9 @@ private:
         FT_Int x0{ 0 };  // _pixels -> x origin
         FT_Int y0{ 0 };  // _pixels -> y origin
         // Bitmap
-        FT_Bitmap bitmap{ 0 };   // Bitmap structure
-        BGR24::s color;     // Bitmap's color
-        uint8_t alpha{ 0 };      // Bitmap's opacity
+        FT_Bitmap bitmap{ 0 };  // Bitmap structure
+        BGR24::s color;         // Bitmap's color
+        uint8_t alpha{ 0 };     // Bitmap's opacity
     };
     // Copies a bitmap with given coords and color in _pixels
     void _copyBitmap(_CopyBitmapArgs& coords);
