@@ -83,7 +83,7 @@ void TextArea::loadString(std::string const& str, TextOpt const& opt) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-// Renders text to a 2D pixel array in the BGRA32 format.
+// Renders text to a 2D pixel array in the RGBA32 format.
 // The passed array should have the same width and height
 // as the TextArea object.
 void TextArea::renderTo(void* ptr)
@@ -457,7 +457,7 @@ void TextArea::_copyBitmap(_CopyBitmapArgs& args)
 
             // Retrieve buffer index and corresponding pixel reference
             size_t const buf_index = (size_t)(j * args.bitmap.pitch + i);
-            BGRA32& pixel = _pixels[(size_t)(x + y * _w)];
+            RGBA32& pixel = _pixels[(size_t)(x + y * _w)];
 
             // Copy pixel
             switch (args.bitmap.pixel_mode) {
@@ -474,7 +474,7 @@ void TextArea::_copyBitmap(_CopyBitmapArgs& args)
                     args.color.plain = args.color.func(x * 1530 / static_cast<int>(_w));
                 }
                 // Blend with existing pixel, using the glyph's pixel value as an alpha
-                pixel *= BGRA32(args.color.plain, px_value);
+                pixel *= RGBA32(args.color.plain, px_value);
                 // Lower alpha post blending if needed
                 if (pixel.bytes.a > args.alpha) {
                     pixel.bytes.a = args.alpha;

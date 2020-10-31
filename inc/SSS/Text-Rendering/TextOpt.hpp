@@ -30,9 +30,9 @@ public:
 // --- Color options ---
 struct TextColors {
     TextColors(
-        BGR24::s text_ = BGR24(0xFFFFFFU),      // White
-        BGR24::s outline_ = BGR24(0x000000U),   // Black
-        BGR24::s shadow_ = BGR24(0x444444U),    // Grey
+        RGB24::s text_ = RGB24(0xFFFFFFU),      // White
+        RGB24::s outline_ = RGB24(0x000000U),   // Black
+        RGB24::s shadow_ = RGB24(0x444444U),    // Grey
         uint8_t alpha_ = 0xFFU                  // No transparency
     ) noexcept :
         text(text_),
@@ -40,9 +40,9 @@ struct TextColors {
         shadow(shadow_),
         alpha(alpha_)
     {};
-    BGR24::s text;      // Text color
-    BGR24::s outline;   // Outline color
-    BGR24::s shadow;    // Shadow color
+    RGB24::s text;      // Text color
+    RGB24::s outline;   // Outline color
+    RGB24::s shadow;    // Shadow color
     uint8_t alpha;      // Overall transparency
 };
 

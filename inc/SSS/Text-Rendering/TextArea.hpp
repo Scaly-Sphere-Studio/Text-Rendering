@@ -64,7 +64,7 @@ public:
     void loadString(std::u32string const& str, TextOpt const& opt);
     // Loads passed string in cache.
     void loadString(std::string const& str, TextOpt const& opt);
-    // Renders text to a 2D pixel array in the BGRA32 format.
+    // Renders text to a 2D pixel array in the RGBA32 format.
     // The passed array should have the same width and height
     // as the TextArea object.
     void renderTo(void* pixels);
@@ -105,7 +105,7 @@ private:
     bool _draw{ true };         // True -> (re)draw _pixels
     bool _typewriter{ false };  // True -> display characters one by one
 
-    BGRA32::Pixels _pixels;  // Pixels vector
+    RGBA32::Pixels _pixels;  // Pixels vector
 
     _internal::Buffer::vector _buffers;   // Buffer array for multiple layouts
     size_t _buffer_count{ 0 };  // Number of ACTIVE buffers, != _buffers.size()
@@ -143,7 +143,7 @@ private:
         FT_Int y0{ 0 };  // _pixels -> y origin
         // Bitmap
         FT_Bitmap bitmap{ 0 };  // Bitmap structure
-        BGR24::s color;         // Bitmap's color
+        RGB24::s color;         // Bitmap's color
         uint8_t alpha{ 0 };     // Bitmap's opacity
     };
     // Copies a bitmap with given coords and color in _pixels
