@@ -42,13 +42,13 @@
     <ClInclude Include="inc\SSS\Text-Rendering\_FontSize.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_Buffer.hpp">
-      <Filter>inc</Filter>
-    </ClInclude>
     <ClInclude Include="inc\SSS\Text-Rendering\_includes.hpp">
       <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="inc\SSS\Text-Rendering\_pointers.hpp">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp">
       <Filter>inc</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,10 +62,10 @@
     <ClCompile Include="src\_FontSize.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\_Buffer.cpp">
+    <ClCompile Include="src\_pointers.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\_pointers.cpp">
+    <ClCompile Include="src\Buffer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

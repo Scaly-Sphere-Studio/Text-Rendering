@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SSS/Text-Rendering/_Buffer.hpp"
+#include "SSS/Text-Rendering/Buffer.hpp"
 
 __SSS_TR_BEGIN
 
@@ -41,39 +41,43 @@ __INTERNAL_END
 
     // --- Class ---
 
-class TextArea {
+class TextArea : public std::enable_shared_from_this<TextArea> {
+    friend class Buffer;
 public:
 
 // --- Aliases ---
-    using Ptr = std::unique_ptr<TextArea>;      // Unique ptr
-    using Shared = std::shared_ptr<TextArea>;   // Shared ptr
+    using Shared = std::shared_ptr<TextArea>;
+private:
+    using Weak = std::weak_ptr<TextArea>;
+
+    static std::vector<Weak> _instances;
 
 // --- Constructor, destructor & clear function ---
-
+    
     // Constructor, sets width & height.
     // Throws an exception if width and/or height are <= 0.
     TextArea(int width, int height);
+public:
     // Destructor, clears out buffer cache.
     ~TextArea() noexcept;
     // Resets the object to newly constructed state
     void clear() noexcept;
 
+    static Shared create(int width, int height);
+
 // --- Basic functions ---
 
-    // Loads passed string in cache.
-    void loadString(std::u32string const& str, TextOpt const& opt);
-    // Loads passed string in cache.
-    void loadString(std::string const& str, TextOpt const& opt);
+    // Use buffer in text area
+    void useBuffer(Buffer::Shared buffer);
     // Renders text to a 2D pixel array in the RGBA32 format.
     // The passed array should have the same width and height
     // as the TextArea object.
     void renderTo(void* pixels);
+    // Returns its rendered pixels.
+    void const* getPixels();
 
 // --- Format functions ---
 
-    // Update the text format.
-    // To be called when a charsize changes internally, for example.
-    void updateFormat();
     // Scrolls up (negative values) or down (positive values)
     // Any excessive scrolling will be negated,
     // hence, this function is safe.
@@ -100,6 +104,8 @@ private:
     size_t _pixels_h{ 0 };  // Height of _pixels -> must NEVER be lower than _h
     int _scrolling{ 0 };    // Scrolling index, in pixels
     
+    bool _update_format{ true }; // True -> update _lines & _scrolling
+    bool _update_lines{ true }; // True -> update _lines
     bool _clear{ true };        // True -> clear _pixels before drawing
     bool _resize{ true };       // True -> resize _pixels before drawing
     bool _draw{ true };         // True -> (re)draw _pixels
@@ -107,8 +113,8 @@ private:
 
     RGBA32::Pixels _pixels;  // Pixels vector
 
-    _internal::Buffer::vector _buffers;   // Buffer array for multiple layouts
-    size_t _buffer_count{ 0 };  // Number of ACTIVE buffers, != _buffers.size()
+    std::vector<Buffer::Shared> _buffers;   // Buffer array for multiple layouts
+
     size_t _glyph_count{ 0 };   // Total number of glyphs in all ACTIVE buffers
     size_t _tw_cursor{ 0 };     // TypeWriter -> Current character position
     size_t _tw_next_cursor{ 0}; // TypeWriter -> Next character position
@@ -117,14 +123,17 @@ private:
 
 // --- Private functions ---
 
+    // Update the text format.
+    // To be called when a charsize changes internally, for example.
+    void _updateFormat();
     // Calls the at(); function from corresponding Buffer
     _internal::GlyphInfo _at(size_t cursor) const;
     // Returns corresponding _internal::Line iterator, or cend()
-    _internal::Line::cit _which_Line(size_t cursor) const noexcept;
+    _internal::Line::cit _whichLine(size_t cursor) const noexcept;
     // Updates _scrolling
     void _scrollingChanged() noexcept;
     // Updates _lines
-    void _update_Lines();
+    void _updateLines();
 
 // --- Private functions -> Draw functions ---
 

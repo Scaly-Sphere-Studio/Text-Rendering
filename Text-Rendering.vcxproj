@@ -29,7 +29,7 @@
     <ClInclude Include="inc\SSS\Text-Rendering.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\_FontSize.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\_includes.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_Buffer.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\Font.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\_pointers.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\TextArea.hpp" />
@@ -37,7 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\_FontSize.cpp" />
-    <ClCompile Include="src\_Buffer.cpp" />
+    <ClCompile Include="src\Buffer.cpp" />
     <ClCompile Include="src\Font.cpp" />
     <ClCompile Include="src\TextArea.cpp" />
     <ClCompile Include="src\_pointers.cpp" />
