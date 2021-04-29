@@ -2,6 +2,8 @@
 
 __SSS_TR_BEGIN
 
+std::vector<TextArea::Weak> TextArea::_instances{};
+
     // --- Constructor, destructor & clear function ---
 
 // Constructor, sets width & height.
@@ -32,9 +34,11 @@ void TextArea::clear() noexcept
         _resize = true;
     }
     // Reset buffers
-    _buffer_count = 0;
+    _buffers.clear();
     _glyph_count = 0;
+    // Reset lines
     _lines.clear();
+    _update_lines = true;
     // Reset pixels
     _clear = true;
     _draw = false;
@@ -43,43 +47,22 @@ void TextArea::clear() noexcept
     _tw_next_cursor = 0;
 }
 
+TextArea::Shared TextArea::create(int width, int height)
+{
+    Shared shared(new TextArea(width, height));
+    _instances.push_back(shared);
+    return shared;
+}
+
     // --- Basic functions ---
 
 // Loads passed string in cache.
-void TextArea::loadString(std::u32string const& str, TextOpt const& opt) try
+void TextArea::useBuffer(Buffer::Shared buffer) try
 {
-    // Ensure we set the corresponding charsize
-    opt.font->useCharsize(opt.style.charsize);
-
-    // If an old buffer is available, update its contents
-    if (_buffers.size() > _buffer_count) {
-        _buffers.at(_buffer_count)->changeContents(str, opt);
-    }
-    // Else, create & fill new buffer ptr & add it to the _buffers vector
-    else {
-        _buffers.emplace_back(std::make_unique<_internal::Buffer>(str, opt));
-    }
-    _internal::Buffer::Ptr const& buffer(_buffers.at(_buffer_count));
-
-    // Load glyphs retrieved by the buffer
-    int const outline_size = opt.style.has_outline ? opt.style.outline_size : 0;
-    for (size_t i(0); i < buffer->size(); ++i) {
-        opt.font->loadGlyph(buffer->at(i).info.codepoint, opt.style.charsize, outline_size);
-    }
     // Update counts
-    _glyph_count += buffer->size();
-    ++_buffer_count;
-    // Append format_
-    _update_Lines();
-}
-__CATCH_AND_RETHROW_METHOD_EXC
-
-// Loads passed string in cache.
-void TextArea::loadString(std::string const& str, TextOpt const& opt) try
-{
-    // Convert string to u32string
-    std::u32string const u32str(str.cbegin(), str.cend());
-    loadString(u32str, opt);
+    _buffers.push_back(buffer);
+    _glyph_count += buffer->_size();
+    _update_lines = true;
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
@@ -88,33 +71,21 @@ __CATCH_AND_RETHROW_METHOD_EXC
 // as the TextArea object.
 void TextArea::renderTo(void* ptr)
 {
-    _drawIfNeeded();
     if (ptr == nullptr) {
         __LOG_METHOD_ERR(ERR_MSG::INVALID_ARGUMENT)
         return;
     }
+    _drawIfNeeded();
     memcpy(ptr, &_pixels.at(_scrolling * _w), (size_t)(4 * _w * _h));
 }
 
-    // --- Format functions ---
-
-// Update the text format. To be called when charsize changes, for example.
-void TextArea::updateFormat() try
+void const* TextArea::getPixels()
 {
-    // Reshape all buffers
-    for (_internal::Buffer::Ptr& buffer : _buffers) {
-        buffer->reshape();
-    }
-    // Update global format
-    float pre_size = static_cast<float>(_pixels_h - _h);
-    _update_Lines();
-    float const size_diff = static_cast<float>(_pixels_h - _h) / pre_size;
-    _scrolling = (size_t)std::round(static_cast<float>(_scrolling) * size_diff);
-    _scrollingChanged();
-    _clear = true;
-    _draw = true;
+    _drawIfNeeded();
+    return &_pixels.at(_scrolling * _w);
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+
+    // --- Format functions ---
 
 // Scrolls up (negative values) or down (positive values)
 // Any excessive scrolling will be negated,
@@ -153,7 +124,7 @@ bool TextArea::incrementCursor() noexcept
     }
 
     ++_tw_next_cursor;
-    _internal::Line::cit line = _which_Line(_tw_next_cursor);
+    _internal::Line::cit line = _whichLine(_tw_next_cursor);
     if (line->first_glyph == _tw_next_cursor) {
         if (line->scrolling - _scrolling > static_cast<int>(_h)) {
             --_tw_next_cursor;
@@ -164,22 +135,35 @@ bool TextArea::incrementCursor() noexcept
     return false;
 }
 
-    // --- Static functions ---
+// Update the text format. To be called from Buffers upon them changing
+void TextArea::_updateFormat() try
+{
+    // Update global format
+    float pre_size = static_cast<float>(_pixels_h - _h);
+    _updateLines();
+    float const size_diff = static_cast<float>(_pixels_h - _h) / pre_size;
+    _scrolling = (size_t)std::round(static_cast<float>(_scrolling) * size_diff);
+    _scrollingChanged();
+    _clear = true;
+    _draw = true;
+
+    _update_format = false;
+}
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Calls the at(); function from corresponding Buffer
 _internal::GlyphInfo TextArea::_at(size_t cursor) const try
 {
-    for (size_t i(0); i < _buffer_count; ++i) {
-        _internal::Buffer::Ptr const& buffer = _buffers.at(i);
-        if (buffer->size() > cursor) {
-            return buffer->at(cursor);
+    for (size_t i(0); i < _buffers.size(); ++i) {
+        Buffer::Shared const& buffer = _buffers.at(i);
+        if (buffer->_size() > cursor) {
+            return buffer->_at(cursor);
         }
-        cursor -= buffer->size();
+        cursor -= buffer->_size();
     }
     throw_exc(ERR_MSG::OUT_OF_BOUND);
 }
 __CATCH_AND_RETHROW_METHOD_EXC
-
 
 // Updates _scrolling
 void TextArea::_scrollingChanged() noexcept
@@ -194,7 +178,7 @@ void TextArea::_scrollingChanged() noexcept
 }
 
 // Updates _lines
-void TextArea::_update_Lines()
+void TextArea::_updateLines()
 {
     // Reset _lines
     _lines.clear();
@@ -261,10 +245,12 @@ void TextArea::_update_Lines()
     _tw_cursor = 0;
     _clear = true;
     _draw = true;
+
+    _update_lines = false;
 }
 
 // Returns corresponding _internal::Line iterator, or cend()
-_internal::Line::cit TextArea::_which_Line(size_t cursor) const noexcept
+_internal::Line::cit TextArea::_whichLine(size_t cursor) const noexcept
 {
     _internal::Line::cit line = _lines.cbegin();
     while (line != _lines.cend() - 1) {
@@ -281,6 +267,14 @@ _internal::Line::cit TextArea::_which_Line(size_t cursor) const noexcept
 // Draws current area if _draw is set to true
 void TextArea::_drawIfNeeded()
 {
+    // Update format if needed
+    if (_update_format) {
+        _updateFormat();
+    }
+    // Update lines if needed
+    if (_update_lines) {
+        _updateLines();
+    }
     // Resize pixels array if needed
     if (_resize) {
         _pixels.resize(_w * _pixels_h);
@@ -353,7 +347,7 @@ _internal::DrawParameters TextArea::_prepareDraw()
     }
 
     // Determine first glyph's corresponding line
-    param.line = _which_Line(param.first_glyph);
+    param.line = _whichLine(param.first_glyph);
     if (param.line != _lines.cend()) {
         // Lower pen.y accordingly
         // TODO: determine exact offsets needed, instead of using 5px
