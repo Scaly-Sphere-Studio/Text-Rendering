@@ -6,6 +6,18 @@
 __SSS_TR_BEGIN
 __INTERNAL_BEGIN
 
+struct Bitmap {
+    int pen_left;
+    int pen_top;
+
+    int width;
+    int height;
+    int bpp;
+
+    std::vector<unsigned char> buffer;
+    unsigned char pixel_mode;
+};
+
 // This class aims to be used within the Font class to load, store,
 // and access glyphs (and their possible outlines) of a given charsize.
 class FontSize {
@@ -20,21 +32,18 @@ public:
     // Destructor. Logs
     ~FontSize();
 
-// --- Glyph functions ---
+// --- Load functions ---
 
     // Loads the given glyph, and its ouline if outline_size > 0.
     // Returns true on error.
     bool loadGlyph(FT_UInt glyph_index, int outline_size);
 
-    // Returns the corresponding glyph's bitmap. Throws if not found.
-    FT_BitmapGlyph_Ptr const&
-        getGlyphBitmap(FT_UInt glyph_index) const;
-    // Returns the corresponding glyph outline's bitmap. Throws if not found.
-    FT_BitmapGlyph_Ptr const&
-        getOutlineBitmap(FT_UInt glyph_index, int outline_size) const;
-
 // --- Get functions ---
 
+    // Returns the corresponding glyph's bitmap. Throws if not found.
+    Bitmap const& getGlyphBitmap(FT_UInt glyph_index) const;
+    // Returns the corresponding glyph outline's bitmap. Throws if not found.
+    Bitmap const& getOutlineBitmap(FT_UInt glyph_index, int outline_size) const;
     // Returns the corresponding HarfBuzz font
     inline HB_Font_Ptr const& getHBFont() const noexcept { return _hb_font; }
 
@@ -47,27 +56,15 @@ private:
     FT_Stroker_Ptr _stroker;        // FreeType stroker, created here
     FT_Face_Ptr const& _ft_face;    // FreeType font face, given
 
-    struct _Glyph {
-        // Variables
-        FT_Glyph_Ptr glyph;
-        FT_BitmapGlyph_Ptr bitmap;
-        // Aliases
-        using Map = std::map<FT_UInt, _Glyph>;
-        using Map2D = std::map<FT_UInt, _Glyph::Map>;
-    };
-    _Glyph::Map _originals;     // Map of glyphs
-    _Glyph::Map2D _outlined;    // Map of outline map of glyphs
+    // Map of glyph bitmaps
+    std::map<FT_UInt, Bitmap> _originals;
+    // Map of outline bitmaps, mapped by outline size
+    std::map<FT_UInt, std::map<FT_UInt, Bitmap>> _outlined;
 
-// --- Private Functions ---
+// --- Private functions ---
 
     // Change FT face charsize
     void _setCharsize();
-    // Loads the original glyph. Returns true on error
-    bool _loadOriginal(FT_UInt glyph_index);
-    // Loads the glyph's outline. Returns true on error
-    bool _loadOutlined(FT_UInt glyph_index, int outline_size);
-    // Stores the glyph and its ouline's bitmaps. Returns true on error
-    bool _storeBitmaps(FT_UInt glyph_index, int outline_size);
 };
 
 __INTERNAL_END

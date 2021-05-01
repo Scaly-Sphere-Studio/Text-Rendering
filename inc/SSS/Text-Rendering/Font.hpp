@@ -66,10 +66,10 @@ public:
     // Returns the corresponding internal HarfBuzz font.
     _internal::HB_Font_Ptr const& getHBFont(int charsize) const;
     // Returns corresponding glyph as a bitmap
-    _internal::FT_BitmapGlyph_Ptr const&
+    _internal::Bitmap const&
         getGlyphBitmap(FT_UInt glyph_index, int charsize) const;
     // Returns corresponding glyph outline as a bitmap
-    _internal::FT_BitmapGlyph_Ptr const&
+    _internal::Bitmap const&
         getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) const;
 
 private:
@@ -83,7 +83,7 @@ private:
 // --- Private functions ---
 
     // Ensures the given charsize has been initialized
-    void _throw_if_bad_charsize(int charsize) const;
+    void _throw_if_bad_charsize(int &charsize) const;
 };
 
 

@@ -11,14 +11,6 @@ using FT_Library_Ptr = C_Ptr
 using FT_Face_Ptr = C_Ptr
     <FT_FaceRec_, FT_Error(*)(FT_Face), FT_Done_Face>;
 
-using FT_Glyph_Ptr = C_Ptr
-    <FT_GlyphRec_, void(*)(FT_Glyph), FT_Done_Glyph>;
-
-void FT_Done_BitmapGlyph(FT_BitmapGlyph glyph);
-
-using FT_BitmapGlyph_Ptr = C_Ptr
-    <FT_BitmapGlyphRec_, void(*)(FT_BitmapGlyph), FT_Done_BitmapGlyph>;
-
 using FT_Stroker_Ptr = C_Ptr
     <FT_StrokerRec_, void(*)(FT_Stroker), FT_Stroker_Done>;
 
