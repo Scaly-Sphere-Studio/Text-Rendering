@@ -118,6 +118,8 @@ __CATCH_AND_RETHROW_METHOD_EXC
 // Destroys the FreeType font face.
 Font::~Font() noexcept
 {
+    _font_sizes.clear();
+    _face.release();
     __LOG_DESTRUCTOR
 }
 
@@ -126,6 +128,9 @@ Font::~Font() noexcept
 // Call this function whenever changing charsize
 void Font::useCharsize(int charsize) try
 {
+    if (charsize <= 0) {
+        charsize = 1;
+    }
     // Create font size if needed
     if (_font_sizes.count(charsize) == 0) {
         _font_sizes.emplace(
@@ -140,6 +145,7 @@ __CATCH_AND_RETHROW_METHOD_EXC
 // Loads corresponding glyph.
 bool Font::loadGlyph(FT_UInt glyph_index, int charsize, int outline_size) try
 {
+    _throw_if_bad_charsize(charsize);
     return _font_sizes.at(charsize).loadGlyph(glyph_index, outline_size);
 }
 __CATCH_AND_RETHROW_METHOD_EXC
@@ -161,7 +167,7 @@ _internal::HB_Font_Ptr const& Font::getHBFont(int charsize) const try
 __CATCH_AND_RETHROW_METHOD_EXC
 
 // Returns corresponding glyph as a bitmap
-_internal::FT_BitmapGlyph_Ptr const&
+_internal::Bitmap const&
 Font::getGlyphBitmap(FT_UInt glyph_index, int charsize) const try
 {
     _throw_if_bad_charsize(charsize);
@@ -170,7 +176,7 @@ Font::getGlyphBitmap(FT_UInt glyph_index, int charsize) const try
 __CATCH_AND_RETHROW_METHOD_EXC
 
 // Returns corresponding glyph outline as a bitmap
-_internal::FT_BitmapGlyph_Ptr const&
+_internal::Bitmap const&
 Font::getOutlineBitmap(FT_UInt glyph_index, int charsize, int outline_size) const try
 {
     _throw_if_bad_charsize(charsize);
@@ -181,8 +187,11 @@ __CATCH_AND_RETHROW_METHOD_EXC
     // --- Private functions ---
 
 // Ensures the given charsize has been initialized
-void Font::_throw_if_bad_charsize(int charsize) const
+void Font::_throw_if_bad_charsize(int &charsize) const
 {
+    if (charsize <= 0) {
+        charsize = 1;
+    }
     if (_font_sizes.count(charsize) == 0) {
         throw_exc(ERR_MSG::NOTHING_FOUND);
     }

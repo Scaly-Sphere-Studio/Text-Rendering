@@ -147,11 +147,14 @@ private:
     void _drawGlyph(_internal::DrawParameters param, _internal::GlyphInfo const& glyph);
 
     struct _CopyBitmapArgs {
+        inline _CopyBitmapArgs(_internal::Bitmap const& _bitmap)
+            : bitmap(_bitmap) {};
+        // Bitmap
+        _internal::Bitmap const& bitmap;
         // Coords
         FT_Int x0{ 0 };  // _pixels -> x origin
         FT_Int y0{ 0 };  // _pixels -> y origin
-        // Bitmap
-        FT_Bitmap bitmap{ 0 };  // Bitmap structure
+        // Colors
         RGB24::s color;         // Bitmap's color
         uint8_t alpha{ 0 };     // Bitmap's opacity
     };

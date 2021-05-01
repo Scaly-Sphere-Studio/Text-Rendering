@@ -392,18 +392,17 @@ void TextArea::_drawGlyph(_internal::DrawParameters param, _internal::GlyphInfo 
 {
     // Skip if the glyph alpha is zero, or if a outline is asked but not available
     if (glyph_info.color.alpha == 0
-        || (param.type.is_outline && !glyph_info.style.has_outline)
+        || (param.type.is_outline && (!glyph_info.style.has_outline || glyph_info.style.outline_size <= 0))
         || (param.type.is_shadow && !glyph_info.style.has_shadow)) {
         return;
     }
 
     // Get corresponding loaded glyph bitmap
-    _internal::FT_BitmapGlyph_Ptr const& bmp_glyph(!param.type.is_outline
+    _internal::Bitmap const& bitmap(!param.type.is_outline
         ? glyph_info.font->getGlyphBitmap(glyph_info.info.codepoint, glyph_info.style.charsize)
         : glyph_info.font->getOutlineBitmap(glyph_info.info.codepoint, glyph_info.style.charsize, glyph_info.style.outline_size));
-    FT_Bitmap const& bitmap(bmp_glyph->bitmap);
     // Skip if bitmap is empty
-    if (bitmap.width == 0 || bitmap.rows == 0) {
+    if (bitmap.width == 0 || bitmap.height == 0) {
         return;
     }
 
@@ -415,14 +414,13 @@ void TextArea::_drawGlyph(_internal::DrawParameters param, _internal::GlyphInfo 
     }
 
     // Prepare copy
-    _CopyBitmapArgs args;
+    _CopyBitmapArgs args(bitmap);
 
     // The (pen.x % 64 > 31) part is used to round up pixel fractions
-    args.x0 = (param.pen.x >> 6) + (param.pen.x % 64 > 31) + bmp_glyph->left;
-    args.y0 = param.line->charsize - (param.pen.y >> 6) - bmp_glyph->top;
+    args.x0 = (param.pen.x >> 6) + (param.pen.x % 64 > 31) + bitmap.pen_left;
+    args.y0 = param.line->charsize - (param.pen.y >> 6) - bitmap.pen_top;
 
     // Retrieve the color to use : either a plain one, or a function to call
-    args.bitmap = bitmap;
     args.color = param.type.is_shadow ?
         glyph_info.color.shadow : param.type.is_outline ?
         glyph_info.color.outline : glyph_info.color.text;
@@ -434,15 +432,9 @@ void TextArea::_drawGlyph(_internal::DrawParameters param, _internal::GlyphInfo 
 // Copies a bitmap with given coords and color in _pixels
 void TextArea::_copyBitmap(_CopyBitmapArgs& args)
 {
-    // Create loop const variables
-    FT_Int const
-        width = args.bitmap.pitch,
-        height = args.bitmap.rows,
-        bpp = args.bitmap.pitch / args.bitmap.width;
-
     // Go through each pixel
-    for (FT_Int i = 0, x = args.x0; i < width; x++, i += bpp) {
-        for (FT_Int j = 0, y = args.y0; j < height; y++, j++) {
+    for (FT_Int i = 0, x = args.x0; i < args.bitmap.width; x++, i += args.bitmap.bpp) {
+        for (FT_Int j = 0, y = args.y0; j < args.bitmap.height; y++, j++) {
 
             // Skip if coordinates are out the pixel array's bounds
             if (x < 0 || y < 0
@@ -450,7 +442,7 @@ void TextArea::_copyBitmap(_CopyBitmapArgs& args)
                 continue;
 
             // Retrieve buffer index and corresponding pixel reference
-            size_t const buf_index = (size_t)(j * args.bitmap.pitch + i);
+            size_t const buf_index = (size_t)(j * args.bitmap.width + i);
             RGBA32& pixel = _pixels[(size_t)(x + y * _w)];
 
             // Copy pixel
