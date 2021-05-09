@@ -78,10 +78,11 @@ public:
 
 // --- Format functions ---
 
-    // Scrolls up (negative values) or down (positive values)
-    // Any excessive scrolling will be negated,
-    // hence, this function is safe.
-    void scroll(int pixels) noexcept;
+    // Scrolls up (negative values) or down (positive values).
+    // The function returns true if the scrolling didn't change.
+    // Any excessive scrolling will be negated, and the function
+    // will return false.
+    bool scroll(int pixels) noexcept;
 
 // --- Typewriter functions ---
 
@@ -94,6 +95,8 @@ public:
     // Second call will render the both the 1st and 2nd character.
     // Etc...
     bool incrementCursor() noexcept;
+
+    inline bool willDraw() const noexcept { return _draw || _clear; };
 
 private:
 
