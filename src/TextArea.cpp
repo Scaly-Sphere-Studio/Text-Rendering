@@ -90,10 +90,12 @@ void const* TextArea::getPixels()
 // Scrolls up (negative values) or down (positive values)
 // Any excessive scrolling will be negated,
 // hence, this function is safe.
-void TextArea::scroll(int pixels) noexcept
+bool TextArea::scroll(int pixels) noexcept
 {
+    int tmp = _scrolling;
     _scrolling += pixels;
     _scrollingChanged();
+    return tmp != _scrolling;
 }
 
     // --- Typewriter functions ---
