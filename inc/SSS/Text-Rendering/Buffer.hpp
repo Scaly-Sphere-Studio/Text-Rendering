@@ -16,13 +16,17 @@ struct GlyphInfo {
         hb_glyph_position_t const& pos_,
         TextStyle const& style_,
         TextColors const& color_,
-        Font::Shared const& font_
+        Font::Shared const& font_,
+        std::u32string const& str_,
+        std::locale const& locale_
     ) noexcept :
         info(info_),
         pos(pos_),
         style(style_),
         color(color_),
-        font(font_)
+        font(font_),
+        str(str_),
+        locale(locale_)
     {};
 
 // --- Variables ---
@@ -30,7 +34,9 @@ struct GlyphInfo {
     hb_glyph_position_t const& pos; // The glyph's position
     TextStyle const& style;         // Style options
     TextColors const& color;        // Color options
-    Font::Shared const& font;        // Color options
+    Font::Shared const& font;       // Font
+    std::u32string const& str;      // Original string
+    std::locale const& locale;      // Locale
     bool is_word_divider{ false };  // Whether the glyph is a word divider
 };
 __INTERNAL_END
@@ -62,6 +68,9 @@ public:
     // Reshapes the buffer with given parameters
     void changeString(std::u32string const& str);
     void changeString(std::string const& str);
+    // Insert text at given position
+    void insertText(std::u32string const& str, size_t cursor);
+    void insertText(std::string const& str, size_t cursor);
     // Reshapes the buffer with given parameters
     void changeOptions(TextOpt const& opt);
 
@@ -70,7 +79,7 @@ private:
     // Original string converted in uint32 vector
     // This is because HB doesn't handle CPP types,
     // and handles UTF32 with uint32_t arrays
-    std::vector<uint32_t> _indexes;
+    std::u32string _str;
     // Buffer options
     TextOpt _opt;
     
@@ -79,6 +88,7 @@ private:
 
     hb_segment_properties_t _properties;    // HB presets : lng, script, direction
     std::vector<uint32_t> _wd_indexes;      // Word dividers as glyph indexes
+    std::locale _locale;
 
     std::vector<hb_glyph_info_t> _glyph_info;       // Glyphs informations
     std::vector<hb_glyph_position_t> _glyph_pos;    // Glpyhs relative position
@@ -89,12 +99,11 @@ private:
     // Throws an exception if cursor is out of bound.
     _internal::GlyphInfo _at(size_t cursor) const;
 
-    // Modifies internal string (indexes)
-    void _changeString(std::u32string const& str);
     // Modifies internal options
     void _changeOptions(TextOpt const& opt);
 
     void _updateBuffer();
+    void _notifyTextAreas();
     // Shapes the buffer and retrieve its informations
     void _shape();
     // Loads needed glyphs

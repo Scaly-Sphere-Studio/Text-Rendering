@@ -3,13 +3,6 @@
 
 __SSS_TR_BEGIN
 
-    // --- Local function ---
-
-static std::u32string toU32str(std::string str)
-{
-    return std::u32string(str.cbegin(), str.cend());
-}
-
     // --- Constructor & Destructor ---
 
 // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
@@ -23,10 +16,9 @@ Buffer::Buffer(std::u32string const& str, TextOpt const& opt) try
     }
 
     // Fill contents
-    _changeString(str);
+    _str = str;
     _changeOptions(opt);
-    _shape();
-    _loadGlyphs();
+    _updateBuffer();
 
     __LOG_CONSTRUCTOR
 }
@@ -45,20 +37,38 @@ Buffer::Shared Buffer::create(std::u32string const& str, TextOpt const& opt)
 
 Buffer::Shared Buffer::create(std::string const& str, TextOpt const& opt)
 {
-    return create(toU32str(str), opt);
+    return create(_internal::toU32str(str), opt);
 }
 
     // --- Basic functions ---
 
 void Buffer::changeString(std::u32string const& str)
 {
-    _changeString(str);
+    _str = str;
     _updateBuffer();
 }
 
 void Buffer::changeString(std::string const& str)
 {
-    changeString(toU32str(str));
+    changeString(_internal::toU32str(str));
+}
+
+void Buffer::insertText(std::u32string const& str, size_t cursor)
+{
+    uint32_t index;
+    if (cursor >= _glyph_count) {
+        index = _glyph_count;
+    }
+    else {
+        index = _at(cursor).info.cluster;
+    }
+    _str.insert(_str.cbegin() + index, str.cbegin(), str.cend());
+    _updateBuffer();
+}
+
+void Buffer::insertText(std::string const& str, size_t cursor)
+{
+    insertText(_internal::toU32str(str), cursor);
 }
 
 void Buffer::changeOptions(TextOpt const& opt)
@@ -82,7 +92,9 @@ _internal::GlyphInfo Buffer::_at(size_t cursor) const try
         _glyph_pos.at(cursor),
         _opt.style,
         _opt.color,
-        _opt.font
+        _opt.font,
+        _str,
+        _locale
     );
     // Check if the glyph is a word divider
     for (hb_codepoint_t index : _wd_indexes) {
@@ -97,18 +109,6 @@ _internal::GlyphInfo Buffer::_at(size_t cursor) const try
 __CATCH_AND_RETHROW_METHOD_EXC
 
 // Reshapes the buffer with given parameters
-void Buffer::_changeString(std::u32string const& str) try
-{
-    // Convert string to uint32 vector, as HarfBuzz only handles that
-    _indexes.clear();
-    _indexes.reserve(str.length());
-    for (char32_t const& c : str) {
-        _indexes.push_back(static_cast<uint32_t>(c));
-    }
-}
-__CATCH_AND_RETHROW_METHOD_EXC
-
-// Reshapes the buffer with given parameters
 void Buffer::_changeOptions(TextOpt const& opt) try
 {
     _opt = opt;
@@ -117,7 +117,7 @@ void Buffer::_changeOptions(TextOpt const& opt) try
     _properties.direction = hb_direction_from_string(opt.lng.direction.c_str(), -1);
     _properties.script = hb_script_from_string(opt.lng.script.c_str(), -1);
     _properties.language = hb_language_from_string(opt.lng.language.c_str(), -1);
-
+    _locale = std::locale(opt.lng.language);
     // Convert word dividers to glyph indexes
     _wd_indexes.clear();
     _wd_indexes.reserve(opt.lng.word_dividers.size());
@@ -132,7 +132,18 @@ void Buffer::_updateBuffer()
 {
     _shape();
     _loadGlyphs();
-    Shared shared_this = shared_from_this();
+    _notifyTextAreas();
+}
+
+void Buffer::_notifyTextAreas()
+{
+    Shared shared_this;
+    try {
+        shared_this = shared_from_this();
+    }
+    catch (std::bad_weak_ptr) {
+        return;
+    }
     for (auto it = TextArea::_instances.begin(); it != TextArea::_instances.cend();) {
         TextArea::Shared textarea = it->lock();
         if (textarea) {
@@ -155,8 +166,9 @@ void Buffer::_shape() try
 {
     _opt.font->useCharsize(_opt.style.charsize);
     // Add string to buffer
-    hb_buffer_add_utf32(_buffer.get(), &_indexes.at(0),
-        static_cast<int>(_indexes.size()), 0U, static_cast<int>(_indexes.size()));
+    uint32_t const* indexes = reinterpret_cast<uint32_t const*>(&_str[0]);
+    int size = static_cast<int>(_str.size());
+    hb_buffer_add_utf32(_buffer.get(), indexes, size, 0U, size);
     // Set properties
     hb_buffer_set_segment_properties(_buffer.get(), &_properties);
     // Shape buffer and retrieve informations

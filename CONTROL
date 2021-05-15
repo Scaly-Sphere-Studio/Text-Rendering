@@ -1,4 +1,4 @@
 Source: sss-text-rendering
-Version: 0.6.1
+Version: 0.6.2
 Description: Text rendering using FreeType and HarfBuzz
 Build-Depends: freetype, harfbuzz, sss-commons

@@ -61,7 +61,6 @@ void TextArea::useBuffer(Buffer::Shared buffer) try
 {
     // Update counts
     _buffers.push_back(buffer);
-    _glyph_count += buffer->_size();
     _update_lines = true;
 }
 __CATCH_AND_RETHROW_METHOD_EXC
@@ -98,12 +97,183 @@ bool TextArea::scroll(int pixels) noexcept
     return tmp != _scrolling;
 }
 
+void TextArea::placeCursor(int x, int y)
+{
+    if (_glyph_count == 0) {
+        _edit_cursor = 0;
+        return;
+    }
+    _edit_x = x;
+    _edit_y = y;
+
+    FT_Vector pen{ 0, 0 };
+    _internal::Line::cit line = _lines.cbegin();
+    for (; line != _lines.cend(); ++line) {
+        pen.y += line->fullsize;
+        if (pen.y > y) break;
+    }
+    if (line == _lines.cend()) {
+        --line;
+    }
+
+    for (size_t i = line->first_glyph; i <= line->last_glyph; ++i) {
+        _internal::GlyphInfo glyph = _at(i);
+        pen.x += glyph.pos.x_advance;
+        if ((pen.x >> 6) > x) {
+            _edit_cursor = i;
+            return;
+        }
+    }
+    _edit_cursor = line->last_glyph + 1;
+}
+
+void TextArea::moveCursor(Cursor position) try
+{
+    static auto const set_cursor = [&](_internal::Line::cit line)->size_t {
+        size_t cursor = line->first_glyph;
+        for (int x = 0; cursor <= line->last_glyph && cursor < _glyph_count; ++cursor) {
+            x += _at(cursor).pos.x_advance;
+            if ((x >> 6) > _edit_x) {
+                break;
+            }
+        }
+        return cursor;
+    };
+    static auto const set_x = [&](size_t cursor, size_t cursor_max) {
+        int x = 0;
+        for (; cursor <= cursor_max && cursor < _glyph_count; ++cursor) {
+            x += _at(cursor).pos.x_advance;
+        }
+        return (x >> 6);
+    };
+    static auto const ctrl_jump = [&](int coeff) {
+        _edit_cursor += coeff;
+        while (_edit_cursor > 0 && _edit_cursor < _glyph_count) {
+            _internal::GlyphInfo glyph = _at(_edit_cursor);
+            char32_t c = glyph.str[glyph.info.cluster];
+            if (std::isalnum(c, glyph.locale))
+                break;
+            _edit_cursor += coeff;
+        }
+        while (_edit_cursor > 0 && _edit_cursor < _glyph_count) {
+            _internal::GlyphInfo glyph = _at(_edit_cursor);
+            char32_t c = glyph.str[glyph.info.cluster];
+            if (!std::isalnum(c, glyph.locale))
+                break;
+            _edit_cursor += coeff;
+        }
+        if (coeff == -1 && _edit_cursor != 0) {
+            ++_edit_cursor;
+        }
+    };
+
+    if (_edit_cursor > _glyph_count) {
+        _edit_cursor = _glyph_count;
+    }
+    _internal::Line::cit line = _whichLine(_edit_cursor);
+
+    switch (position) {
+    case Cursor::Up :
+        if (line == _lines.cbegin()) break;
+        --line;
+        _edit_cursor = set_cursor(line);
+        break;
+
+    case Cursor::Down :
+        if (line == _lines.cend() - 1) break;
+        ++line;
+        _edit_cursor = set_cursor(line);
+        break;
+
+    case Cursor::Left :
+        if (_edit_cursor == 0) break;
+        --_edit_cursor;
+        line = _whichLine(_edit_cursor);
+        _edit_x = set_x(line->first_glyph, _edit_cursor);
+        break;
+
+    case Cursor::Right :
+        if (_edit_cursor >= _glyph_count) break;
+        ++_edit_cursor;
+        line = _whichLine(_edit_cursor);
+        _edit_x = set_x(line->first_glyph, _edit_cursor);
+        break;
+
+    case Cursor::CtrlLeft :
+        if (_edit_cursor == 0) break;
+        ctrl_jump(-1);
+        line = _whichLine(_edit_cursor);
+        _edit_x = set_x(line->first_glyph, _edit_cursor);
+        break;
+
+    case Cursor::CtrlRight :
+        if (_edit_cursor >= _glyph_count) break;
+        ctrl_jump(1);
+        line = _whichLine(_edit_cursor);
+        _edit_x = set_x(line->first_glyph, _edit_cursor);
+        break;
+
+    case Cursor::Home :
+        _edit_cursor = line->first_glyph;
+        _edit_x = set_x(line->first_glyph, _edit_cursor);
+        break;
+
+    case Cursor::End :
+        _edit_cursor = line->last_glyph + 1;
+        _edit_x = set_x(line->first_glyph, _edit_cursor);
+        break;
+    }
+}
+__CATCH_AND_RETHROW_METHOD_EXC
+
+void TextArea::insertText(std::u32string str) try
+{
+    if (str.empty()) {
+        __LOG_OBJ_METHOD_WRN("Empty string.");
+        return;
+    }
+    if (_buffers.empty()) {
+        throw_exc("No buffer was given beforehand.");
+    }
+    size_t cursor = _edit_cursor;
+    size_t size = 0;
+    if (cursor >= _glyph_count) {
+        Buffer::Shared const& buffer = _buffers.back();
+        size_t const tmp = buffer->_size();
+        buffer->insertText(str, buffer->_size());
+        size = buffer->_size() - tmp;
+    }
+    else {
+        for (Buffer::Shared const& buffer : _buffers) {
+            if (buffer->_size() >= cursor) {
+                size_t const tmp = buffer->_size();
+                buffer->insertText(str, cursor);
+                size = buffer->_size() - tmp;
+                break;
+            }
+            cursor -= buffer->_size();
+        }
+    }
+    if (size != 0) {
+        _updateFormat();
+    }
+    for (size_t i = 0; i < size; ++i) {
+        moveCursor(Cursor::Right);
+    }
+}
+__CATCH_AND_RETHROW_METHOD_EXC
+
+void TextArea::insertText(std::string str)
+{
+    insertText(_internal::toU32str(str));
+}
+
     // --- Typewriter functions ---
 
 // Sets the writing mode (default: false):
 // - true: Text is rendered char by char, see incrementCursor();
 // - false: Text is fully rendered
-void TextArea::setTypeWriter(bool activate) noexcept
+void TextArea::TWset(bool activate) noexcept
 {
     if (_typewriter != activate) {
         _tw_cursor = 0;
@@ -118,7 +288,7 @@ void TextArea::setTypeWriter(bool activate) noexcept
 // The first call will render the 1st character.
 // Second call will render the both the 1st and 2nd character.
 // Etc...
-bool TextArea::incrementCursor() noexcept
+bool TextArea::TWprint() noexcept
 {
     // Skip if the writing mode is set to default, or if all glyphs have been written
     if (!_typewriter || _tw_next_cursor >= _glyph_count) {
@@ -187,6 +357,11 @@ void TextArea::_updateLines()
     _lines.emplace_back();
     _internal::Line::it line = _lines.begin();
     size_t cursor = 0;
+
+    _glyph_count = 0;
+    for (Buffer::Shared const& buffer : _buffers) {
+        _glyph_count += buffer->_size();
+    }
 
     // Place pen at (0, 0), we don't take scrolling into account
     size_t last_divider(0);
@@ -368,12 +543,18 @@ _internal::DrawParameters TextArea::_prepareDraw()
 }
 
 // Draws shadows, outlines, or plain glyphs
-void TextArea::_drawGlyphs(_internal::DrawParameters param)
+void TextArea::_drawGlyphs(_internal::DrawParameters param) try
 {
     // Draw the glyphs
     for (size_t cursor = param.first_glyph; cursor < param.last_glyph; ++cursor) {
         _internal::GlyphInfo const glyph(_at(cursor));
-        _drawGlyph(param, glyph);
+        try {
+            _drawGlyph(param, glyph);
+        }
+        catch (std::exception const& e) {
+            std::string str(toString("cursor #") + toString(cursor));
+            throw_exc(context_msg(str, e.what()));
+        }
         // Handle line breaks. Return true if pen goes out of bound
         if (cursor == param.line->last_glyph && param.line != _lines.end() - 1) {
             param.pen.x = 5 << 6;
@@ -387,6 +568,7 @@ void TextArea::_drawGlyphs(_internal::DrawParameters param)
         }
     }
 }
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Loads (if needed) and renders the corresponding glyph to the
 // pixels pointer at the given pen's coordinates.

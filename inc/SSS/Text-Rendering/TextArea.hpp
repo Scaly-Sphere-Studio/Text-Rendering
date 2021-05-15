@@ -47,7 +47,7 @@ public:
 
 // --- Aliases ---
     using Shared = std::shared_ptr<TextArea>;
-private:
+protected:
     using Weak = std::weak_ptr<TextArea>;
 
     static std::vector<Weak> _instances;
@@ -84,19 +84,38 @@ public:
     // will return false.
     bool scroll(int pixels) noexcept;
 
+// --- Edit functions ---
+
+    void placeCursor(int x, int y);
+
+    enum class Cursor {
+        Up,
+        Down,
+        Left,
+        Right,
+        CtrlLeft,
+        CtrlRight,
+        Home,
+        End,
+    };
+    void moveCursor(Cursor position);
+    void insertText(std::u32string str);
+    void insertText(std::string str);
+
 // --- Typewriter functions ---
 
     // Sets the writing mode (default: false):
     // - true: Text is rendered char by char, see incrementCursor();
     // - false: Text is fully rendered
-    void setTypeWriter(bool activate) noexcept;
+    void TWset(bool activate) noexcept;
     // Increments the typewriter's cursor. Start point is 0.
     // The first call will render the 1st character.
     // Second call will render the both the 1st and 2nd character.
     // Etc...
-    bool incrementCursor() noexcept;
+    bool TWprint() noexcept;
 
-    inline bool willDraw() const noexcept { return _draw || _clear; };
+    inline bool willDraw() const noexcept
+        { return _update_format || _update_lines || _draw || _clear; };
 
 private:
 
@@ -119,6 +138,8 @@ private:
     std::vector<Buffer::Shared> _buffers;   // Buffer array for multiple layouts
 
     size_t _glyph_count{ 0 };   // Total number of glyphs in all ACTIVE buffers
+    size_t _edit_cursor{ size_t(-1) };  // Cursor used in edit
+    int _edit_x{ 0 }, _edit_y{ 0 };     // Cursor 
     size_t _tw_cursor{ 0 };     // TypeWriter -> Current character position
     size_t _tw_next_cursor{ 0}; // TypeWriter -> Next character position
 
