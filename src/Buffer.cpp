@@ -149,7 +149,7 @@ void Buffer::_notifyTextAreas()
         if (textarea) {
             for (Shared const& buffer : textarea->_buffers) {
                 if (shared_this == buffer) {
-                    textarea->_update_format = true;
+                    textarea->_update_lines = true;
                     break;
                 }
             }
@@ -195,8 +195,12 @@ void Buffer::_loadGlyphs()
 {
     // Load glyphs
     int const outline_size = _opt.style.has_outline ? _opt.style.outline_size : 0;
-    for (size_t i(0); i < _glyph_count; ++i) {
-        _opt.font->loadGlyph(_at(i).info.codepoint, _opt.style.charsize, outline_size);
+    std::unordered_set<hb_codepoint_t> glyph_ids;
+    for (hb_glyph_info_t const& info : _glyph_info) {
+        glyph_ids.insert(info.codepoint);
+    }
+    for (hb_codepoint_t const& glyph_id: glyph_ids) {
+        _opt.font->loadGlyph(glyph_id, _opt.style.charsize, outline_size);
     }
 }
 

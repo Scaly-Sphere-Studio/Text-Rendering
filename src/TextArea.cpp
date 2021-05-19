@@ -97,7 +97,7 @@ bool TextArea::scroll(int pixels) noexcept
     return tmp != _scrolling;
 }
 
-void TextArea::placeCursor(int x, int y)
+void TextArea::placeCursor(int x, int y) try
 {
     if (_glyph_count == 0) {
         _edit_cursor = 0;
@@ -116,7 +116,7 @@ void TextArea::placeCursor(int x, int y)
         --line;
     }
 
-    for (size_t i = line->first_glyph; i <= line->last_glyph; ++i) {
+    for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
         _internal::GlyphInfo glyph = _at(i);
         pen.x += glyph.pos.x_advance;
         if ((pen.x >> 6) > x) {
@@ -126,6 +126,7 @@ void TextArea::placeCursor(int x, int y)
     }
     _edit_cursor = line->last_glyph + 1;
 }
+__CATCH_AND_RETHROW_METHOD_EXC
 
 void TextArea::moveCursor(Cursor position) try
 {
@@ -255,7 +256,7 @@ void TextArea::insertText(std::u32string str) try
         }
     }
     if (size != 0) {
-        _updateFormat();
+        _updateLines();
     }
     for (size_t i = 0; i < size; ++i) {
         moveCursor(Cursor::Right);
@@ -306,22 +307,6 @@ bool TextArea::TWprint() noexcept
     _draw = true;
     return false;
 }
-
-// Update the text format. To be called from Buffers upon them changing
-void TextArea::_updateFormat() try
-{
-    // Update global format
-    float pre_size = static_cast<float>(_pixels_h - _h);
-    _updateLines();
-    float const size_diff = static_cast<float>(_pixels_h - _h) / pre_size;
-    _scrolling = (size_t)std::round(static_cast<float>(_scrolling) * size_diff);
-    _scrollingChanged();
-    _clear = true;
-    _draw = true;
-
-    _update_format = false;
-}
-__CATCH_AND_RETHROW_METHOD_EXC
 
 // Calls the at(); function from corresponding Buffer
 _internal::GlyphInfo TextArea::_at(size_t cursor) const try
@@ -412,14 +397,21 @@ void TextArea::_updateLines()
 
     line->last_glyph = cursor;
     line->scrolling += static_cast<int>(line->fullsize);
+    
+    _tw_cursor = 0;
 
+    // Update size & scrolling
+    size_t const size_before = _pixels_h;
     _pixels_h = line->scrolling;
     if (_pixels_h < _h) {
         _pixels_h = _h;
     }
-    _resize = true;
-
-    _tw_cursor = 0;
+    if (_pixels_h != size_before) {
+        _resize = true;
+        float const size_diff = static_cast<float>(_pixels_h - _h) / (size_before - _h);
+        _scrolling = (size_t)std::round(static_cast<float>(_scrolling) * size_diff);
+        _scrollingChanged();
+    }
     _clear = true;
     _draw = true;
 
@@ -444,10 +436,6 @@ _internal::Line::cit TextArea::_whichLine(size_t cursor) const noexcept
 // Draws current area if _draw is set to true
 void TextArea::_drawIfNeeded()
 {
-    // Update format if needed
-    if (_update_format) {
-        _updateFormat();
-    }
     // Update lines if needed
     if (_update_lines) {
         _updateLines();

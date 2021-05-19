@@ -115,7 +115,7 @@ public:
     bool TWprint() noexcept;
 
     inline bool willDraw() const noexcept
-        { return _update_format || _update_lines || _draw || _clear; };
+        { return _update_lines || _draw || _clear; };
 
 private:
 
@@ -126,7 +126,6 @@ private:
     size_t _pixels_h{ 0 };  // Height of _pixels -> must NEVER be lower than _h
     int _scrolling{ 0 };    // Scrolling index, in pixels
     
-    bool _update_format{ true }; // True -> update _lines & _scrolling
     bool _update_lines{ true }; // True -> update _lines
     bool _clear{ true };        // True -> clear _pixels before drawing
     bool _resize{ true };       // True -> resize _pixels before drawing
@@ -146,11 +145,8 @@ private:
     _internal::Line::vector _lines;   // Indexes of line breaks & charsizes
 
 // --- Private functions ---
-
-    // Update the text format.
-    // To be called when a charsize changes internally, for example.
-    void _updateFormat();
-    // Calls the at(); function from corresponding Buffer
+    
+// Calls the at(); function from corresponding Buffer
     _internal::GlyphInfo _at(size_t cursor) const;
     // Returns corresponding _internal::Line iterator, or cend()
     _internal::Line::cit _whichLine(size_t cursor) const noexcept;
