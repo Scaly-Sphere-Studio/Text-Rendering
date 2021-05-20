@@ -10,34 +10,24 @@ __SSS_TR_BEGIN
 __INTERNAL_BEGIN
 // A structure filled with informations of a given glyph
 struct GlyphInfo {
-// --- Constructor ---
-    GlyphInfo(
-        hb_glyph_info_t const& info_,
-        hb_glyph_position_t const& pos_,
-        TextStyle const& style_,
-        TextColors const& color_,
-        Font::Shared const& font_,
-        std::u32string const& str_,
-        std::locale const& locale_
-    ) noexcept :
-        info(info_),
-        pos(pos_),
-        style(style_),
-        color(color_),
-        font(font_),
-        str(str_),
-        locale(locale_)
-    {};
-
-// --- Variables ---
-    hb_glyph_info_t const& info;    // The glyph's informations
-    hb_glyph_position_t const& pos; // The glyph's position
-    TextStyle const& style;         // Style options
-    TextColors const& color;        // Color options
-    Font::Shared const& font;       // Font
-    std::u32string const& str;      // Original string
-    std::locale const& locale;      // Locale
+    hb_glyph_info_t info;       // The glyph's informations
+    hb_glyph_position_t pos;    // The glyph's position
     bool is_word_divider{ false };  // Whether the glyph is a word divider
+};
+
+struct BufferInfo {
+    std::vector<GlyphInfo> glyphs;  // Glyph infos
+    TextStyle style;    // Style options
+    TextColors color;   // Color options
+    Font::Shared font;  // Font
+    std::u32string str; // Original string
+    std::locale locale; // Locale
+};
+
+class BufferInfoVector : public std::vector<BufferInfo> {
+public:
+    GlyphInfo const& getGlyph(size_t cursor);
+    BufferInfo const& getBuffer(size_t cursor);
 };
 __INTERNAL_END
 
@@ -90,14 +80,7 @@ private:
     std::vector<uint32_t> _wd_indexes;      // Word dividers as glyph indexes
     std::locale _locale;
 
-    std::vector<hb_glyph_info_t> _glyph_info;       // Glyphs informations
-    std::vector<hb_glyph_position_t> _glyph_pos;    // Glpyhs relative position
-
-    // Returns the number of glyphs in the buffer
-    inline size_t _size() const noexcept { return static_cast<size_t>(_glyph_count); }
-    // Returns a structure filled with informations of a given glyph.
-    // Throws an exception if cursor is out of bound.
-    _internal::GlyphInfo _at(size_t cursor) const;
+    _internal::BufferInfo _buffer_info;
 
     // Modifies internal options
     void _changeOptions(TextOpt const& opt);
