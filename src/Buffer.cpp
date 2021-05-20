@@ -2,6 +2,33 @@
 #include "SSS/Text-Rendering/TextArea.hpp"
 
 __SSS_TR_BEGIN
+__INTERNAL_BEGIN
+
+GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) try
+{
+    for (BufferInfo const& buffer_info : *this) {
+        if (buffer_info.glyphs.size() > cursor) {
+            return buffer_info.glyphs.at(cursor);
+        }
+        cursor -= buffer_info.glyphs.size();
+    }
+    throw_exc(ERR_MSG::OUT_OF_BOUND);
+}
+__CATCH_AND_RETHROW_METHOD_EXC
+
+_internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) try
+{
+    for (BufferInfo const& buffer_info : *this) {
+        if (buffer_info.glyphs.size() > cursor) {
+            return buffer_info;
+        }
+        cursor -= buffer_info.glyphs.size();
+    }
+    throw_exc(ERR_MSG::OUT_OF_BOUND);
+}
+__CATCH_AND_RETHROW_METHOD_EXC
+
+__INTERNAL_END
 
     // --- Constructor & Destructor ---
 
@@ -17,6 +44,7 @@ Buffer::Buffer(std::u32string const& str, TextOpt const& opt) try
 
     // Fill contents
     _str = str;
+    _buffer_info.str = _str;
     _changeOptions(opt);
     _updateBuffer();
 
@@ -40,11 +68,12 @@ Buffer::Shared Buffer::create(std::string const& str, TextOpt const& opt)
     return create(_internal::toU32str(str), opt);
 }
 
-    // --- Basic functions ---
+// --- Basic functions ---
 
 void Buffer::changeString(std::u32string const& str)
 {
     _str = str;
+    _buffer_info.str = _str;
     _updateBuffer();
 }
 
@@ -60,9 +89,10 @@ void Buffer::insertText(std::u32string const& str, size_t cursor)
         index = _glyph_count;
     }
     else {
-        index = _at(cursor).info.cluster;
+        index = _buffer_info.glyphs.at(cursor).info.cluster;
     }
     _str.insert(_str.cbegin() + index, str.cbegin(), str.cend());
+    _buffer_info.str = _str;
     _updateBuffer();
 }
 
@@ -77,47 +107,21 @@ void Buffer::changeOptions(TextOpt const& opt)
     _updateBuffer();
 }
 
-// Returns a structure filled with informations of a given glyph.
-// Throws an exception if cursor is out of bound.
-_internal::GlyphInfo Buffer::_at(size_t cursor) const try
-{
-    // Ensure the range of given argument is correct
-    if (cursor > _glyph_count) {
-        throw_exc(ERR_MSG::OUT_OF_BOUND);
-    }
-
-    // Fill glyph info
-    _internal::GlyphInfo ret(
-        _glyph_info.at(cursor),
-        _glyph_pos.at(cursor),
-        _opt.style,
-        _opt.color,
-        _opt.font,
-        _str,
-        _locale
-    );
-    // Check if the glyph is a word divider
-    for (hb_codepoint_t index : _wd_indexes) {
-        if (ret.info.codepoint == index) {
-            ret.is_word_divider = true;
-            break;
-        }
-    }
-    // Return infos
-    return ret;
-}
-__CATCH_AND_RETHROW_METHOD_EXC
-
 // Reshapes the buffer with given parameters
 void Buffer::_changeOptions(TextOpt const& opt) try
 {
     _opt = opt;
+    _buffer_info.style = _opt.style;
+    _buffer_info.color = _opt.color;
+    _buffer_info.font = _opt.font;
 
     // Set buffer properties
     _properties.direction = hb_direction_from_string(opt.lng.direction.c_str(), -1);
     _properties.script = hb_script_from_string(opt.lng.script.c_str(), -1);
     _properties.language = hb_language_from_string(opt.lng.language.c_str(), -1);
     _locale = std::locale(opt.lng.language);
+    _buffer_info.locale = _locale;
+
     // Convert word dividers to glyph indexes
     _wd_indexes.clear();
     _wd_indexes.reserve(opt.lng.word_dividers.size());
@@ -175,14 +179,25 @@ void Buffer::_shape() try
     hb_shape(_opt.font->getHBFont(_opt.style.charsize).get(), _buffer.get(), nullptr, 0);
 
     // Retrieve glyph informations
-    hb_glyph_info_t* info = hb_buffer_get_glyph_infos(_buffer.get(), &_glyph_count);
-    _glyph_info.clear();
-    _glyph_info.insert(_glyph_info.cbegin(), info, &info[_glyph_count]);
-
+    hb_glyph_info_t const* info = hb_buffer_get_glyph_infos(_buffer.get(), &_glyph_count);
     // Retrieve glyph positions
-    hb_glyph_position_t* pos = hb_buffer_get_glyph_positions(_buffer.get(), nullptr);
-    _glyph_pos.clear();
-    _glyph_pos.insert(_glyph_pos.cbegin(), pos, &pos[_glyph_count]);
+    hb_glyph_position_t const* pos = hb_buffer_get_glyph_positions(_buffer.get(), nullptr);
+
+    _buffer_info.glyphs.clear();
+    _buffer_info.glyphs.resize(_glyph_count);
+    for (size_t i = 0; i < _glyph_count; ++i) {
+        // Add references via constructor
+        _internal::GlyphInfo& glyph = _buffer_info.glyphs.at(i);
+        glyph.info = info[i];
+        glyph.pos = pos[i];
+        // Check if the glyph is a word divider
+        for (hb_codepoint_t index : _wd_indexes) {
+            if (glyph.info.codepoint == index) {
+                glyph.is_word_divider = true;
+                break;
+            }
+        }
+    }
 
     // Now that we have all needed informations,
     // reset buffer to free HarfBuzz's internal cache
@@ -196,8 +211,8 @@ void Buffer::_loadGlyphs()
     // Load glyphs
     int const outline_size = _opt.style.has_outline ? _opt.style.outline_size : 0;
     std::unordered_set<hb_codepoint_t> glyph_ids;
-    for (hb_glyph_info_t const& info : _glyph_info) {
-        glyph_ids.insert(info.codepoint);
+    for (_internal::GlyphInfo const& glyph : _buffer_info.glyphs) {
+        glyph_ids.insert(glyph.info.codepoint);
     }
     for (hb_codepoint_t const& glyph_id: glyph_ids) {
         _opt.font->loadGlyph(glyph_id, _opt.style.charsize, outline_size);

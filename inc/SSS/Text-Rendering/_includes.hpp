@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 
 // STL
+#include <array>
 #include <map>
 #include <unordered_set>
 #include <vector>

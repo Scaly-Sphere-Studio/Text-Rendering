@@ -31,7 +31,6 @@ void TextArea::clear() noexcept
     _scrolling = 0;
     if (_pixels_h != _h) {
         _pixels_h = _h;
-        _resize = true;
     }
     // Reset buffers
     _buffers.clear();
@@ -41,10 +40,10 @@ void TextArea::clear() noexcept
     _update_lines = true;
     // Reset pixels
     _clear = true;
-    _draw = false;
     // Reset typewriter
     _tw_cursor = 0;
     _tw_next_cursor = 0;
+    _drawIfNeeded();
 }
 
 TextArea::Shared TextArea::create(int width, int height)
@@ -65,24 +64,27 @@ void TextArea::useBuffer(Buffer::Shared buffer) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-// Renders text to a 2D pixel array in the RGBA32 format.
-// The passed array should have the same width and height
-// as the TextArea object.
-void TextArea::renderTo(void* ptr)
+bool TextArea::wasUpdated()
 {
-    if (ptr == nullptr) {
-        __LOG_METHOD_ERR(ERR_MSG::INVALID_ARGUMENT)
-        return;
+    if (_processing_pixels->isPending()) {
+        _current_pixels = _processing_pixels;
+        _processing_pixels->setAsHandled();
+        _drawIfNeeded();
+        return true;
     }
     _drawIfNeeded();
-    memcpy(ptr, &_pixels.at(_scrolling * _w), (size_t)(4 * _w * _h));
+    return false;
 }
 
-void const* TextArea::getPixels()
+void const* TextArea::getPixels() const try
 {
-    _drawIfNeeded();
-    return &_pixels.at(_scrolling * _w);
+    RGBA32::Pixels const& pixels = _current_pixels->getPixels();
+    if (pixels.empty()) {
+        return nullptr;
+    }
+    return &pixels.at(_scrolling * _w);
 }
+__CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Format functions ---
 
@@ -117,7 +119,7 @@ void TextArea::placeCursor(int x, int y) try
     }
 
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
-        _internal::GlyphInfo glyph = _at(i);
+        _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(i));
         pen.x += glyph.pos.x_advance;
         if ((pen.x >> 6) > x) {
             _edit_cursor = i;
@@ -133,7 +135,7 @@ void TextArea::moveCursor(Cursor position) try
     static auto const set_cursor = [&](_internal::Line::cit line)->size_t {
         size_t cursor = line->first_glyph;
         for (int x = 0; cursor <= line->last_glyph && cursor < _glyph_count; ++cursor) {
-            x += _at(cursor).pos.x_advance;
+            x += _buffer_infos.getGlyph(cursor).pos.x_advance;
             if ((x >> 6) > _edit_x) {
                 break;
             }
@@ -143,23 +145,26 @@ void TextArea::moveCursor(Cursor position) try
     static auto const set_x = [&](size_t cursor, size_t cursor_max) {
         int x = 0;
         for (; cursor <= cursor_max && cursor < _glyph_count; ++cursor) {
-            x += _at(cursor).pos.x_advance;
+            x += _buffer_infos.getGlyph(cursor).pos.x_advance;
         }
         return (x >> 6);
     };
     static auto const ctrl_jump = [&](int coeff) {
         _edit_cursor += coeff;
         while (_edit_cursor > 0 && _edit_cursor < _glyph_count) {
-            _internal::GlyphInfo glyph = _at(_edit_cursor);
-            char32_t c = glyph.str[glyph.info.cluster];
-            if (std::isalnum(c, glyph.locale))
+            _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(_edit_cursor));
+            _internal::BufferInfo const& buffer(_buffer_infos.getBuffer(_edit_cursor));
+
+            char32_t c = buffer.str[glyph.info.cluster];
+            if (std::isalnum(c, buffer.locale))
                 break;
             _edit_cursor += coeff;
         }
         while (_edit_cursor > 0 && _edit_cursor < _glyph_count) {
-            _internal::GlyphInfo glyph = _at(_edit_cursor);
-            char32_t c = glyph.str[glyph.info.cluster];
-            if (!std::isalnum(c, glyph.locale))
+            _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(_edit_cursor));
+            _internal::BufferInfo const& buffer(_buffer_infos.getBuffer(_edit_cursor));
+            char32_t c = buffer.str[glyph.info.cluster];
+            if (!std::isalnum(c, buffer.locale))
                 break;
             _edit_cursor += coeff;
         }
@@ -171,7 +176,7 @@ void TextArea::moveCursor(Cursor position) try
     if (_edit_cursor > _glyph_count) {
         _edit_cursor = _glyph_count;
     }
-    _internal::Line::cit line = _whichLine(_edit_cursor);
+    _internal::Line::cit line = _internal::Line::which(_lines, _edit_cursor);
 
     switch (position) {
     case Cursor::Up :
@@ -189,28 +194,28 @@ void TextArea::moveCursor(Cursor position) try
     case Cursor::Left :
         if (_edit_cursor == 0) break;
         --_edit_cursor;
-        line = _whichLine(_edit_cursor);
+        line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case Cursor::Right :
         if (_edit_cursor >= _glyph_count) break;
         ++_edit_cursor;
-        line = _whichLine(_edit_cursor);
+        line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case Cursor::CtrlLeft :
         if (_edit_cursor == 0) break;
         ctrl_jump(-1);
-        line = _whichLine(_edit_cursor);
+        line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case Cursor::CtrlRight :
         if (_edit_cursor >= _glyph_count) break;
         ctrl_jump(1);
-        line = _whichLine(_edit_cursor);
+        line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
@@ -240,23 +245,24 @@ void TextArea::insertText(std::u32string str) try
     size_t size = 0;
     if (cursor >= _glyph_count) {
         Buffer::Shared const& buffer = _buffers.back();
-        size_t const tmp = buffer->_size();
-        buffer->insertText(str, buffer->_size());
-        size = buffer->_size() - tmp;
+        size_t const tmp = buffer->_glyph_count;
+        buffer->insertText(str, buffer->_glyph_count);
+        size = buffer->_glyph_count - tmp;
     }
     else {
         for (Buffer::Shared const& buffer : _buffers) {
-            if (buffer->_size() >= cursor) {
-                size_t const tmp = buffer->_size();
+            if (buffer->_glyph_count >= cursor) {
+                size_t const tmp = buffer->_glyph_count;
                 buffer->insertText(str, cursor);
-                size = buffer->_size() - tmp;
+                size = buffer->_glyph_count - tmp;
                 break;
             }
-            cursor -= buffer->_size();
+            cursor -= buffer->_glyph_count;
         }
     }
     if (size != 0) {
-        _updateLines();
+        _update_lines = true;
+        _drawIfNeeded();
     }
     for (size_t i = 0; i < size; ++i) {
         moveCursor(Cursor::Right);
@@ -280,8 +286,8 @@ void TextArea::TWset(bool activate) noexcept
         _tw_cursor = 0;
         _tw_next_cursor = 0;
         _clear = true;
-        _draw = true;
         _typewriter = activate;
+        _drawIfNeeded();
     }
 }
 
@@ -297,30 +303,16 @@ bool TextArea::TWprint() noexcept
     }
 
     ++_tw_next_cursor;
-    _internal::Line::cit line = _whichLine(_tw_next_cursor);
+    _internal::Line::cit line = _internal::Line::which(_lines, _tw_next_cursor);
     if (line->first_glyph == _tw_next_cursor) {
         if (line->scrolling - _scrolling > static_cast<int>(_h)) {
             --_tw_next_cursor;
             return true;
         }
     }
-    _draw = true;
+    _drawIfNeeded();
     return false;
 }
-
-// Calls the at(); function from corresponding Buffer
-_internal::GlyphInfo TextArea::_at(size_t cursor) const try
-{
-    for (size_t i(0); i < _buffers.size(); ++i) {
-        Buffer::Shared const& buffer = _buffers.at(i);
-        if (buffer->_size() > cursor) {
-            return buffer->_at(cursor);
-        }
-        cursor -= buffer->_size();
-    }
-    throw_exc(ERR_MSG::OUT_OF_BOUND);
-}
-__CATCH_AND_RETHROW_METHOD_EXC
 
 // Updates _scrolling
 void TextArea::_scrollingChanged() noexcept
@@ -343,9 +335,12 @@ void TextArea::_updateLines()
     _internal::Line::it line = _lines.begin();
     size_t cursor = 0;
 
+    
     _glyph_count = 0;
+    _buffer_infos.clear();
     for (Buffer::Shared const& buffer : _buffers) {
-        _glyph_count += buffer->_size();
+        _buffer_infos.emplace_back(buffer->_buffer_info);
+        _glyph_count += buffer->_glyph_count;
     }
 
     // Place pen at (0, 0), we don't take scrolling into account
@@ -353,13 +348,15 @@ void TextArea::_updateLines()
     FT_Vector pen({ 0, 0 });
     while (cursor < _glyph_count) {
         // Retrieve glyph infos
-        _internal::GlyphInfo const glyph(_at(cursor));
+        _internal::GlyphInfo const& glyph = _buffer_infos.getGlyph(cursor);
+        _internal::BufferInfo const& buffer = _buffer_infos.getBuffer(cursor);
+
         // Update max_size
-        int const charsize = glyph.style.charsize;
+        int const charsize = buffer.style.charsize;
         if (line->charsize < charsize) {
             line->charsize = charsize;
         }
-        size_t fullsize = (int)((float)charsize * glyph.style.line_spacing);
+        size_t fullsize = (int)((float)charsize * buffer.style.line_spacing);
         if (line->fullsize < fullsize) {
             line->fullsize = fullsize;
         }
@@ -407,82 +404,42 @@ void TextArea::_updateLines()
         _pixels_h = _h;
     }
     if (_pixels_h != size_before) {
-        _resize = true;
         float const size_diff = static_cast<float>(_pixels_h - _h) / (size_before - _h);
         _scrolling = (size_t)std::round(static_cast<float>(_scrolling) * size_diff);
         _scrollingChanged();
     }
     _clear = true;
-    _draw = true;
-
     _update_lines = false;
 }
 
-// Returns corresponding _internal::Line iterator, or cend()
-_internal::Line::cit TextArea::_whichLine(size_t cursor) const noexcept
-{
-    _internal::Line::cit line = _lines.cbegin();
-    while (line != _lines.cend() - 1) {
-        if (line->last_glyph >= cursor) {
-            break;
-        }
-        ++line;
-    }
-    return line;
-}
-
-    // --- Private functions -> Draw functions ---
-
-// Draws current area if _draw is set to true
+// Draws current area if needed & possible
 void TextArea::_drawIfNeeded()
 {
     // Update lines if needed
     if (_update_lines) {
         _updateLines();
     }
-    // Resize pixels array if needed
-    if (_resize) {
-        _pixels.resize(_w * _pixels_h);
-        _resize = false;
-    }
-    // Clear out pixels array if needed
-    if (_clear) {
-        std::fill(_pixels.begin(), _pixels.end(), 0);
-        _clear = false;
-    }
-    // Skip if already drawn
-    if (!_draw) {
+    // Skip if running
+    if (_processing_pixels->isRunning()) {
         return;
+    }
+    // Update processing pixels if needed
+    if (_processing_pixels == _current_pixels) {
+        ++_processing_pixels;
+        if (_processing_pixels == _pixels.end()) {
+            _processing_pixels = _pixels.begin();
+        }
     }
 
     // Determine draw parameters
     _internal::DrawParameters param(_prepareDraw());
-
     if (param.first_glyph > param.last_glyph || param.last_glyph > _glyph_count) {
         __LOG_METHOD_ERR(ERR_MSG::INVALID_ARGUMENT);
         return;
     }
 
-    // Draw Outline shadows
-    param.type.is_shadow = true;
-    param.type.is_outline = true;
-    _drawGlyphs(param);
-
-    // Draw Text shadows
-    param.type.is_outline = false;
-    _drawGlyphs(param);
-
-    // Draw Outlines
-    param.type.is_shadow = false;
-    param.type.is_outline = true;
-    _drawGlyphs(param);
-
-    // Draw Text
-    param.type.is_outline = false;
-    _drawGlyphs(param);
-
-    // Update draw statement
-    _draw = false;
+    // Draw in thread
+    _processing_pixels->draw(param, _w, _pixels_h, _clear, _lines, _buffer_infos);
 }
 
 // Prepares drawing parameters, which will be used multiple times per draw
@@ -505,14 +462,14 @@ _internal::DrawParameters TextArea::_prepareDraw()
             // It is important to note that we only update the current
             // character position after a whole word has been written.
             // This is to avoid drawing over previous glyphs.
-            if (_at(cursor).is_word_divider) {
+            if (_buffer_infos.getGlyph(cursor).is_word_divider) {
                 _tw_cursor = cursor;
             }
         }
     }
 
     // Determine first glyph's corresponding line
-    param.line = _whichLine(param.first_glyph);
+    param.line = _internal::Line::which(_lines, param.first_glyph);
     if (param.line != _lines.cend()) {
         // Lower pen.y accordingly
         // TODO: determine exact offsets needed, instead of using 5px
@@ -522,129 +479,12 @@ _internal::DrawParameters TextArea::_prepareDraw()
 
         // Shift the pen on the line accordingly
         for (size_t cursor = param.line->first_glyph; cursor < param.first_glyph; ++cursor) {
-            hb_glyph_position_t const pos(_at(cursor).pos);
+            hb_glyph_position_t const pos(_buffer_infos.getGlyph(cursor).pos);
             param.pen.x += pos.x_advance;
             param.pen.y += pos.y_advance;
         }
     }
     return param;
-}
-
-// Draws shadows, outlines, or plain glyphs
-void TextArea::_drawGlyphs(_internal::DrawParameters param) try
-{
-    // Draw the glyphs
-    for (size_t cursor = param.first_glyph; cursor < param.last_glyph; ++cursor) {
-        _internal::GlyphInfo const glyph(_at(cursor));
-        try {
-            _drawGlyph(param, glyph);
-        }
-        catch (std::exception const& e) {
-            std::string str(toString("cursor #") + toString(cursor));
-            throw_exc(context_msg(str, e.what()));
-        }
-        // Handle line breaks. Return true if pen goes out of bound
-        if (cursor == param.line->last_glyph && param.line != _lines.end() - 1) {
-            param.pen.x = 5 << 6;
-            param.pen.y -= static_cast<int>(param.line->fullsize) << 6;
-            ++param.line;
-        }
-        // Increment pen's coordinates
-        else {
-            param.pen.x += glyph.pos.x_advance;
-            param.pen.y += glyph.pos.y_advance;
-        }
-    }
-}
-__CATCH_AND_RETHROW_METHOD_EXC
-
-// Loads (if needed) and renders the corresponding glyph to the
-// pixels pointer at the given pen's coordinates.
-void TextArea::_drawGlyph(_internal::DrawParameters param, _internal::GlyphInfo const& glyph_info)
-{
-    // Skip if the glyph alpha is zero, or if a outline is asked but not available
-    if (glyph_info.color.alpha == 0
-        || (param.type.is_outline && (!glyph_info.style.has_outline || glyph_info.style.outline_size <= 0))
-        || (param.type.is_shadow && !glyph_info.style.has_shadow)) {
-        return;
-    }
-
-    // Get corresponding loaded glyph bitmap
-    _internal::Bitmap const& bitmap(!param.type.is_outline
-        ? glyph_info.font->getGlyphBitmap(glyph_info.info.codepoint, glyph_info.style.charsize)
-        : glyph_info.font->getOutlineBitmap(glyph_info.info.codepoint, glyph_info.style.charsize, glyph_info.style.outline_size));
-    // Skip if bitmap is empty
-    if (bitmap.width == 0 || bitmap.height == 0) {
-        return;
-    }
-
-    // Shadow offset
-    // TODO: turn this into an option
-    if (param.type.is_shadow) {
-        param.pen.x += 3 << 6;
-        param.pen.y -= 3 << 6;
-    }
-
-    // Prepare copy
-    _CopyBitmapArgs args(bitmap);
-
-    // The (pen.x % 64 > 31) part is used to round up pixel fractions
-    args.x0 = (param.pen.x >> 6) + (param.pen.x % 64 > 31) + bitmap.pen_left;
-    args.y0 = param.line->charsize - (param.pen.y >> 6) - bitmap.pen_top;
-
-    // Retrieve the color to use : either a plain one, or a function to call
-    args.color = param.type.is_shadow ?
-        glyph_info.color.shadow : param.type.is_outline ?
-        glyph_info.color.outline : glyph_info.color.text;
-    args.alpha = glyph_info.color.alpha;
-
-    _copyBitmap(args);
-}
-
-// Copies a bitmap with given coords and color in _pixels
-void TextArea::_copyBitmap(_CopyBitmapArgs& args)
-{
-    // Go through each pixel
-    for (FT_Int i = 0, x = args.x0; i < args.bitmap.width; x++, i += args.bitmap.bpp) {
-        for (FT_Int j = 0, y = args.y0; j < args.bitmap.height; y++, j++) {
-
-            // Skip if coordinates are out the pixel array's bounds
-            if (x < 0 || y < 0
-                || x >= static_cast<int>(_w) || y >= static_cast<int>(_pixels_h))
-                continue;
-
-            // Retrieve buffer index and corresponding pixel reference
-            size_t const buf_index = (size_t)(j * args.bitmap.width + i);
-            RGBA32& pixel = _pixels[(size_t)(x + y * _w)];
-
-            // Copy pixel
-            switch (args.bitmap.pixel_mode) {
-                // In this case, bitmaps have 1 byte per pixel.
-                // Hence, they are monochrome (gray).
-            case FT_PIXEL_MODE_GRAY: {
-                // Skip if the glyph's pixel value is 0
-                uint8_t const px_value = args.bitmap.buffer[buf_index];
-                if (px_value == 0) {
-                    continue;
-                }
-                // Determine color via function if needed
-                if (!args.color.is_plain) {
-                    args.color.plain = args.color.func(x * 1530 / static_cast<int>(_w));
-                }
-                // Blend with existing pixel, using the glyph's pixel value as an alpha
-                pixel *= RGBA32(args.color.plain, px_value);
-                // Lower alpha post blending if needed
-                if (pixel.bytes.a > args.alpha) {
-                    pixel.bytes.a = args.alpha;
-                }
-                break;
-            }
-            default:
-                __LOG_METHOD_ERR("Unkown bitmap pixel mode.");
-                return;
-            }
-        }
-    }
 }
 
 __SSS_TR_END
