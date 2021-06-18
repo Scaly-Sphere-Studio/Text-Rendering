@@ -21,9 +21,8 @@
   <ItemGroup>
     <None Include="CONTROL" />
     <None Include="InstallScripts.ps1" />
-    <None Include="vcpkg_scripts\export.ps1" />
-    <None Include="vcpkg_scripts\local_install.ps1" />
-    <None Include="vcpkg_scripts\local_remove.ps1" />
+    <None Include="vcpkg_scripts\Install.ps1" />
+    <None Include="vcpkg_scripts\Remove.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\SSS\Text-Rendering.hpp" />

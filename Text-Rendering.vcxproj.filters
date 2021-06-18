@@ -16,13 +16,10 @@
   <ItemGroup>
     <None Include="InstallScripts.ps1" />
     <None Include="CONTROL" />
-    <None Include="vcpkg_scripts\export.ps1">
+    <None Include="vcpkg_scripts\Remove.ps1">
       <Filter>vcpkg_scripts</Filter>
     </None>
-    <None Include="vcpkg_scripts\local_install.ps1">
-      <Filter>vcpkg_scripts</Filter>
-    </None>
-    <None Include="vcpkg_scripts\local_remove.ps1">
+    <None Include="vcpkg_scripts\Install.ps1">
       <Filter>vcpkg_scripts</Filter>
     </None>
   </ItemGroup>
