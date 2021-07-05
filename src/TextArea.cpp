@@ -34,16 +34,16 @@ void TextArea::clear() noexcept
     }
     // Reset buffers
     _buffers.clear();
+    _buffer_infos.clear();
     _glyph_count = 0;
     // Reset lines
-    _lines.clear();
-    _update_lines = true;
-    // Reset pixels
-    _clear = true;
+    _updateLines();
     // Reset typewriter
     _tw_cursor = 0;
     _tw_next_cursor = 0;
-    _drawIfNeeded();
+    // Reset pixels
+    _draw = true;
+    _clear = true;
 }
 
 TextArea::Shared TextArea::create(int width, int height)
@@ -60,11 +60,14 @@ void TextArea::useBuffer(Buffer::Shared buffer) try
 {
     // Update counts
     _buffers.push_back(buffer);
-    _update_lines = true;
+    _buffer_infos.update(_buffers);
+    _glyph_count = _buffer_infos.glyphCount();
+    _draw = true;
+    _updateLines();
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-bool TextArea::wasUpdated()
+bool TextArea::update()
 {
     if (_processing_pixels->isPending()) {
         _current_pixels = _processing_pixels;
@@ -82,7 +85,11 @@ void const* TextArea::getPixels() const try
     if (pixels.empty()) {
         return nullptr;
     }
-    return &pixels.at(_scrolling * _w);
+    size_t const index = static_cast<size_t>(_scrolling) * static_cast<size_t>(_w);
+    if (index >= pixels.size()) {
+        throw_exc(ERR_MSG::OUT_OF_BOUND);
+    }
+    return &pixels.at(index);
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
@@ -105,6 +112,7 @@ void TextArea::placeCursor(int x, int y) try
         _edit_cursor = 0;
         return;
     }
+    y += _scrolling;
     _edit_x = x;
     _edit_y = y;
 
@@ -245,25 +253,27 @@ void TextArea::insertText(std::u32string str) try
     size_t size = 0;
     if (cursor >= _glyph_count) {
         Buffer::Shared const& buffer = _buffers.back();
-        size_t const tmp = buffer->_glyph_count;
-        buffer->insertText(str, buffer->_glyph_count);
-        size = buffer->_glyph_count - tmp;
+        size_t const tmp = buffer->glyphCount();
+        buffer->insertText(str, buffer->glyphCount());
+        size = buffer->glyphCount() - tmp;
     }
     else {
         for (Buffer::Shared const& buffer : _buffers) {
-            if (buffer->_glyph_count >= cursor) {
-                size_t const tmp = buffer->_glyph_count;
+            if (buffer->glyphCount() >= cursor) {
+                size_t const tmp = buffer->glyphCount();
                 buffer->insertText(str, cursor);
-                size = buffer->_glyph_count - tmp;
+                size = buffer->glyphCount() - tmp;
                 break;
             }
-            cursor -= buffer->_glyph_count;
+            cursor -= buffer->glyphCount();
         }
     }
-    if (size != 0) {
-        _update_lines = true;
-        _drawIfNeeded();
-    }
+    _buffer_infos.update(_buffers);
+    _glyph_count = _buffer_infos.glyphCount();
+    _draw = true;
+    // Update lines as they need to be updated before moving cursor
+    _updateLines();
+    // Move cursor
     for (size_t i = 0; i < size; ++i) {
         moveCursor(Cursor::Right);
     }
@@ -285,9 +295,9 @@ void TextArea::TWset(bool activate) noexcept
     if (_typewriter != activate) {
         _tw_cursor = 0;
         _tw_next_cursor = 0;
+        _draw = true;
         _clear = true;
         _typewriter = activate;
-        _drawIfNeeded();
     }
 }
 
@@ -310,7 +320,7 @@ bool TextArea::TWprint() noexcept
             return true;
         }
     }
-    _drawIfNeeded();
+    _draw = true;
     return false;
 }
 
@@ -335,14 +345,6 @@ void TextArea::_updateLines()
     _internal::Line::it line = _lines.begin();
     size_t cursor = 0;
 
-    
-    _glyph_count = 0;
-    _buffer_infos.clear();
-    for (Buffer::Shared const& buffer : _buffers) {
-        _buffer_infos.emplace_back(buffer->_buffer_info);
-        _glyph_count += buffer->_glyph_count;
-    }
-
     // Place pen at (0, 0), we don't take scrolling into account
     size_t last_divider(0);
     FT_Vector pen({ 0, 0 });
@@ -356,7 +358,7 @@ void TextArea::_updateLines()
         if (line->charsize < charsize) {
             line->charsize = charsize;
         }
-        size_t fullsize = (int)((float)charsize * buffer.style.line_spacing);
+        int const fullsize = static_cast<int>(static_cast<float>(charsize) * buffer.style.line_spacing);
         if (line->fullsize < fullsize) {
             line->fullsize = fullsize;
         }
@@ -369,7 +371,7 @@ void TextArea::_updateLines()
         pen.x += glyph.pos.x_advance;
         pen.y += glyph.pos.y_advance;
         // If the pen is now out of bound, we should line break
-        if (pen.x < 0 || (pen.x >> 6) >= static_cast<int>(_w)) {
+        if (pen.x < 0 || (pen.x >> 6) >= _w) {
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
                 --cursor;
@@ -378,7 +380,7 @@ void TextArea::_updateLines()
                 cursor = last_divider;
             }
             line->last_glyph = cursor;
-            line->scrolling += static_cast<int>(line->fullsize);
+            line->scrolling += line->fullsize;
             last_divider = 0;
             // Add line if needed
             _lines.push_back({ 0, 0, 0, 0, 0 });
@@ -393,7 +395,7 @@ void TextArea::_updateLines()
     }
 
     line->last_glyph = cursor;
-    line->scrolling += static_cast<int>(line->fullsize);
+    line->scrolling += line->fullsize;
     
     _tw_cursor = 0;
 
@@ -409,17 +411,16 @@ void TextArea::_updateLines()
         _scrollingChanged();
     }
     _clear = true;
-    _update_lines = false;
 }
 
 // Draws current area if needed & possible
 void TextArea::_drawIfNeeded()
 {
-    // Update lines if needed
-    if (_update_lines) {
-        _updateLines();
+    // Skip if drawing is not needed
+    if (!_draw) {
+        return;
     }
-    // Skip if running
+    // Skip if a draw call is already running
     if (_processing_pixels->isRunning()) {
         return;
     }
@@ -440,6 +441,7 @@ void TextArea::_drawIfNeeded()
 
     // Draw in thread
     _processing_pixels->draw(param, _w, _pixels_h, _clear, _lines, _buffer_infos);
+    _draw = false;
 }
 
 // Prepares drawing parameters, which will be used multiple times per draw
@@ -474,8 +476,7 @@ _internal::DrawParameters TextArea::_prepareDraw()
         // Lower pen.y accordingly
         // TODO: determine exact offsets needed, instead of using 5px
         param.pen = { 5 * 64, -5 * 64 };
-        param.pen.y -= (param.line->scrolling
-            - static_cast<int>(param.line->fullsize)) << 6;
+        param.pen.y -= (param.line->scrolling - param.line->fullsize) << 6;
 
         // Shift the pen on the line accordingly
         for (size_t cursor = param.line->first_glyph; cursor < param.first_glyph; ++cursor) {

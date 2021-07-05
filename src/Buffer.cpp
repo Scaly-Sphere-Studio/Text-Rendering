@@ -4,7 +4,7 @@
 __SSS_TR_BEGIN
 __INTERNAL_BEGIN
 
-GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) try
+GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) const try
 {
     for (BufferInfo const& buffer_info : *this) {
         if (buffer_info.glyphs.size() > cursor) {
@@ -16,7 +16,7 @@ GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-_internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) try
+_internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const try
 {
     for (BufferInfo const& buffer_info : *this) {
         if (buffer_info.glyphs.size() > cursor) {
@@ -27,6 +27,23 @@ _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) try
     throw_exc(ERR_MSG::OUT_OF_BOUND);
 }
 __CATCH_AND_RETHROW_METHOD_EXC
+
+void BufferInfoVector::update(std::vector<Buffer::Shared> buffers)
+{
+    _glyph_count = 0;
+    clear();
+    reserve(buffers.size());
+    for (Buffer::Shared const& buffer : buffers) {
+        emplace_back(buffer->_buffer_info);
+        _glyph_count += buffer->glyphCount();
+    }
+}
+
+void BufferInfoVector::clear() noexcept
+{
+    _glyph_count = 0;
+    vector::clear();
+}
 
 __INTERNAL_END
 
@@ -85,8 +102,8 @@ void Buffer::changeString(std::string const& str)
 void Buffer::insertText(std::u32string const& str, size_t cursor)
 {
     uint32_t index;
-    if (cursor >= _glyph_count) {
-        index = _glyph_count;
+    if (cursor >= glyphCount()) {
+        index = static_cast<uint32_t>(glyphCount());
     }
     else {
         index = _buffer_info.glyphs.at(cursor).info.cluster;
@@ -153,7 +170,8 @@ void Buffer::_notifyTextAreas()
         if (textarea) {
             for (Shared const& buffer : textarea->_buffers) {
                 if (shared_this == buffer) {
-                    textarea->_update_lines = true;
+                    textarea->_draw = true;
+                    textarea->_updateLines();
                     break;
                 }
             }
@@ -168,7 +186,7 @@ void Buffer::_notifyTextAreas()
 // Shapes the buffer and retrieve its informations
 void Buffer::_shape() try
 {
-    _opt.font->useCharsize(_opt.style.charsize);
+    _opt.font->setCharsize(_opt.style.charsize);
     // Add string to buffer
     uint32_t const* indexes = reinterpret_cast<uint32_t const*>(&_str[0]);
     int size = static_cast<int>(_str.size());
@@ -179,13 +197,14 @@ void Buffer::_shape() try
     hb_shape(_opt.font->getHBFont(_opt.style.charsize).get(), _buffer.get(), nullptr, 0);
 
     // Retrieve glyph informations
-    hb_glyph_info_t const* info = hb_buffer_get_glyph_infos(_buffer.get(), &_glyph_count);
+    unsigned int glyph_count = 0;
+    hb_glyph_info_t const* info = hb_buffer_get_glyph_infos(_buffer.get(), &glyph_count);
     // Retrieve glyph positions
     hb_glyph_position_t const* pos = hb_buffer_get_glyph_positions(_buffer.get(), nullptr);
 
     _buffer_info.glyphs.clear();
-    _buffer_info.glyphs.resize(_glyph_count);
-    for (size_t i = 0; i < _glyph_count; ++i) {
+    _buffer_info.glyphs.resize(glyph_count);
+    for (size_t i = 0; i < glyph_count; ++i) {
         // Add references via constructor
         _internal::GlyphInfo& glyph = _buffer_info.glyphs.at(i);
         glyph.info = info[i];

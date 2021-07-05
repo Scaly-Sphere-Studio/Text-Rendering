@@ -15,6 +15,11 @@ Line::cit Line::which(vector const& lines, size_t cursor)
     return line;
 }
 
+TextAreaPixels::~TextAreaPixels()
+{
+    cancel();
+}
+
 void TextAreaPixels::draw(DrawParameters param, int w, int h, bool clear,
     std::vector<Line> lines, BufferInfoVector buffer_infos)
 {
@@ -40,15 +45,18 @@ void TextAreaPixels::_function(DrawParameters param)
     param.type.is_shadow = true;
     param.type.is_outline = true;
     _drawGlyphs(param);
+    if (_is_canceled) return;
 
     // Draw Text shadows
     param.type.is_outline = false;
     _drawGlyphs(param);
+    if (_is_canceled) return;
 
     // Draw Outlines
     param.type.is_shadow = false;
     param.type.is_outline = true;
     _drawGlyphs(param);
+    if (_is_canceled) return;
 
     // Draw Text
     param.type.is_outline = false;
@@ -59,6 +67,7 @@ void TextAreaPixels::_drawGlyphs(DrawParameters param)
 {
     // Draw the glyphs
     for (size_t cursor = param.first_glyph; cursor < param.last_glyph; ++cursor) {
+        if (_is_canceled) return;
         GlyphInfo const& glyph_info(_buffer_infos.getGlyph(cursor));
         BufferInfo const& buffer_info(_buffer_infos.getBuffer(cursor));
         try {

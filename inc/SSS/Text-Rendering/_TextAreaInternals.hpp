@@ -12,7 +12,7 @@ struct Line {
     // Variables
     size_t first_glyph{ 0 }; // First glyph of the line
     size_t last_glyph{ 0 };  // Line break after rendering glyph
-    size_t fullsize{ 0 };    // Line's full size, in pixels
+    int fullsize{ 0 };       // Line's full size, in pixels
     int charsize{ 0 };       // The highest charsize on the line
     int scrolling{ 0 };      // Total scrolling for this line to be above the top
     // Aliases
@@ -41,6 +41,9 @@ struct DrawParameters {
 };
 
 class TextAreaPixels : public ThreadBase<DrawParameters> {
+public:
+    ~TextAreaPixels();
+
 private:
     using ThreadBase::run;
 

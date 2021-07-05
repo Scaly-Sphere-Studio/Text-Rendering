@@ -126,18 +126,21 @@ Font::~Font() noexcept
     // --- Glyph functions ---
 
 // Call this function whenever changing charsize
-void Font::useCharsize(int charsize) try
+void Font::setCharsize(int charsize) try
 {
     if (charsize <= 0) {
         charsize = 1;
     }
-    // Create font size if needed
+    // Create font size if needed (which sets the charsize)
     if (_font_sizes.count(charsize) == 0) {
         _font_sizes.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(charsize),        // Key
             std::forward_as_tuple(_face, charsize)  // Value
         );
+    }
+    else {
+        _font_sizes.at(charsize).setCharsize();
     }
 }
 __CATCH_AND_RETHROW_METHOD_EXC

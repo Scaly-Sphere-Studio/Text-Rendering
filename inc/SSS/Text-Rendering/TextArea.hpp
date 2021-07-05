@@ -32,7 +32,7 @@ public:
 
     // Use buffer in text area
     void useBuffer(Buffer::Shared buffer);
-    bool wasUpdated();
+    bool update();
     // Returns its rendered pixels.
     void const* getPixels() const;
 
@@ -78,12 +78,12 @@ private:
 
 // --- Object info ---
     
-    size_t _w;              // Width of area
-    size_t _h;              // Height of area
-    size_t _pixels_h{ 0 };  // Height of _pixels -> must NEVER be lower than _h
+    int _w;                 // Width of area
+    int _h;                 // Height of area
+    int _pixels_h{ 0 };     // Height of _pixels -> must NEVER be lower than _h
     int _scrolling{ 0 };    // Scrolling index, in pixels
     
-    bool _update_lines{ true }; // True -> update _lines
+    bool _draw{ true };         // True -> enables _drawIfNeeded
     bool _clear{ true };        // True -> clear _pixels before drawing
     bool _typewriter{ false };  // True -> display characters one by one
 

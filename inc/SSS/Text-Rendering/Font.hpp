@@ -53,7 +53,7 @@ public:
 
 // --- Glyph functions ---
 
-    void useCharsize(int charsize);
+    void setCharsize(int charsize);
     // Loads corresponding glyph.
     bool loadGlyph(FT_UInt glyph_index, int charsize, int outline_size);
     // Clears out the internal glyph cache.
