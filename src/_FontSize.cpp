@@ -16,7 +16,7 @@ FontSize::FontSize(FT_Face_Ptr const& ft_face, int charsize) try
         throw_exc("negative charsize not allowed.");
     }
     // Set charsize
-    _setCharsize();
+    setCharsize();
     // Create HarfBuzz font from FreeType font face.
     _hb_font.reset(hb_ft_font_create_referenced(ft_face.get()));
     // Create Stroker
@@ -71,6 +71,14 @@ static FT_Error _convertGlyph(FT_Glyph ft_glyph, Bitmap& bitmap)
     return false;
 }
 
+void FontSize::setCharsize()
+{
+    // Set charsize
+    FT_Error error = FT_Set_Char_Size(_ft_face.get(), _charsize << 6, 0,
+        Font::getHDPI(), Font::getVDPI());
+    __THROW_IF_FT_ERROR("FT_Set_Char_Size()");
+}
+
 // Loads the given glyph, and its ouline if outline_size > 0
 bool FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
 {
@@ -82,7 +90,7 @@ bool FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
         return false;
     }
     // Set charsize
-    _setCharsize();
+    setCharsize();
 
     // Load glyph
     FT_Error error = FT_Load_Glyph(_ft_face.get(), glyph_index, FT_LOAD_DEFAULT);
@@ -147,14 +155,6 @@ Bitmap const& FontSize::getOutlineBitmap(FT_UInt glyph_index, int outline_size) 
     return _outlined.at(outline_size).at(glyph_index);
 }
 __CATCH_AND_RETHROW_METHOD_EXC
-
-void FontSize::_setCharsize()
-{
-    // Set charsize
-    FT_Error error = FT_Set_Char_Size(_ft_face.get(), _charsize << 6, 0,
-        Font::getHDPI(), Font::getVDPI());
-    __THROW_IF_FT_ERROR("FT_Set_Char_Size()");
-}
 
 __INTERNAL_END
 __SSS_TR_END

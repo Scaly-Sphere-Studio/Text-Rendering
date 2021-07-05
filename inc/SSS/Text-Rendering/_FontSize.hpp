@@ -34,6 +34,8 @@ public:
 
 // --- Load functions ---
 
+    // Change FT face charsize
+    void setCharsize();
     // Loads the given glyph, and its ouline if outline_size > 0.
     // Returns true on error.
     bool loadGlyph(FT_UInt glyph_index, int outline_size);
@@ -60,11 +62,6 @@ private:
     std::map<FT_UInt, Bitmap> _originals;
     // Map of outline bitmaps, mapped by outline size
     std::map<FT_UInt, std::map<FT_UInt, Bitmap>> _outlined;
-
-// --- Private functions ---
-
-    // Change FT face charsize
-    void _setCharsize();
 };
 
 __INTERNAL_END

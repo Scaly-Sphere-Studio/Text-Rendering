@@ -5,6 +5,9 @@
 
 __SSS_TR_BEGIN
 
+// Pre-declaration
+class Buffer;
+
     // --- Internal structures ---
 
 __INTERNAL_BEGIN
@@ -26,8 +29,13 @@ struct BufferInfo {
 
 class BufferInfoVector : public std::vector<BufferInfo> {
 public:
-    GlyphInfo const& getGlyph(size_t cursor);
-    BufferInfo const& getBuffer(size_t cursor);
+    inline size_t glyphCount() const { return _glyph_count; };
+    GlyphInfo const& getGlyph(size_t cursor) const;
+    BufferInfo const& getBuffer(size_t cursor) const;
+    void update(std::vector<std::shared_ptr<Buffer>> buffers);
+    void clear() noexcept;
+private:
+    size_t _glyph_count{ 0 };
 };
 __INTERNAL_END
 
@@ -35,7 +43,7 @@ __INTERNAL_END
 
 // Simplified HarfBuzz buffer
 class Buffer : public std::enable_shared_from_this<Buffer> {
-    friend class TextArea;
+    friend class _internal::BufferInfoVector;
 public:
 // --- Aliases ---
 
@@ -64,6 +72,8 @@ public:
     // Reshapes the buffer with given parameters
     void changeOptions(TextOpt const& opt);
 
+    inline size_t glyphCount() const noexcept { return _buffer_info.glyphs.size(); };
+
 private:
 
     // Original string converted in uint32 vector
@@ -74,13 +84,12 @@ private:
     TextOpt _opt;
     
     _internal::HB_Buffer_Ptr _buffer;   // HarfBuzz buffer
-    unsigned int _glyph_count;          // Total number of glyphs
+    _internal::BufferInfo _buffer_info; // Buffer informations
 
     hb_segment_properties_t _properties;    // HB presets : lng, script, direction
     std::vector<uint32_t> _wd_indexes;      // Word dividers as glyph indexes
     std::locale _locale;
 
-    _internal::BufferInfo _buffer_info;
 
     // Modifies internal options
     void _changeOptions(TextOpt const& opt);
