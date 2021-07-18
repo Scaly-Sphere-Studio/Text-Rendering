@@ -127,6 +127,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ProgramDataBaseFileName>$(Outdir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,6 +143,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ProgramDataBaseFileName>$(Outdir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -159,6 +161,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ProgramDataBaseFileName>$(Outdir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -178,6 +181,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ProgramDataBaseFileName>$(Outdir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
