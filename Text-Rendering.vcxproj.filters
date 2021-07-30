@@ -62,9 +62,6 @@
     <ClCompile Include="src\_FontSize.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\_pointers.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\Buffer.cpp">
       <Filter>src</Filter>
     </ClCompile>

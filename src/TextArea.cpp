@@ -11,9 +11,6 @@ std::vector<TextArea::Weak> TextArea::_instances{};
 TextArea::TextArea(int width, int height) try
     : _w(width), _h(height)
 {
-    if (_w <= 0 || _h <= 0) {
-        throw_exc(ERR_MSG::INVALID_ARGUMENT);
-    }
     __LOG_CONSTRUCTOR
 }
 __CATCH_AND_RETHROW_METHOD_EXC
@@ -41,9 +38,6 @@ void TextArea::clear() noexcept
     // Reset typewriter
     _tw_cursor = 0;
     _tw_next_cursor = 0;
-    // Reset pixels
-    _draw = true;
-    _clear = true;
 }
 
 TextArea::Shared TextArea::create(int width, int height)
@@ -52,6 +46,14 @@ TextArea::Shared TextArea::create(int width, int height)
     _instances.push_back(shared);
     return shared;
 }
+
+void TextArea::resize(int width, int height) try
+{
+    _w = width;
+    _h = height;
+    _updateLines();
+}
+__CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Basic functions ---
 
@@ -62,21 +64,18 @@ void TextArea::useBuffer(Buffer::Shared buffer) try
     _buffers.push_back(buffer);
     _buffer_infos.update(_buffers);
     _glyph_count = _buffer_infos.glyphCount();
-    _draw = true;
     _updateLines();
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-bool TextArea::update()
+void TextArea::update()
 {
     if (_processing_pixels->isPending()) {
         _current_pixels = _processing_pixels;
         _processing_pixels->setAsHandled();
-        _drawIfNeeded();
-        return true;
+        _changes_pending = true;
     }
     _drawIfNeeded();
-    return false;
 }
 
 void const* TextArea::getPixels() const try
@@ -98,12 +97,14 @@ __CATCH_AND_RETHROW_METHOD_EXC
 // Scrolls up (negative values) or down (positive values)
 // Any excessive scrolling will be negated,
 // hence, this function is safe.
-bool TextArea::scroll(int pixels) noexcept
+void TextArea::scroll(int pixels) noexcept
 {
     int tmp = _scrolling;
     _scrolling += pixels;
     _scrollingChanged();
-    return tmp != _scrolling;
+    if (!_changes_pending) {
+        _changes_pending = tmp != _scrolling;
+    }
 }
 
 void TextArea::placeCursor(int x, int y) try
@@ -270,7 +271,6 @@ void TextArea::insertText(std::u32string str) try
     }
     _buffer_infos.update(_buffers);
     _glyph_count = _buffer_infos.glyphCount();
-    _draw = true;
     // Update lines as they need to be updated before moving cursor
     _updateLines();
     // Move cursor
@@ -296,7 +296,6 @@ void TextArea::TWset(bool activate) noexcept
         _tw_cursor = 0;
         _tw_next_cursor = 0;
         _draw = true;
-        _clear = true;
         _typewriter = activate;
     }
 }
@@ -337,8 +336,11 @@ void TextArea::_scrollingChanged() noexcept
 }
 
 // Updates _lines
-void TextArea::_updateLines()
+void TextArea::_updateLines() try
 {
+    if (_w <= 0 || _h <= 0) {
+        throw_exc("width and/or height <= 0");
+    }
     // Reset _lines
     _lines.clear();
     _lines.emplace_back();
@@ -410,8 +412,9 @@ void TextArea::_updateLines()
         _scrolling = (size_t)std::round(static_cast<float>(_scrolling) * size_diff);
         _scrollingChanged();
     }
-    _clear = true;
+    _draw = true;
 }
+__CATCH_AND_RETHROW_METHOD_EXC
 
 // Draws current area if needed & possible
 void TextArea::_drawIfNeeded()
@@ -440,7 +443,7 @@ void TextArea::_drawIfNeeded()
     }
 
     // Draw in thread
-    _processing_pixels->draw(param, _w, _pixels_h, _clear, _lines, _buffer_infos);
+    _processing_pixels->draw(param, _w, _pixels_h, _lines, _buffer_infos);
     _draw = false;
 }
 

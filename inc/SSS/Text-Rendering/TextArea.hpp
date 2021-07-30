@@ -28,13 +28,20 @@ public:
 
     static Shared create(int width, int height);
 
+    void resize(int width, int height);
 // --- Basic functions ---
 
     // Use buffer in text area
     void useBuffer(Buffer::Shared buffer);
-    bool update();
+    void update();
+    inline bool changesPending() const noexcept { return _changes_pending; };
+    inline void changesHandled() noexcept { _changes_pending = false; }
+
     // Returns its rendered pixels.
     void const* getPixels() const;
+
+    // Fills width and height with internal values
+    inline void getDimensions(int& w, int& h) const noexcept { w = _w; h = _h; }
 
 // --- Format functions ---
 
@@ -42,7 +49,7 @@ public:
     // The function returns true if the scrolling didn't change.
     // Any excessive scrolling will be negated, and the function
     // will return false.
-    bool scroll(int pixels) noexcept;
+    void scroll(int pixels) noexcept;
 
 // --- Edit functions ---
 
@@ -84,8 +91,9 @@ private:
     int _scrolling{ 0 };    // Scrolling index, in pixels
     
     bool _draw{ true };         // True -> enables _drawIfNeeded
-    bool _clear{ true };        // True -> clear _pixels before drawing
     bool _typewriter{ false };  // True -> display characters one by one
+
+    bool _changes_pending{ false }; // True -> update() returns true
 
     using _PixelBuffers = std::array<_internal::TextAreaPixels, 2>;
     _PixelBuffers _pixels;

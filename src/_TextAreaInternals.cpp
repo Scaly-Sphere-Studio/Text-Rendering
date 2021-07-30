@@ -20,13 +20,12 @@ TextAreaPixels::~TextAreaPixels()
     cancel();
 }
 
-void TextAreaPixels::draw(DrawParameters param, int w, int h, bool clear,
+void TextAreaPixels::draw(DrawParameters param, int w, int h,
     std::vector<Line> lines, BufferInfoVector buffer_infos)
 {
     cancel();
     _w = w;
     _h = h;
-    _clear = clear;
     _lines = lines;
     _buffer_infos = buffer_infos;
     param.line = Line::which(_lines, param.first_glyph);
@@ -37,7 +36,10 @@ void TextAreaPixels::draw(DrawParameters param, int w, int h, bool clear,
 void TextAreaPixels::_function(DrawParameters param)
 {
     _pixels.resize(_w * _h);
-    if (_clear) {
+    if constexpr (DEBUGMODE) {
+        std::fill(_pixels.begin(), _pixels.end(), RGBA32(0, 0, 0, 122));
+    }
+    else {
         std::fill(_pixels.begin(), _pixels.end(), RGBA32(0));
     }
 

@@ -40,7 +40,6 @@
     <ClCompile Include="src\Buffer.cpp" />
     <ClCompile Include="src\Font.cpp" />
     <ClCompile Include="src\TextArea.cpp" />
-    <ClCompile Include="src\_pointers.cpp" />
     <ClCompile Include="src\_TextAreaInternals.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
