@@ -170,8 +170,7 @@ void Buffer::_notifyTextAreas()
         if (textarea) {
             for (Shared const& buffer : textarea->_buffers) {
                 if (shared_this == buffer) {
-                    textarea->_draw = true;
-                    textarea->_updateLines();
+                    textarea->_updateBufferInfos();
                     break;
                 }
             }

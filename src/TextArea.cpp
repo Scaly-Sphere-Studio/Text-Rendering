@@ -11,14 +11,12 @@ std::vector<TextArea::Weak> TextArea::_instances{};
 TextArea::TextArea(int width, int height) try
     : _w(width), _h(height)
 {
-    __LOG_CONSTRUCTOR
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
 // Destructor, clears out buffer cache.
 TextArea::~TextArea() noexcept
 {
-    __LOG_DESTRUCTOR
 }
 
 // Resets the object to newly constructed state
@@ -62,9 +60,7 @@ void TextArea::useBuffer(Buffer::Shared buffer) try
 {
     // Update counts
     _buffers.push_back(buffer);
-    _buffer_infos.update(_buffers);
-    _glyph_count = _buffer_infos.glyphCount();
-    _updateLines();
+    _updateBufferInfos();
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
@@ -188,52 +184,52 @@ void TextArea::moveCursor(Cursor position) try
     _internal::Line::cit line = _internal::Line::which(_lines, _edit_cursor);
 
     switch (position) {
-    case Cursor::Up :
+    case Cursor::Up:
         if (line == _lines.cbegin()) break;
         --line;
         _edit_cursor = set_cursor(line);
         break;
 
-    case Cursor::Down :
+    case Cursor::Down:
         if (line == _lines.cend() - 1) break;
         ++line;
         _edit_cursor = set_cursor(line);
         break;
 
-    case Cursor::Left :
+    case Cursor::Left:
         if (_edit_cursor == 0) break;
         --_edit_cursor;
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::Right :
+    case Cursor::Right:
         if (_edit_cursor >= _glyph_count) break;
         ++_edit_cursor;
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::CtrlLeft :
+    case Cursor::CtrlLeft:
         if (_edit_cursor == 0) break;
         ctrl_jump(-1);
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::CtrlRight :
+    case Cursor::CtrlRight:
         if (_edit_cursor >= _glyph_count) break;
         ctrl_jump(1);
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::Home :
+    case Cursor::Home:
         _edit_cursor = line->first_glyph;
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::End :
+    case Cursor::End:
         _edit_cursor = line->last_glyph + 1;
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
@@ -269,10 +265,8 @@ void TextArea::insertText(std::u32string str) try
             cursor -= buffer->glyphCount();
         }
     }
-    _buffer_infos.update(_buffers);
-    _glyph_count = _buffer_infos.glyphCount();
     // Update lines as they need to be updated before moving cursor
-    _updateLines();
+    _updateBufferInfos();
     // Move cursor
     for (size_t i = 0; i < size; ++i) {
         moveCursor(Cursor::Right);
@@ -413,6 +407,14 @@ void TextArea::_updateLines() try
         _scrollingChanged();
     }
     _draw = true;
+}
+__CATCH_AND_RETHROW_METHOD_EXC
+
+void TextArea::_updateBufferInfos() try
+{
+    _buffer_infos.update(_buffers);
+    _glyph_count = _buffer_infos.glyphCount();
+    _updateLines();
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 

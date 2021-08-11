@@ -117,6 +117,8 @@ private:
     void _scrollingChanged() noexcept;
     // Updates _lines
     void _updateLines();
+    // Updates _buffer_infos and _glyph_count, then calls _updateLines();
+    void _updateBufferInfos();
 
 // --- Private functions -> Draw functions ---
 
