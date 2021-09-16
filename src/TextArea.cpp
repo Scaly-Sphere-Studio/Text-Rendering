@@ -80,13 +80,23 @@ void const* TextArea::getPixels() const try
     if (pixels.empty()) {
         return nullptr;
     }
-    size_t const index = static_cast<size_t>(_scrolling) * static_cast<size_t>(_w);
-    if (index >= pixels.size()) {
+    // Retrieve cropped dimensions of current pixels
+    int w, h;
+    _current_pixels->getDimensions(w, h);
+    size_t size = static_cast<size_t>(w) * static_cast<size_t>(h);
+    // Ensure current scrolling doesn't go past the pixels vector
+    size_t const index = static_cast<size_t>(_scrolling) * static_cast<size_t>(w);
+    if (index > pixels.size() - size) {
         throw_exc(ERR_MSG::OUT_OF_BOUND);
     }
     return &pixels.at(index);
 }
 __CATCH_AND_RETHROW_METHOD_EXC
+
+void TextArea::getDimensions(int& w, int& h) const noexcept
+{
+    _current_pixels->getDimensions(w, h);
+}
 
     // --- Format functions ---
 
@@ -445,7 +455,7 @@ void TextArea::_drawIfNeeded()
     }
 
     // Draw in thread
-    _processing_pixels->draw(param, _w, _pixels_h, _lines, _buffer_infos);
+    _processing_pixels->draw(param, _w, _h, _pixels_h, _lines, _buffer_infos);
     _draw = false;
 }
 

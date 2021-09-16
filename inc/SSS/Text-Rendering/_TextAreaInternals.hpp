@@ -48,10 +48,10 @@ private:
     using ThreadBase::run;
 
 public:
-    void draw(DrawParameters param, int w, int h,
+    void draw(DrawParameters param, int w, int h, int pixels_h,
         std::vector<Line> lines, BufferInfoVector glyph_infos);
     inline RGBA32::Pixels const& getPixels() const noexcept { return _pixels; };
-    inline size_t getHeight() const noexcept { return static_cast<size_t>(_h); };
+    inline void getDimensions(int& w, int& h) const noexcept { w = _w; h = _h; };
 
 protected:
     virtual void _function(DrawParameters param);
@@ -60,6 +60,7 @@ private:
 
     int _w{ 0 };
     int _h{ 0 };
+    int _pixels_h{ 0 };
     RGBA32::Pixels _pixels;
 
     std::vector<Line> _lines;

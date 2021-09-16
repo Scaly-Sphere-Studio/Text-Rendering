@@ -41,7 +41,7 @@ public:
     void const* getPixels() const;
 
     // Fills width and height with internal values
-    inline void getDimensions(int& w, int& h) const noexcept { w = _w; h = _h; }
+    void getDimensions(int& w, int& h) const noexcept;
 
 // --- Format functions ---
 
