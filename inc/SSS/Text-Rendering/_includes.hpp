@@ -44,9 +44,3 @@
 #define __THROW_IF_FT_ERROR(X) if (error) { \
     SSS::throw_exc(SSS::context_msg(X, FT_Error_String(error))); \
 }
-
-__SSS_TR_BEGIN
-__INTERNAL_BEGIN
-static inline std::u32string toU32str(std::string str) { return std::u32string(str.cbegin(), str.cend()); };
-__INTERNAL_END
-__SSS_TR_END

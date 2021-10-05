@@ -48,15 +48,12 @@ struct TextColors {
 
 // --- Language options ---
 struct TextLanguage {
-private:
-    using _c32Vector = std::vector<char32_t>;
-
 public:
     TextLanguage(
-        std::string const& language_ = "en",            // English
-        std::string const& script_ = "Latn",            // Latin script
-        std::string const& direction_ = "ltr",          // Left to right
-        _c32Vector const& word_dividers_ = { U' ' }   // Single word divider: space
+        std::string const& language_ = "en",        // English
+        std::string const& script_ = "Latn",        // Latin script
+        std::string const& direction_ = "ltr",      // Left to right
+        std::u32string const& word_dividers_ = U" " // Single word divider: space
     ) noexcept :
         language(language_),
         script(script_),
@@ -66,14 +63,14 @@ public:
     std::string language;           // Language ("en", "fr", "ar", ...)
     std::string script;             // Script ("Latn", "Arab", ...)
     std::string direction;          // Text direction ("ltr", "rtl")
-    _c32Vector word_dividers;   // Word dividers (spaces, most of the time)
+    std::u32string word_dividers;   // Word dividers (spaces, most of the time)
 };
 
 // --- All text options put together ---
 struct TextOpt {
     // --- Constructor ---
     TextOpt(
-        Font::Shared font_,  // Used font
+        Font::Shared font_ = Font::getShared("arial.ttf"),  // Used font
         TextStyle const& style_ = TextStyle(),      // See upward
         TextColors const& color_ = TextColors(),    // See upward
         TextLanguage const& lng_ = TextLanguage()   // See upward

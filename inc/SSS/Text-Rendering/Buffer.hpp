@@ -4,17 +4,16 @@
 #include "SSS/Text-Rendering/TextOpt.hpp"
 
 __SSS_TR_BEGIN
-
+__INTERNAL_BEGIN
 // Pre-declaration
 class Buffer;
 
     // --- Internal structures ---
 
-__INTERNAL_BEGIN
 // A structure filled with informations of a given glyph
 struct GlyphInfo {
-    hb_glyph_info_t info;       // The glyph's informations
-    hb_glyph_position_t pos;    // The glyph's position
+    hb_glyph_info_t info{};         // The glyph's informations
+    hb_glyph_position_t pos{};      // The glyph's position
     bool is_word_divider{ false };  // Whether the glyph is a word divider
 };
 
@@ -32,34 +31,25 @@ public:
     inline size_t glyphCount() const { return _glyph_count; };
     GlyphInfo const& getGlyph(size_t cursor) const;
     BufferInfo const& getBuffer(size_t cursor) const;
-    void update(std::vector<std::shared_ptr<Buffer>> buffers);
+    void update(std::vector<std::unique_ptr<Buffer>> const& buffers);
     void clear() noexcept;
 private:
     size_t _glyph_count{ 0 };
 };
-__INTERNAL_END
 
-    // --- Class ---
+    // --- Main class ---
 
 // Simplified HarfBuzz buffer
-class Buffer : public std::enable_shared_from_this<Buffer> {
-    friend class _internal::BufferInfoVector;
+class Buffer {
+    friend class BufferInfoVector;
 public:
-// --- Aliases ---
-
-    using Shared = std::shared_ptr<Buffer>;
-
+    using Ptr = std::unique_ptr<Buffer>;
 // --- Constructor & Destructor ---
-private:
-    // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-    Buffer(std::u32string const& str, TextOpt const& opt);
     
-public:
+    // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
+    Buffer(TextOpt const& opt);
     // Destructor
-    ~Buffer() noexcept;
-
-    static Shared create(std::u32string const& str, TextOpt const& opt);
-    static Shared create(std::string const& str, TextOpt const& opt);
+    ~Buffer();
 
 // --- Basic functions ---
 
@@ -73,6 +63,9 @@ public:
     void changeOptions(TextOpt const& opt);
 
     inline size_t glyphCount() const noexcept { return _buffer_info.glyphs.size(); };
+
+    inline std::u32string getString() const noexcept { return _str; };
+    inline TextOpt getOptions() const noexcept { return _opt; };
 
 private:
 
@@ -95,11 +88,11 @@ private:
     void _changeOptions(TextOpt const& opt);
 
     void _updateBuffer();
-    void _notifyTextAreas();
     // Shapes the buffer and retrieve its informations
     void _shape();
     // Loads needed glyphs
     void _loadGlyphs();
 };
 
+__INTERNAL_END
 __SSS_TR_END

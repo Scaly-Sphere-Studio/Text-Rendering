@@ -28,12 +28,12 @@ _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const tr
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void BufferInfoVector::update(std::vector<Buffer::Shared> buffers)
+void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
 {
     _glyph_count = 0;
     clear();
     reserve(buffers.size());
-    for (Buffer::Shared const& buffer : buffers) {
+    for (Buffer::Ptr const& buffer : buffers) {
         emplace_back(buffer->_buffer_info);
         _glyph_count += buffer->glyphCount();
     }
@@ -45,12 +45,11 @@ void BufferInfoVector::clear() noexcept
     vector::clear();
 }
 
-__INTERNAL_END
 
     // --- Constructor & Destructor ---
 
 // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-Buffer::Buffer(std::u32string const& str, TextOpt const& opt) try
+Buffer::Buffer(TextOpt const& opt) try
     : _opt(opt)
 {
     // Create buffer (and reference it to prevent early deletion)
@@ -59,30 +58,16 @@ Buffer::Buffer(std::u32string const& str, TextOpt const& opt) try
         throw_exc("HarfBuzz buffer allocation failed.");
     }
 
-    // Fill contents
-    _str = str;
-    _buffer_info.str = _str;
     _changeOptions(opt);
-    _updateBuffer();
 
     __LOG_CONSTRUCTOR
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
 // Destructor
-Buffer::~Buffer() noexcept
+Buffer::~Buffer()
 {
     __LOG_DESTRUCTOR
-}
-
-Buffer::Shared Buffer::create(std::u32string const& str, TextOpt const& opt)
-{
-    return Shared(new Buffer(str, opt));
-}
-
-Buffer::Shared Buffer::create(std::string const& str, TextOpt const& opt)
-{
-    return create(_internal::toU32str(str), opt);
 }
 
 // --- Basic functions ---
@@ -96,7 +81,7 @@ void Buffer::changeString(std::u32string const& str)
 
 void Buffer::changeString(std::string const& str)
 {
-    changeString(_internal::toU32str(str));
+    changeString(strToU32(str));
 }
 
 void Buffer::insertText(std::u32string const& str, size_t cursor)
@@ -115,7 +100,7 @@ void Buffer::insertText(std::u32string const& str, size_t cursor)
 
 void Buffer::insertText(std::string const& str, size_t cursor)
 {
-    insertText(_internal::toU32str(str), cursor);
+    insertText(strToU32(str), cursor);
 }
 
 void Buffer::changeOptions(TextOpt const& opt)
@@ -153,33 +138,6 @@ void Buffer::_updateBuffer()
 {
     _shape();
     _loadGlyphs();
-    _notifyTextAreas();
-}
-
-void Buffer::_notifyTextAreas()
-{
-    Shared shared_this;
-    try {
-        shared_this = shared_from_this();
-    }
-    catch (std::bad_weak_ptr) {
-        return;
-    }
-    for (auto it = TextArea::_instances.begin(); it != TextArea::_instances.cend();) {
-        TextArea::Shared textarea = it->lock();
-        if (textarea) {
-            for (Shared const& buffer : textarea->_buffers) {
-                if (shared_this == buffer) {
-                    textarea->_updateBufferInfos();
-                    break;
-                }
-            }
-            ++it;
-        }
-        else {
-            it = TextArea::_instances.erase(it);
-        }
-    }
 }
 
 // Shapes the buffer and retrieve its informations
@@ -237,4 +195,5 @@ void Buffer::_loadGlyphs()
     }
 }
 
+__INTERNAL_END
 __SSS_TR_END

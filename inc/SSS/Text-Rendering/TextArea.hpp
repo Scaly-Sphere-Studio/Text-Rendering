@@ -5,16 +5,7 @@
 __SSS_TR_BEGIN
 
 class TextArea : public std::enable_shared_from_this<TextArea> {
-    friend class Buffer;
-public:
-
-// --- Aliases ---
-    using Shared = std::shared_ptr<TextArea>;
 protected:
-    using Weak = std::weak_ptr<TextArea>;
-
-    static std::vector<Weak> _instances;
-
 // --- Constructor, destructor & clear function ---
     
     // Constructor, sets width & height.
@@ -23,16 +14,20 @@ protected:
 public:
     // Destructor, clears out buffer cache.
     ~TextArea() noexcept;
-    // Resets the object to newly constructed state
+    // Resets the object to newly constructed state (except for TextOpt map)
     void clear() noexcept;
 
+    using Shared = std::shared_ptr<TextArea>;
     static Shared create(int width, int height);
 
     void resize(int width, int height);
 // --- Basic functions ---
 
-    // Use buffer in text area
-    void useBuffer(Buffer::Shared buffer);
+    void setTextOpt(uint32_t id, TextOpt const& opt);
+    void clearTextOpt();
+    void parseString(std::u32string const& str);
+    void parseString(std::string const& str);
+
     void update();
     inline bool changesPending() const noexcept { return _changes_pending; };
     inline void changesHandled() noexcept { _changes_pending = false; }
@@ -100,8 +95,9 @@ private:
     _PixelBuffers::const_iterator _current_pixels{ _pixels.cbegin() };
     _PixelBuffers::iterator _processing_pixels{ _pixels.begin() };
 
-    std::vector<Buffer::Shared> _buffers;   // Buffer array for multiple layouts
-    _internal::BufferInfoVector _buffer_infos;   // Buffer infos
+    std::map<uint32_t, TextOpt> _text_opt;          // Map of TextOpt
+    std::vector<_internal::Buffer::Ptr> _buffers;   // Buffer array for multiple layouts
+    _internal::BufferInfoVector _buffer_infos;      // Buffer infos
 
     size_t _glyph_count{ 0 };   // Total number of glyphs in all ACTIVE buffers
     size_t _edit_cursor{ size_t(-1) };  // Cursor used in edit

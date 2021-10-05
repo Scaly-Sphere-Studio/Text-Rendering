@@ -2,8 +2,6 @@
 
 __SSS_TR_BEGIN
 
-std::vector<TextArea::Weak> TextArea::_instances{};
-
     // --- Constructor, destructor & clear function ---
 
 // Constructor, sets width & height.
@@ -11,6 +9,9 @@ std::vector<TextArea::Weak> TextArea::_instances{};
 TextArea::TextArea(int width, int height) try
     : _w(width), _h(height)
 {
+    if (_w <= 0 || _h <= 0) {
+        throw_exc(ERR_MSG::INVALID_ARGUMENT);
+    }
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
@@ -40,9 +41,7 @@ void TextArea::clear() noexcept
 
 TextArea::Shared TextArea::create(int width, int height)
 {
-    Shared shared(new TextArea(width, height));
-    _instances.push_back(shared);
-    return shared;
+    return Shared(new TextArea(width, height));
 }
 
 void TextArea::resize(int width, int height) try
@@ -55,14 +54,65 @@ __CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Basic functions ---
 
-// Loads passed string in cache.
-void TextArea::useBuffer(Buffer::Shared buffer) try
+void TextArea::setTextOpt(uint32_t id, TextOpt const& opt) try
 {
-    // Update counts
-    _buffers.push_back(buffer);
+    if (_text_opt.count(id) == 0) {
+        _text_opt.insert(std::make_pair(id, opt));
+    }
+    else {
+        _text_opt.at(id) = opt;
+    }
+}
+__CATCH_AND_RETHROW_METHOD_EXC
+
+void TextArea::clearTextOpt()
+{
+    _text_opt.clear();
+}
+
+void TextArea::parseString(std::u32string const& str) try
+{
+    clear();
+    TextOpt opt = _text_opt[0];
+    size_t i = 0;
+    while (i != str.size()) {
+        size_t const unit_separator = str.find(U'\u001F', i);
+        if (unit_separator == std::string::npos) {
+            // add buffer and load sub string
+            _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
+            _buffers.back()->changeString(str.substr(i));
+            break;
+        }
+        else {
+            // find next US instance
+            size_t const next_unit_separator = str.find(U'\u001F', unit_separator + 1);
+            if (next_unit_separator == std::string::npos) {
+                _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
+                _buffers.back()->changeString(str.substr(i));
+                break;
+            }
+            // add buffer if needed
+            size_t diff = unit_separator - i;
+            if (diff > 0) {
+                _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
+                _buffers.back()->changeString(str.substr(i, diff));
+            }
+            // parse id and change options
+            diff = next_unit_separator - unit_separator - 1;
+            opt = _text_opt[std::stoul(u32toStr(
+                str.substr(unit_separator + 1, diff)))];
+            // skip to next sub strings
+            i = next_unit_separator + 1;
+        }
+    }
     _updateBufferInfos();
 }
 __CATCH_AND_RETHROW_METHOD_EXC
+
+void TextArea::parseString(std::string const& str)
+{
+    parseString(strToU32(str));
+}
 
 void TextArea::update()
 {
@@ -259,13 +309,13 @@ void TextArea::insertText(std::u32string str) try
     size_t cursor = _edit_cursor;
     size_t size = 0;
     if (cursor >= _glyph_count) {
-        Buffer::Shared const& buffer = _buffers.back();
+        _internal::Buffer::Ptr const& buffer = _buffers.back();
         size_t const tmp = buffer->glyphCount();
         buffer->insertText(str, buffer->glyphCount());
         size = buffer->glyphCount() - tmp;
     }
     else {
-        for (Buffer::Shared const& buffer : _buffers) {
+        for (_internal::Buffer::Ptr const& buffer : _buffers) {
             if (buffer->glyphCount() >= cursor) {
                 size_t const tmp = buffer->glyphCount();
                 buffer->insertText(str, cursor);
@@ -286,7 +336,7 @@ __CATCH_AND_RETHROW_METHOD_EXC
 
 void TextArea::insertText(std::string str)
 {
-    insertText(_internal::toU32str(str));
+    insertText(strToU32(str));
 }
 
     // --- Typewriter functions ---
