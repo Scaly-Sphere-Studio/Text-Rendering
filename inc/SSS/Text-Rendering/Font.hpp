@@ -43,10 +43,11 @@ public:
     static inline FT_UInt const& getVDPI() noexcept { return _vdpi; }
 
 // --- Constructor & Destructor ---
-
+private:
     // Constructor, inits FreeType if called for the first time.
     // Creates a FreeType font face.
     Font(std::string const& font_file);
+public:
     // Destructor, quits FreeType if called from last remaining instance.
     // Destroys the FreeType font face.
     ~Font() noexcept;

@@ -4,7 +4,7 @@
 
 __SSS_TR_BEGIN
 
-class TextArea : public std::enable_shared_from_this<TextArea> {
+class TextArea {
 protected:
 // --- Constructor, destructor & clear function ---
     
@@ -17,8 +17,15 @@ public:
     // Resets the object to newly constructed state (except for TextOpt map)
     void clear() noexcept;
 
-    using Shared = std::shared_ptr<TextArea>;
-    static Shared create(int width, int height);
+    using Ptr = std::shared_ptr<TextArea>;
+    using Map = std::map<uint32_t, Ptr>;
+private:
+    static Map _instances;
+public:
+    static Map const& getTextAreas() noexcept { return _instances; };
+    static void createInstance(uint32_t id, int width, int height);
+    static void removeInstance(uint32_t id);
+    static void clearInstances() noexcept;
 
     void resize(int width, int height);
 // --- Basic functions ---

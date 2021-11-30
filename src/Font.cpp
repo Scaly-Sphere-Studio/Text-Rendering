@@ -76,7 +76,7 @@ Font::Shared Font::getShared(std::string const& font_file) try
     // If the shared_ptr is empty, create a new Font
     if (!shared) {
         // Create new Font
-        shared = std::make_shared<Font>(font_file);
+        shared = static_cast<Font::Shared>(new Font(font_file));
         // Reference Font in our map
         Weak tmp(shared);
         weak.swap(tmp);

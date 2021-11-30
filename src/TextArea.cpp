@@ -2,6 +2,8 @@
 
 __SSS_TR_BEGIN
 
+TextArea::Map TextArea::_instances{};
+
     // --- Constructor, destructor & clear function ---
 
 // Constructor, sets width & height.
@@ -39,9 +41,24 @@ void TextArea::clear() noexcept
     _tw_next_cursor = 0;
 }
 
-TextArea::Shared TextArea::create(int width, int height)
+void TextArea::createInstance(uint32_t id, int width, int height) try
 {
-    return Shared(new TextArea(width, height));
+    _instances.try_emplace(id);
+    _instances.at(id).reset(new TextArea(width, height));
+}
+__CATCH_AND_RETHROW_FUNC_EXC
+
+void TextArea::removeInstance(uint32_t id) try
+{
+    if (_instances.count(id) != 0) {
+        _instances.erase(id);
+    }
+}
+__CATCH_AND_RETHROW_FUNC_EXC
+
+void TextArea::clearInstances() noexcept
+{
+    _instances.clear();
 }
 
 void TextArea::resize(int width, int height) try
