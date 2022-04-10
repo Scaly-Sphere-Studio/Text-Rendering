@@ -1,10 +1,10 @@
 #pragma once
 
-#include "SSS/Text-Rendering/Font.hpp"
-#include "SSS/Text-Rendering/TextOpt.hpp"
+#include "Font.hpp"
+#include "../Format.hpp"
 
-__SSS_TR_BEGIN
-__INTERNAL_BEGIN
+__SSS_TR_BEGIN;
+__INTERNAL_BEGIN;
 // Pre-declaration
 class Buffer;
 
@@ -19,9 +19,9 @@ struct GlyphInfo {
 
 struct BufferInfo {
     std::vector<GlyphInfo> glyphs;  // Glyph infos
-    TextStyle style;    // Style options
-    TextColors color;   // Color options
-    Font::Shared font;  // Font
+    Format::Style style;   // Style options
+    Format::Color color;   // Color options
+    std::string font;   // Font
     std::u32string str; // Original string
     std::locale locale; // Locale
 };
@@ -47,7 +47,7 @@ public:
 // --- Constructor & Destructor ---
     
     // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-    Buffer(TextOpt const& opt);
+    Buffer(Format const& opt);
     // Destructor
     ~Buffer();
 
@@ -60,12 +60,12 @@ public:
     void insertText(std::u32string const& str, size_t cursor);
     void insertText(std::string const& str, size_t cursor);
     // Reshapes the buffer with given parameters
-    void changeOptions(TextOpt const& opt);
+    void changeFormat(Format const& opt);
 
     inline size_t glyphCount() const noexcept { return _buffer_info.glyphs.size(); };
 
     inline std::u32string getString() const noexcept { return _str; };
-    inline TextOpt getOptions() const noexcept { return _opt; };
+    inline Format getFormat() const noexcept { return _opt; };
 
 private:
 
@@ -74,10 +74,10 @@ private:
     // and handles UTF32 with uint32_t arrays
     std::u32string _str;
     // Buffer options
-    TextOpt _opt;
+    Format _opt;
     
-    _internal::HB_Buffer_Ptr _buffer;   // HarfBuzz buffer
-    _internal::BufferInfo _buffer_info; // Buffer informations
+    HB_Buffer_Ptr _buffer;   // HarfBuzz buffer
+    BufferInfo _buffer_info; // Buffer informations
 
     hb_segment_properties_t _properties;    // HB presets : lng, script, direction
     std::vector<uint32_t> _wd_indexes;      // Word dividers as glyph indexes
@@ -85,7 +85,7 @@ private:
 
 
     // Modifies internal options
-    void _changeOptions(TextOpt const& opt);
+    void _changeFormat(Format const& opt);
 
     void _updateBuffer();
     // Shapes the buffer and retrieve its informations
@@ -94,5 +94,5 @@ private:
     void _loadGlyphs();
 };
 
-__INTERNAL_END
-__SSS_TR_END
+__INTERNAL_END;
+__SSS_TR_END;

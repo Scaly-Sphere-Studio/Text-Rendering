@@ -1,10 +1,9 @@
 #pragma once
 
-#include "_includes.hpp"
 #include "Buffer.hpp"
 
-__SSS_TR_BEGIN
-__INTERNAL_BEGIN
+__SSS_TR_BEGIN;
+__INTERNAL_BEGIN;
 
 // Stores line informations
 struct Line {
@@ -40,28 +39,26 @@ struct DrawParameters {
     } type;     // Glyph type
 };
 
-class TextAreaPixels : public ThreadBase<DrawParameters> {
+class AreaPixels : public SSS::AsyncBase<DrawParameters> {
 public:
-    ~TextAreaPixels();
+    ~AreaPixels();
 
 private:
-    using ThreadBase::run;
+    using AsyncBase::run;
 
 public:
     void draw(DrawParameters param, int w, int h, int pixels_h,
         std::vector<Line> lines, BufferInfoVector glyph_infos);
-    inline RGBA32::Pixels const& getPixels() const noexcept { return _pixels; };
+    inline RGBA32::Vector const& getPixels() const noexcept { return _pixels; };
     inline void getDimensions(int& w, int& h) const noexcept { w = _w; h = _h; };
 
-protected:
-    virtual void _function(DrawParameters param);
-
 private:
+    virtual void _asyncFunction(DrawParameters param);
 
     int _w{ 0 };
     int _h{ 0 };
     int _pixels_h{ 0 };
-    RGBA32::Pixels _pixels;
+    RGBA32::Vector _pixels;
 
     std::vector<Line> _lines;
     BufferInfoVector _buffer_infos;
@@ -75,8 +72,8 @@ private:
         FT_Int x0{ 0 };  // _pixels -> x origin
         FT_Int y0{ 0 };  // _pixels -> y origin
         // Colors
-        RGB24::s color;         // Bitmap's color
-        uint8_t alpha{ 0 };     // Bitmap's opacity
+        Format::Color::Config color;    // Bitmap's color
+        uint8_t alpha{ 0 };             // Bitmap's opacity
     };
 
     void _drawGlyphs(DrawParameters param);
@@ -84,5 +81,5 @@ private:
     void _copyBitmap(_CopyBitmapArgs& args);
 };
 
-__INTERNAL_END
-__SSS_TR_END
+__INTERNAL_END;
+__SSS_TR_END;

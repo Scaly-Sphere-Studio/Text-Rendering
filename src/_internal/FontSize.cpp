@@ -1,11 +1,8 @@
-#include "SSS/Text-Rendering/_FontSize.hpp"
+#include "SSS/Text-Rendering/_internal/FontSize.hpp"
+#include "SSS/Text-Rendering/Lib.hpp"
 
-// Including Font in the .cpp to avoid include loop
-#include "SSS/Text-Rendering/Font.hpp"
-
-__SSS_TR_BEGIN
-__INTERNAL_BEGIN
-
+__SSS_TR_BEGIN;
+__INTERNAL_BEGIN;
     // --- Constructor & Destructor ---
 
 // Constructor, throws if invalid charsize
@@ -21,13 +18,13 @@ FontSize::FontSize(FT_Face_Ptr const& ft_face, int charsize) try
     _hb_font.reset(hb_ft_font_create_referenced(ft_face.get()));
     // Create Stroker
     FT_Stroker stroker;
-    FT_Error error = FT_Stroker_New(Font::getFTLib().get(), &stroker);
+    FT_Error error = FT_Stroker_New(Lib::getPtr().get(), &stroker);
     __THROW_IF_FT_ERROR("FT_Stroker_New()");
     _stroker.reset(stroker);
 
-    __LOG_CONSTRUCTOR
+    __LOG_CONSTRUCTOR;
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 // Destructor. Logs
 FontSize::~FontSize()
@@ -36,7 +33,7 @@ FontSize::~FontSize()
     _outlined.clear();
     _hb_font.release();
     _stroker.release();
-    __LOG_DESTRUCTOR
+    __LOG_DESTRUCTOR;
 }
 
     // --- Glyph functions ---
@@ -73,9 +70,11 @@ static FT_Error _convertGlyph(FT_Glyph ft_glyph, Bitmap& bitmap)
 
 void FontSize::setCharsize()
 {
+    // Get DPI
+    FT_UInt hdpi, vdpi;
+    getDPI(hdpi, vdpi);
     // Set charsize
-    FT_Error error = FT_Set_Char_Size(_ft_face.get(), _charsize << 6, 0,
-        Font::getHDPI(), Font::getVDPI());
+    FT_Error error = FT_Set_Char_Size(_ft_face.get(), _charsize << 6, 0, hdpi, vdpi);
     __THROW_IF_FT_ERROR("FT_Set_Char_Size()");
 }
 
@@ -131,7 +130,7 @@ bool FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
 
     return false;
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 // Returns the corresponding glyph's bitmap. Throws if not found.
 Bitmap const& FontSize::getGlyphBitmap(FT_UInt glyph_index) const try
@@ -142,7 +141,7 @@ Bitmap const& FontSize::getGlyphBitmap(FT_UInt glyph_index) const try
     // Retrieve bitmap from cache
     return _originals.at(glyph_index);
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 // Returns the corresponding glyph outline's bitmap. Throws if not found.
 Bitmap const& FontSize::getOutlineBitmap(FT_UInt glyph_index, int outline_size) const try
@@ -154,7 +153,7 @@ Bitmap const& FontSize::getOutlineBitmap(FT_UInt glyph_index, int outline_size) 
     // Retrieve bitmap from cache
     return _outlined.at(outline_size).at(glyph_index);
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
-__INTERNAL_END
+__INTERNAL_END;
 __SSS_TR_END

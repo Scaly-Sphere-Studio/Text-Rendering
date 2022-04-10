@@ -1,8 +1,8 @@
-#include "SSS/Text-Rendering/Buffer.hpp"
-#include "SSS/Text-Rendering/TextArea.hpp"
+#include "SSS/Text-Rendering/_internal/Buffer.hpp"
+#include "SSS/Text-Rendering/Lib.hpp"
 
-__SSS_TR_BEGIN
-__INTERNAL_BEGIN
+__SSS_TR_BEGIN;
+__INTERNAL_BEGIN;
 
 GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) const try
 {
@@ -14,7 +14,7 @@ GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) const try
     }
     throw_exc(ERR_MSG::OUT_OF_BOUND);
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const try
 {
@@ -26,7 +26,7 @@ _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const tr
     }
     throw_exc(ERR_MSG::OUT_OF_BOUND);
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
 {
@@ -49,7 +49,7 @@ void BufferInfoVector::clear() noexcept
     // --- Constructor & Destructor ---
 
 // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-Buffer::Buffer(TextOpt const& opt) try
+Buffer::Buffer(Format const& opt) try
     : _opt(opt)
 {
     // Create buffer (and reference it to prevent early deletion)
@@ -58,16 +58,13 @@ Buffer::Buffer(TextOpt const& opt) try
         throw_exc("HarfBuzz buffer allocation failed.");
     }
 
-    _changeOptions(opt);
-
-    __LOG_CONSTRUCTOR
+    _changeFormat(opt);
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 // Destructor
 Buffer::~Buffer()
 {
-    __LOG_DESTRUCTOR
 }
 
 // --- Basic functions ---
@@ -81,7 +78,7 @@ void Buffer::changeString(std::u32string const& str)
 
 void Buffer::changeString(std::string const& str)
 {
-    changeString(strToU32(str));
+    changeString(strToStr32(str));
 }
 
 void Buffer::insertText(std::u32string const& str, size_t cursor)
@@ -100,18 +97,21 @@ void Buffer::insertText(std::u32string const& str, size_t cursor)
 
 void Buffer::insertText(std::string const& str, size_t cursor)
 {
-    insertText(strToU32(str), cursor);
+    insertText(strToStr32(str), cursor);
 }
 
-void Buffer::changeOptions(TextOpt const& opt)
+void Buffer::changeFormat(Format const& opt)
 {
-    _changeOptions(opt);
+    _changeFormat(opt);
     _updateBuffer();
 }
 
 // Reshapes the buffer with given parameters
-void Buffer::_changeOptions(TextOpt const& opt) try
+void Buffer::_changeFormat(Format const& opt) try
 {
+    // Retrieve Font (must be loaded)
+    Font::Ptr const& font = Lib::getFont(opt.font);
+
     _opt = opt;
     _buffer_info.style = _opt.style;
     _buffer_info.color = _opt.color;
@@ -128,11 +128,11 @@ void Buffer::_changeOptions(TextOpt const& opt) try
     _wd_indexes.clear();
     _wd_indexes.reserve(opt.lng.word_dividers.size());
     for (char32_t const& c : opt.lng.word_dividers) {
-        FT_UInt const index(FT_Get_Char_Index(opt.font->getFTFace().get(), c));
+        FT_UInt const index(FT_Get_Char_Index(font->getFTFace().get(), c));
         _wd_indexes.push_back(index);
     }
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 void Buffer::_updateBuffer()
 {
@@ -143,7 +143,10 @@ void Buffer::_updateBuffer()
 // Shapes the buffer and retrieve its informations
 void Buffer::_shape() try
 {
-    _opt.font->setCharsize(_opt.style.charsize);
+    // Retrieve Font (must be loaded)
+    Font::Ptr const& font = Lib::getFont(_opt.font);
+
+    font->setCharsize(_opt.style.charsize);
     // Add string to buffer
     uint32_t const* indexes = reinterpret_cast<uint32_t const*>(&_str[0]);
     int size = static_cast<int>(_str.size());
@@ -151,7 +154,7 @@ void Buffer::_shape() try
     // Set properties
     hb_buffer_set_segment_properties(_buffer.get(), &_properties);
     // Shape buffer and retrieve informations
-    hb_shape(_opt.font->getHBFont(_opt.style.charsize).get(), _buffer.get(), nullptr, 0);
+    hb_shape(font->getHBFont(_opt.style.charsize).get(), _buffer.get(), nullptr, 0);
 
     // Retrieve glyph informations
     unsigned int glyph_count = 0;
@@ -180,10 +183,13 @@ void Buffer::_shape() try
     // (this does NOT free the buffer itself, only its contents)
     hb_buffer_reset(_buffer.get());
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+__CATCH_AND_RETHROW_METHOD_EXC;
 
 void Buffer::_loadGlyphs()
 {
+    // Retrieve Font (must be loaded)
+    Font::Ptr const& font = Lib::getFont(_opt.font);
+
     // Load glyphs
     int const outline_size = _opt.style.has_outline ? _opt.style.outline_size : 0;
     std::unordered_set<hb_codepoint_t> glyph_ids;
@@ -191,9 +197,9 @@ void Buffer::_loadGlyphs()
         glyph_ids.insert(glyph.info.codepoint);
     }
     for (hb_codepoint_t const& glyph_id: glyph_ids) {
-        _opt.font->loadGlyph(glyph_id, _opt.style.charsize, outline_size);
+        font->loadGlyph(glyph_id, _opt.style.charsize, outline_size);
     }
 }
 
-__INTERNAL_END
-__SSS_TR_END
+__INTERNAL_END;
+__SSS_TR_END;

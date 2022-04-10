@@ -12,6 +12,15 @@
     <Filter Include="vcpkg_scripts">
       <UniqueIdentifier>{2e9304bf-d336-4a17-b008-b6aeacc0770b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="inc\TR">
+      <UniqueIdentifier>{f2a4a496-d11d-45d7-8a4d-3ff9ab124173}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="inc\TR\internal">
+      <UniqueIdentifier>{4297f1e8-6cb7-42ca-b375-82efbccf8098}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\internal">
+      <UniqueIdentifier>{bd92cd88-077c-48e2-b41a-799e0a73f71d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="InstallScripts.ps1" />
@@ -22,50 +31,57 @@
     <None Include="vcpkg_scripts\Install.ps1">
       <Filter>vcpkg_scripts</Filter>
     </None>
+    <None Include="Doxyfile" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\SSS\Text-Rendering\Font.hpp">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\TextArea.hpp">
-      <Filter>inc</Filter>
-    </ClInclude>
     <ClInclude Include="inc\SSS\Text-Rendering.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\TextOpt.hpp">
-      <Filter>inc</Filter>
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\AreaInternals.hpp">
+      <Filter>inc\TR\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_FontSize.hpp">
-      <Filter>inc</Filter>
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Buffer.hpp">
+      <Filter>inc\TR\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_includes.hpp">
-      <Filter>inc</Filter>
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\FontSize.hpp">
+      <Filter>inc\TR\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_pointers.hpp">
-      <Filter>inc</Filter>
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\_includes.hpp">
+      <Filter>inc\TR\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp">
-      <Filter>inc</Filter>
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\pointers.hpp">
+      <Filter>inc\TR\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_TextAreaInternals.hpp">
-      <Filter>inc</Filter>
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Font.hpp">
+      <Filter>inc\TR\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\Format.hpp">
+      <Filter>inc\TR</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\Area.hpp">
+      <Filter>inc\TR</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\SSS\Text-Rendering\Lib.hpp">
+      <Filter>inc\TR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\TextArea.cpp">
+    <ClCompile Include="src\Area.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Font.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\_internal\AreaInternals.cpp">
+      <Filter>src\internal</Filter>
     </ClCompile>
-    <ClCompile Include="src\_FontSize.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\_internal\Buffer.cpp">
+      <Filter>src\internal</Filter>
     </ClCompile>
-    <ClCompile Include="src\Buffer.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\_internal\FontSize.cpp">
+      <Filter>src\internal</Filter>
     </ClCompile>
-    <ClCompile Include="src\_TextAreaInternals.cpp">
+    <ClCompile Include="src\_internal\Font.cpp">
+      <Filter>src\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Lib.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

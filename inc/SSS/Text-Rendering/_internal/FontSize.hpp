@@ -1,10 +1,9 @@
 #pragma once
 
-#include "SSS/Text-Rendering/_includes.hpp"
-#include "SSS/Text-Rendering/_pointers.hpp"
+#include "pointers.hpp"
 
-__SSS_TR_BEGIN
-__INTERNAL_BEGIN
+__SSS_TR_BEGIN;
+__INTERNAL_BEGIN;
 
 struct Bitmap {
     int pen_left;
@@ -64,5 +63,5 @@ private:
     std::map<FT_UInt, std::map<FT_UInt, Bitmap>> _outlined;
 };
 
-__INTERNAL_END
-__SSS_TR_END
+__INTERNAL_END;
+__SSS_TR_END;

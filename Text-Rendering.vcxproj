@@ -20,27 +20,30 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CONTROL" />
+    <None Include="Doxyfile" />
     <None Include="InstallScripts.ps1" />
     <None Include="vcpkg_scripts\Install.ps1" />
     <None Include="vcpkg_scripts\Remove.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\SSS\Text-Rendering.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_FontSize.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_includes.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Buffer.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Font.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_pointers.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\TextArea.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\TextOpt.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_TextAreaInternals.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\FontSize.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\_includes.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Buffer.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Font.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\pointers.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Area.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Format.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\_internal\AreaInternals.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Lib.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\_FontSize.cpp" />
-    <ClCompile Include="src\Buffer.cpp" />
-    <ClCompile Include="src\Font.cpp" />
-    <ClCompile Include="src\TextArea.cpp" />
-    <ClCompile Include="src\_TextAreaInternals.cpp" />
+    <ClCompile Include="src\Lib.cpp" />
+    <ClCompile Include="src\_internal\FontSize.cpp" />
+    <ClCompile Include="src\_internal\Buffer.cpp" />
+    <ClCompile Include="src\_internal\Font.cpp" />
+    <ClCompile Include="src\Area.cpp" />
+    <ClCompile Include="src\_internal\AreaInternals.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

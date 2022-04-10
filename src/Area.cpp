@@ -1,14 +1,14 @@
-#include "SSS/Text-Rendering/TextArea.hpp"
+#include "SSS/Text-Rendering/Area.hpp"
 
-__SSS_TR_BEGIN
+__SSS_TR_BEGIN;
 
-TextArea::Map TextArea::_instances{};
+Area::Map Area::_instances{};
 
     // --- Constructor, destructor & clear function ---
 
 // Constructor, sets width & height.
 // Throws an exception if width and/or height are <= 0.
-TextArea::TextArea(int width, int height) try
+Area::Area(int width, int height) try
     : _w(width), _h(height)
 {
     if (_w <= 0 || _h <= 0) {
@@ -18,12 +18,12 @@ TextArea::TextArea(int width, int height) try
 __CATCH_AND_RETHROW_METHOD_EXC
 
 // Destructor, clears out buffer cache.
-TextArea::~TextArea() noexcept
+Area::~Area() noexcept
 {
 }
 
 // Resets the object to newly constructed state
-void TextArea::clear() noexcept
+void Area::clear() noexcept
 {
     // Reset scrolling
     _scrolling = 0;
@@ -41,14 +41,14 @@ void TextArea::clear() noexcept
     _tw_next_cursor = 0;
 }
 
-void TextArea::createInstance(uint32_t id, int width, int height) try
+void Area::create(uint32_t id, int width, int height) try
 {
     _instances.try_emplace(id);
-    _instances.at(id).reset(new TextArea(width, height));
+    _instances.at(id).reset(new Area(width, height));
 }
 __CATCH_AND_RETHROW_FUNC_EXC
 
-void TextArea::removeInstance(uint32_t id) try
+void Area::remove(uint32_t id) try
 {
     if (_instances.count(id) != 0) {
         _instances.erase(id);
@@ -56,12 +56,12 @@ void TextArea::removeInstance(uint32_t id) try
 }
 __CATCH_AND_RETHROW_FUNC_EXC
 
-void TextArea::clearInstances() noexcept
+void Area::clearMap() noexcept
 {
     _instances.clear();
 }
 
-void TextArea::resize(int width, int height) try
+void Area::resize(int width, int height) try
 {
     _w = width;
     _h = height;
@@ -71,26 +71,26 @@ __CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Basic functions ---
 
-void TextArea::setTextOpt(uint32_t id, TextOpt const& opt) try
+void Area::setFormat(uint32_t id, Format const& format) try
 {
-    if (_text_opt.count(id) == 0) {
-        _text_opt.insert(std::make_pair(id, opt));
+    if (_formats.count(id) == 0) {
+        _formats.insert(std::make_pair(id, format));
     }
     else {
-        _text_opt.at(id) = opt;
+        _formats.at(id) = format;
     }
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void TextArea::clearTextOpt()
+void Area::clearFormats()
 {
-    _text_opt.clear();
+    _formats.clear();
 }
 
-void TextArea::parseString(std::u32string const& str) try
+void Area::parseString(std::u32string const& str) try
 {
     clear();
-    TextOpt opt = _text_opt[0];
+    Format opt = _formats[0];
     size_t i = 0;
     while (i != str.size()) {
         size_t const unit_separator = str.find(U'\u001F', i);
@@ -116,7 +116,7 @@ void TextArea::parseString(std::u32string const& str) try
             }
             // parse id and change options
             diff = next_unit_separator - unit_separator - 1;
-            opt = _text_opt[std::stoul(u32toStr(
+            opt = _formats[std::stoul(str32ToStr(
                 str.substr(unit_separator + 1, diff)))];
             // skip to next sub strings
             i = next_unit_separator + 1;
@@ -126,12 +126,12 @@ void TextArea::parseString(std::u32string const& str) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void TextArea::parseString(std::string const& str)
+void Area::parseString(std::string const& str)
 {
-    parseString(strToU32(str));
+    parseString(strToStr32(str));
 }
 
-void TextArea::update()
+void Area::update()
 {
     if (_processing_pixels->isPending()) {
         _current_pixels = _processing_pixels;
@@ -141,9 +141,9 @@ void TextArea::update()
     _drawIfNeeded();
 }
 
-void const* TextArea::getPixels() const try
+void const* Area::getPixels() const try
 {
-    RGBA32::Pixels const& pixels = _current_pixels->getPixels();
+    RGBA32::Vector const& pixels = _current_pixels->getPixels();
     if (pixels.empty()) {
         return nullptr;
     }
@@ -160,7 +160,7 @@ void const* TextArea::getPixels() const try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void TextArea::getDimensions(int& w, int& h) const noexcept
+void Area::getDimensions(int& w, int& h) const noexcept
 {
     _current_pixels->getDimensions(w, h);
 }
@@ -170,7 +170,7 @@ void TextArea::getDimensions(int& w, int& h) const noexcept
 // Scrolls up (negative values) or down (positive values)
 // Any excessive scrolling will be negated,
 // hence, this function is safe.
-void TextArea::scroll(int pixels) noexcept
+void Area::scroll(int pixels) noexcept
 {
     int tmp = _scrolling;
     _scrolling += pixels;
@@ -180,7 +180,7 @@ void TextArea::scroll(int pixels) noexcept
     }
 }
 
-void TextArea::placeCursor(int x, int y) try
+void Area::placeCursor(int x, int y) try
 {
     if (_glyph_count == 0) {
         _edit_cursor = 0;
@@ -212,8 +212,15 @@ void TextArea::placeCursor(int x, int y) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void TextArea::moveCursor(Cursor position) try
+void Area::moveCursor(Cursor position) try
 {
+    static auto const set_x = [&](size_t cursor, size_t cursor_max) {
+        int x = 0;
+        for (; cursor <= cursor_max && cursor < _glyph_count; ++cursor) {
+            x += _buffer_infos.getGlyph(cursor).pos.x_advance;
+        }
+        return (x >> 6);
+    };
     static auto const set_cursor = [&](_internal::Line::cit line)->size_t {
         size_t cursor = line->first_glyph;
         for (int x = 0; cursor <= line->last_glyph && cursor < _glyph_count; ++cursor) {
@@ -223,13 +230,6 @@ void TextArea::moveCursor(Cursor position) try
             }
         }
         return cursor;
-    };
-    static auto const set_x = [&](size_t cursor, size_t cursor_max) {
-        int x = 0;
-        for (; cursor <= cursor_max && cursor < _glyph_count; ++cursor) {
-            x += _buffer_infos.getGlyph(cursor).pos.x_advance;
-        }
-        return (x >> 6);
     };
     static auto const ctrl_jump = [&](int coeff) {
         _edit_cursor += coeff;
@@ -261,16 +261,12 @@ void TextArea::moveCursor(Cursor position) try
     _internal::Line::cit line = _internal::Line::which(_lines, _edit_cursor);
 
     switch (position) {
-    case Cursor::Up:
-        if (line == _lines.cbegin()) break;
-        --line;
-        _edit_cursor = set_cursor(line);
-        break;
 
-    case Cursor::Down:
-        if (line == _lines.cend() - 1) break;
-        ++line;
-        _edit_cursor = set_cursor(line);
+    case Cursor::Right:
+        if (_edit_cursor >= _glyph_count) break;
+        ++_edit_cursor;
+        line = _internal::Line::which(_lines, _edit_cursor);
+        _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case Cursor::Left:
@@ -280,9 +276,21 @@ void TextArea::moveCursor(Cursor position) try
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::Right:
+    case Cursor::Down:
+        if (line == _lines.cend() - 1) break;
+        ++line;
+        _edit_cursor = set_cursor(line);
+        break;
+
+    case Cursor::Up:
+        if (line == _lines.cbegin()) break;
+        --line;
+        _edit_cursor = set_cursor(line);
+        break;
+
+    case Cursor::CtrlRight:
         if (_edit_cursor >= _glyph_count) break;
-        ++_edit_cursor;
+        ctrl_jump(1);
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
@@ -294,14 +302,7 @@ void TextArea::moveCursor(Cursor position) try
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::CtrlRight:
-        if (_edit_cursor >= _glyph_count) break;
-        ctrl_jump(1);
-        line = _internal::Line::which(_lines, _edit_cursor);
-        _edit_x = set_x(line->first_glyph, _edit_cursor);
-        break;
-
-    case Cursor::Home:
+    case Cursor::Start:
         _edit_cursor = line->first_glyph;
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
@@ -314,7 +315,7 @@ void TextArea::moveCursor(Cursor position) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void TextArea::insertText(std::u32string str) try
+void Area::insertText(std::u32string str) try
 {
     if (str.empty()) {
         __LOG_OBJ_METHOD_WRN("Empty string.");
@@ -351,9 +352,9 @@ void TextArea::insertText(std::u32string str) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void TextArea::insertText(std::string str)
+void Area::insertText(std::string str)
 {
-    insertText(strToU32(str));
+    insertText(strToStr32(str));
 }
 
     // --- Typewriter functions ---
@@ -361,7 +362,7 @@ void TextArea::insertText(std::string str)
 // Sets the writing mode (default: false):
 // - true: Text is rendered char by char, see incrementCursor();
 // - false: Text is fully rendered
-void TextArea::TWset(bool activate) noexcept
+void Area::TWset(bool activate) noexcept
 {
     if (_typewriter != activate) {
         _tw_cursor = 0;
@@ -375,7 +376,7 @@ void TextArea::TWset(bool activate) noexcept
 // The first call will render the 1st character.
 // Second call will render the both the 1st and 2nd character.
 // Etc...
-bool TextArea::TWprint() noexcept
+bool Area::TWprint() noexcept
 {
     // Skip if the writing mode is set to default, or if all glyphs have been written
     if (!_typewriter || _tw_next_cursor >= _glyph_count) {
@@ -395,7 +396,7 @@ bool TextArea::TWprint() noexcept
 }
 
 // Updates _scrolling
-void TextArea::_scrollingChanged() noexcept
+void Area::_scrollingChanged() noexcept
 {
     if (_scrolling <= 0) {
         _scrolling = 0;
@@ -407,7 +408,7 @@ void TextArea::_scrollingChanged() noexcept
 }
 
 // Updates _lines
-void TextArea::_updateLines() try
+void Area::_updateLines() try
 {
     if (_w <= 0 || _h <= 0) {
         throw_exc("width and/or height <= 0");
@@ -487,7 +488,7 @@ void TextArea::_updateLines() try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void TextArea::_updateBufferInfos() try
+void Area::_updateBufferInfos() try
 {
     _buffer_infos.update(_buffers);
     _glyph_count = _buffer_infos.glyphCount();
@@ -496,7 +497,7 @@ void TextArea::_updateBufferInfos() try
 __CATCH_AND_RETHROW_METHOD_EXC
 
 // Draws current area if needed & possible
-void TextArea::_drawIfNeeded()
+void Area::_drawIfNeeded()
 {
     // Skip if drawing is not needed
     if (!_draw) {
@@ -527,7 +528,7 @@ void TextArea::_drawIfNeeded()
 }
 
 // Prepares drawing parameters, which will be used multiple times per draw
-_internal::DrawParameters TextArea::_prepareDraw()
+_internal::DrawParameters Area::_prepareDraw()
 {
     _internal::DrawParameters param;
     // Determine range of glyphs to render
@@ -570,4 +571,4 @@ _internal::DrawParameters TextArea::_prepareDraw()
     return param;
 }
 
-__SSS_TR_END
+__SSS_TR_END;

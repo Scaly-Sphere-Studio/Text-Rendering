@@ -1,7 +1,8 @@
-#include "SSS/Text-Rendering/_TextAreaInternals.hpp"
+#include "SSS/Text-Rendering/_internal/AreaInternals.hpp"
+#include "SSS/Text-Rendering/Lib.hpp"
 
-__SSS_TR_BEGIN
-__INTERNAL_BEGIN
+__SSS_TR_BEGIN;
+__INTERNAL_BEGIN;
 
 Line::cit Line::which(vector const& lines, size_t cursor)
 {
@@ -15,12 +16,12 @@ Line::cit Line::which(vector const& lines, size_t cursor)
     return line;
 }
 
-TextAreaPixels::~TextAreaPixels()
+AreaPixels::~AreaPixels()
 {
     cancel();
 }
 
-void TextAreaPixels::draw(DrawParameters param, int w, int h, int pixels_h,
+void AreaPixels::draw(DrawParameters param, int w, int h, int pixels_h,
     std::vector<Line> lines, BufferInfoVector buffer_infos)
 {
     cancel();
@@ -34,7 +35,7 @@ void TextAreaPixels::draw(DrawParameters param, int w, int h, int pixels_h,
     run(param);
 }
 
-void TextAreaPixels::_function(DrawParameters param)
+void AreaPixels::_asyncFunction(DrawParameters param)
 {
     _pixels.resize(_w * _pixels_h);
     if constexpr (DEBUGMODE) {
@@ -48,29 +49,29 @@ void TextAreaPixels::_function(DrawParameters param)
     param.type.is_shadow = true;
     param.type.is_outline = true;
     _drawGlyphs(param);
-    if (_is_canceled) return;
-
+    if (_beingCanceled()) return;
+    
     // Draw Text shadows
     param.type.is_outline = false;
     _drawGlyphs(param);
-    if (_is_canceled) return;
+    if (_beingCanceled()) return;
 
     // Draw Outlines
     param.type.is_shadow = false;
     param.type.is_outline = true;
     _drawGlyphs(param);
-    if (_is_canceled) return;
+    if (_beingCanceled()) return;
 
     // Draw Text
     param.type.is_outline = false;
     _drawGlyphs(param);
 }
 
-void TextAreaPixels::_drawGlyphs(DrawParameters param)
+void AreaPixels::_drawGlyphs(DrawParameters param)
 {
     // Draw the glyphs
     for (size_t cursor = param.first_glyph; cursor < param.last_glyph; ++cursor) {
-        if (_is_canceled) return;
+        if (_beingCanceled()) return;
         GlyphInfo const& glyph_info(_buffer_infos.getGlyph(cursor));
         BufferInfo const& buffer_info(_buffer_infos.getBuffer(cursor));
         try {
@@ -78,7 +79,7 @@ void TextAreaPixels::_drawGlyphs(DrawParameters param)
         }
         catch (std::exception const& e) {
             std::string str(toString("cursor #") + toString(cursor));
-            throw_exc(context_msg(str, e.what()));
+            throw_exc(__CONTEXT_MSG(str, e.what()));
         }
         // Handle line breaks. Return true if pen goes out of bound
         if (cursor == param.line->last_glyph && param.line != _lines.end() - 1) {
@@ -94,7 +95,7 @@ void TextAreaPixels::_drawGlyphs(DrawParameters param)
     }
 }
 
-void TextAreaPixels::_drawGlyph(DrawParameters param, BufferInfo const& buffer_info, GlyphInfo const& glyph_info)
+void AreaPixels::_drawGlyph(DrawParameters param, BufferInfo const& buffer_info, GlyphInfo const& glyph_info)
 {
     // Skip if the glyph alpha is zero, or if a outline is asked but not available
     if (buffer_info.color.alpha == 0
@@ -103,10 +104,13 @@ void TextAreaPixels::_drawGlyph(DrawParameters param, BufferInfo const& buffer_i
         return;
     }
 
+    // Retrieve Font (must be loaded)
+    Font::Ptr const& font = Lib::getFont(buffer_info.font);
+
     // Get corresponding loaded glyph bitmap
     Bitmap const& bitmap(!param.type.is_outline
-        ? buffer_info.font->getGlyphBitmap(glyph_info.info.codepoint, buffer_info.style.charsize)
-        : buffer_info.font->getOutlineBitmap(glyph_info.info.codepoint, buffer_info.style.charsize, buffer_info.style.outline_size));
+        ? font->getGlyphBitmap(glyph_info.info.codepoint, buffer_info.style.charsize)
+        : font->getOutlineBitmap(glyph_info.info.codepoint, buffer_info.style.charsize, buffer_info.style.outline_size));
     // Skip if bitmap is empty
     if (bitmap.width == 0 || bitmap.height == 0) {
         return;
@@ -135,7 +139,7 @@ void TextAreaPixels::_drawGlyph(DrawParameters param, BufferInfo const& buffer_i
     _copyBitmap(args);
 }
 
-void TextAreaPixels::_copyBitmap(_CopyBitmapArgs& args)
+void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
 {
     // Go through each pixel
     for (FT_Int i = 0, x = args.x0; i < args.bitmap.width; x++, i += args.bitmap.bpp) {
@@ -159,12 +163,19 @@ void TextAreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                 if (px_value == 0) {
                     continue;
                 }
-                // Determine color via function if needed
-                if (!args.color.is_plain) {
-                    args.color.plain = args.color.func(x * 1530 / static_cast<int>(_w));
+                // Determine color
+                RGB24 color;
+                switch (args.color.func) {
+                    using Func = Format::Color::Func;
+                case Func::none:
+                    color = args.color.plain;
+                    break;
+                case Func::rainbow:
+                    color = rainbow(x, _w);
+                    break;
                 }
                 // Blend with existing pixel, using the glyph's pixel value as an alpha
-                pixel *= RGBA32(args.color.plain, px_value);
+                pixel *= RGBA32(color, px_value);
                 // Lower alpha post blending if needed
                 if (pixel.bytes.a > args.alpha) {
                     pixel.bytes.a = args.alpha;
@@ -179,5 +190,5 @@ void TextAreaPixels::_copyBitmap(_CopyBitmapArgs& args)
     }
 }
 
-__INTERNAL_END
-__SSS_TR_END
+__INTERNAL_END;
+__SSS_TR_END;

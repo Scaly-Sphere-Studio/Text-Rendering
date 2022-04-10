@@ -1,49 +1,50 @@
 #pragma once
 
-#include "SSS/Text-Rendering/_TextAreaInternals.hpp"
+#include "_internal/AreaInternals.hpp"
 
-__SSS_TR_BEGIN
+__SSS_TR_BEGIN;
 
-class TextArea {
-protected:
-// --- Constructor, destructor & clear function ---
-    
-    // Constructor, sets width & height.
-    // Throws an exception if width and/or height are <= 0.
-    TextArea(int width, int height);
+class Area {
 public:
-    // Destructor, clears out buffer cache.
-    ~TextArea() noexcept;
-    // Resets the object to newly constructed state (except for TextOpt map)
-    void clear() noexcept;
-
-    using Ptr = std::shared_ptr<TextArea>;
+    using Ptr = std::unique_ptr<Area>;
     using Map = std::map<uint32_t, Ptr>;
+
 private:
     static Map _instances;
-public:
-    static Map const& getTextAreas() noexcept { return _instances; };
-    static void createInstance(uint32_t id, int width, int height);
-    static void removeInstance(uint32_t id);
-    static void clearInstances() noexcept;
 
-    void resize(int width, int height);
+public:
+    static void create(uint32_t id, int width, int height);
+    static void remove(uint32_t id);
+    static Map const& getMap() noexcept { return _instances; };
+    static void clearMap() noexcept;
+
+private:
+    // Constructor, sets width & height.
+    // Throws an exception if width and/or height are <= 0.
+    Area(int width, int height);
+public:
+    // Destructor, clears out buffer cache.
+    ~Area() noexcept;
 // --- Basic functions ---
 
-    void setTextOpt(uint32_t id, TextOpt const& opt);
-    void clearTextOpt();
+    void setFormat(uint32_t id, Format const& format);
+    void clearFormats();
+
     void parseString(std::u32string const& str);
     void parseString(std::string const& str);
 
     void update();
-    inline bool changesPending() const noexcept { return _changes_pending; };
-    inline void changesHandled() noexcept { _changes_pending = false; }
+    inline bool hasChangesPending() const noexcept { return _changes_pending; };
+    inline void setChangesAsHandled() noexcept { _changes_pending = false; }
 
     // Returns its rendered pixels.
     void const* getPixels() const;
+    // Clears stored strings, buffers, and such
+    void clear() noexcept;
 
     // Fills width and height with internal values
     void getDimensions(int& w, int& h) const noexcept;
+    void resize(int width, int height);
 
 // --- Format functions ---
 
@@ -58,13 +59,13 @@ public:
     void placeCursor(int x, int y);
 
     enum class Cursor {
-        Up,
-        Down,
-        Left,
         Right,
-        CtrlLeft,
+        Left,
+        Down,
+        Up,
         CtrlRight,
-        Home,
+        CtrlLeft,
+        Start,
         End,
     };
     void moveCursor(Cursor position);
@@ -97,12 +98,12 @@ private:
 
     bool _changes_pending{ false }; // True -> update() returns true
 
-    using _PixelBuffers = std::array<_internal::TextAreaPixels, 2>;
+    using _PixelBuffers = std::array<_internal::AreaPixels, 2>;
     _PixelBuffers _pixels;
     _PixelBuffers::const_iterator _current_pixels{ _pixels.cbegin() };
     _PixelBuffers::iterator _processing_pixels{ _pixels.begin() };
 
-    std::map<uint32_t, TextOpt> _text_opt;          // Map of TextOpt
+    std::map<uint32_t, Format> _formats;            // Map of Format
     std::vector<_internal::Buffer::Ptr> _buffers;   // Buffer array for multiple layouts
     _internal::BufferInfoVector _buffer_infos;      // Buffer infos
 
@@ -131,4 +132,4 @@ private:
     _internal::DrawParameters _prepareDraw();
 };
 
-__SSS_TR_END
+__SSS_TR_END;
