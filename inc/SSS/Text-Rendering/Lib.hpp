@@ -4,16 +4,45 @@
 
 __SSS_TR_BEGIN;
 
+/** Inits internal libraries.
+ *  @usage To be called before any processing operation, and
+ *  met with terminate() before exiting the program.
+ */
 void init();
+/** Clears cached data & terminates internal libraries.
+ *  @usage To be called before exiting the program, to meet
+ *  previous init() call.
+ */
 void terminate() noexcept;
 
-void addFontDir(std::string const& font_dir);
-void loadFont(std::string const& font_name);
-void unloadFont(std::string const& font_name);
+/** Adds user-defined font directory, along with system-defined ones.
+ *  @param[in] dir_path The directory path to be added. Can be
+ *  relative or absolute.
+ *  @sa loadFont(), unloadFont(), clearFonts().
+ */
+void addFontDir(std::string const& dir_path);
+/** Loads a font in cache, to be used via Format::font.
+ *  @param[in] font_filename Font file name. Must contain
+ *  extension, eg: \c "arial.ttf".
+ *  @sa addFontDir(), unloadFont(), clearFonts().
+ */
+void loadFont(std::string const& font_filename);
+/** Deletes a font that is no longer needed from cache.
+ *  @param[in] font_filename Font file name. Must contain
+ *  extension, eg: \c "arial.ttf".
+ *  @sa addFontDir(), loadFont(), clearFonts().
+ */
+void unloadFont(std::string const& font_filename);
+/** Deletes all fonts from cache.
+ *  Automatically called from terminate().
+ *  @sa addFontDir(), loadFont(), unloadFont().
+ */
 void clearFonts() noexcept;
 
+/** \cond TODO*/
 void setDPI(FT_UInt hdpi, FT_UInt vdpi);
 void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept;
+/** \endcond*/
 
 __INTERNAL_BEGIN;
 
@@ -45,7 +74,7 @@ public:
 
     static inline FontDirs const& getFontDirs() noexcept { return font_dirs; };
 
-    static Font::Ptr const& getFont(std::string const& font_name);
+    static Font::Ptr const& getFont(std::string const& font_filename);
 
 };
 

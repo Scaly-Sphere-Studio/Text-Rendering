@@ -5,31 +5,31 @@
 __SSS_TR_BEGIN;
 
 /** Structure defining different formats to be used in Area instances.
- *  The structure holds 4 variables
+ *  @sa Style, Color, Language.
  */
 struct Format {
     /** Sets the style of corresponding text.*/
     struct Style {
         /** Font size, in pt.
-         *  Default value: \c 12.
+         *  @default \c 12
          */
         int charsize{ 12 };
         /** Whether the text has an outline.
-         *  Default value: \c false.
+         *  @default \c false
          *  @sa #outline_size.
          */
         bool has_outline{ false };
         /** Outline size, if any.
-         *  Default value: \c 0.
+         *  @default \c 0
          *  @sa #has_outline.
          */
         int outline_size{ 0 };
         /** Whether the text has a shadow.
-         *  Default value: \c false.
+         *  @default \c false
          */
         bool has_shadow{ false };
         /** Spacing between lines.
-         *  Default value: \c 1.5.
+         *  @default \c 1.5
          */
         float line_spacing{ 1.5f };
     };
@@ -43,30 +43,37 @@ struct Format {
             none,   /**< No function, the Config::plain color is used.*/
             rainbow /**< The color is determined by the width ratio*/
         };
-        /** Holds both a plain color and a #Func variable.*/
+        /** Stores a "final color" in a single struct,
+         *  whether it's plain or computed from a function.
+         *  @default Plain white
+         */
         struct Config {
-            /** The plain color to be used if \c #func is set to \c Func::plain.*/
-            RGB24 plain;
-            /** The way to determine the color of the text.*/
+            /** The plain color to be used if \c #func is set to \c Func::none.
+             *  @default \c 0xFFFFFF <em>(plain white)</em>
+             */
+            RGB24 plain{ 0xFFFFFF };
+            /** The way to determine the color of the text.
+             *  @default Func::none
+             */
             Func func{ Func::none };
         };
         /** Text color.
-         *  Default value: \c 0xFFFFFF, plain white.\n
+         *  @default \c 0xFFFFFF <em>(plain white)</em>
          *  @sa Config
          */
         Config text{ 0xFFFFFF };
         /** Text outline color, if any.
-         *  Default value: \c 0, plain black.\n
+         *  @default \c 0x000000 <em>(plain black)</em>
          *  @sa Style::has_outline, Config
          */
         Config outline{ 0x000000 };
         /** Text shadow color, if any.
-         *  Default value: \c 0x444444, plain gray.\n
+         *  @default \c 0x444444 <em>(plain gray)</em>
          *  @sa Style::has_shadow, Config
          */
         Config shadow{ 0x444444 };
         /** Text opacity.
-         *  Default value: \c 255, fully opaque.
+         *  @default \c 255 <em>(fully opaque)</em>
          */
         uint8_t alpha{ 255 };
     };
@@ -76,31 +83,38 @@ struct Format {
     public:
         /** BCP 47 language tag, used in
          *  [Harfbuzz](https://harfbuzz.github.io/harfbuzz-hb-common.html#hb-language-t).
-         *  Default value: \c "en".
+         *  @default \c "en"
          */
         std::string language{ "en" };
         /** ISO 15924 script, used in 
          *  [Harfbuzz](https://harfbuzz.github.io/harfbuzz-hb-common.html#hb-script-t).
-         *  Default value: \c "Latn".
+         *  @default \c "Latn"
          */
         std::string script{ "Latn" };
         /** Writing direction, used in
          *  [Harfbuzz](https://harfbuzz.github.io/harfbuzz-hb-common.html#hb-direction-t).
-         *  Default value: \c "ltr".
+         *  @default \c "ltr"
          */
         std::string direction{ "ltr" };
         /** [Word dividers](https://en.wikipedia.org/wiki/Word_divider),
          *  a blank space in most cases, but not always.
-         *  Default value: \c U" ".
+         *  Stored in a UTF32 string acting as a UTF32 vector.\n
+         *  @default \c U" " <em>(blank space)</em>
          */
         std::u32string word_dividers{ U" " };
     };
 
-    // --- Variables ---
-    std::string font{ "arial.ttf" };   // Font
-    Style style;        // Style
-    Color color;        // Colors
-    Language lng;       // Language
+    /** Font file name (needs to be initialised before processing).
+     *  @default \c "arial.ttf"
+     *  @sa loadFont(), addFontDir().
+     */
+    std::string font{ "arial.ttf" };
+    /** See Style documentation.*/
+    Style style;
+    /** See Color documentation.*/
+    Color color;
+    /** See Language documentation.*/
+    Language lng;
 };
 
 __SSS_TR_END;

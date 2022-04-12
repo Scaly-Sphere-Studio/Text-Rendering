@@ -39,12 +39,12 @@ std::map<std::string, Font::Ptr> Lib::fonts{ };
 FT_UInt Lib::hdpi{ 96 };
 FT_UInt Lib::vdpi{ 0 };
 
-Font::Ptr const& Lib::getFont(std::string const& font_name) try
+Font::Ptr const& Lib::getFont(std::string const& font_filename) try
 {
-    if (fonts.count(font_name) == 0) {
-        throw_exc(__CONTEXT_MSG("No loaded font with name", font_name));
+    if (fonts.count(font_filename) == 0) {
+        throw_exc(__CONTEXT_MSG("No loaded font with name", font_filename));
     }
-    return fonts.at(font_name);
+    return fonts.at(font_filename);
 }
 __CATCH_AND_RETHROW_FUNC_EXC;
 
@@ -57,7 +57,7 @@ void init() try
         FT_Error error = FT_Init_FreeType(&lib);
         __THROW_IF_FT_ERROR("FT_Init_FreeType()");
         return lib;
-    }());
+        }());
 }
 __CATCH_AND_RETHROW_FUNC_EXC;
 
@@ -70,7 +70,11 @@ void terminate() noexcept
 
 void addFontDir(std::string const& font_dir) try
 {
-    if (pathIsDir(font_dir)) {
+    std::string const rel_path = SSS::PWD + font_dir;
+    if (pathIsDir(rel_path)) {
+        _internal::Lib::font_dirs.push_front(rel_path);
+    }
+    else if (pathIsDir(font_dir)) {
         _internal::Lib::font_dirs.push_front(font_dir);
     }
     else {
@@ -79,19 +83,19 @@ void addFontDir(std::string const& font_dir) try
 }
 __CATCH_AND_RETHROW_FUNC_EXC;
 
-void loadFont(std::string const& font_name) try
+void loadFont(std::string const& font_filename) try
 {
-    _internal::Font::Ptr& font = _internal::Lib::fonts[font_name];
+    _internal::Font::Ptr& font = _internal::Lib::fonts[font_filename];
     if (!font) {
-        font.reset(new _internal::Font(font_name));
+        font.reset(new _internal::Font(font_filename));
     }
 }
 __CATCH_AND_RETHROW_FUNC_EXC;
 
-void unloadFont(std::string const& font_name)
+void unloadFont(std::string const& font_filename)
 {
-    if (_internal::Lib::fonts.count(font_name) != 0) {
-        _internal::Lib::fonts.erase(_internal::Lib::fonts.find(font_name));
+    if (_internal::Lib::fonts.count(font_filename) != 0) {
+        _internal::Lib::fonts.erase(_internal::Lib::fonts.find(font_filename));
     }
 }
 

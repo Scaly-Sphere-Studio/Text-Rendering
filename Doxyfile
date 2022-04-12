@@ -261,7 +261,9 @@ TAB_SIZE               = 4
 # with the commands \{ and \} for these it is advised to use the version @{ and
 # @} or use a double escape (\\{ and \\})
 
-ALIASES                = "usage=\par Usage^^"
+ALIASES                = "usage=\par Usage^^" \
+                         "default=\par Default value^^" \
+                         "eg=\par Example(s)^^"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
 # only. Doxygen will then generate output that is more tailored for C. For
@@ -631,7 +633,7 @@ FORCE_LOCAL_INCLUDES   = NO
 # documentation for inline members.
 # The default value is: YES.
 
-INLINE_INFO            = YES
+INLINE_INFO            = NO
 
 # If the SORT_MEMBER_DOCS tag is set to YES then doxygen will sort the
 # (detailed) documentation of file and class members alphabetically by member

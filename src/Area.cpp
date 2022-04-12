@@ -71,7 +71,7 @@ __CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Basic functions ---
 
-void Area::setFormat(uint32_t id, Format const& format) try
+void Area::setFormat(Format const& format, uint32_t id) try
 {
     if (_formats.count(id) == 0) {
         _formats.insert(std::make_pair(id, format));
@@ -82,7 +82,7 @@ void Area::setFormat(uint32_t id, Format const& format) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void Area::clearFormats()
+void Area::resetFormats() noexcept
 {
     _formats.clear();
 }
@@ -212,7 +212,7 @@ void Area::placeCursor(int x, int y) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void Area::moveCursor(Cursor position) try
+void Area::moveCursor(CursorInput position) try
 {
     static auto const set_x = [&](size_t cursor, size_t cursor_max) {
         int x = 0;
@@ -262,52 +262,52 @@ void Area::moveCursor(Cursor position) try
 
     switch (position) {
 
-    case Cursor::Right:
+    case CursorInput::Right:
         if (_edit_cursor >= _glyph_count) break;
         ++_edit_cursor;
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::Left:
+    case CursorInput::Left:
         if (_edit_cursor == 0) break;
         --_edit_cursor;
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::Down:
+    case CursorInput::Down:
         if (line == _lines.cend() - 1) break;
         ++line;
         _edit_cursor = set_cursor(line);
         break;
 
-    case Cursor::Up:
+    case CursorInput::Up:
         if (line == _lines.cbegin()) break;
         --line;
         _edit_cursor = set_cursor(line);
         break;
 
-    case Cursor::CtrlRight:
+    case CursorInput::CtrlRight:
         if (_edit_cursor >= _glyph_count) break;
         ctrl_jump(1);
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::CtrlLeft:
+    case CursorInput::CtrlLeft:
         if (_edit_cursor == 0) break;
         ctrl_jump(-1);
         line = _internal::Line::which(_lines, _edit_cursor);
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::Start:
+    case CursorInput::Start:
         _edit_cursor = line->first_glyph;
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
-    case Cursor::End:
+    case CursorInput::End:
         _edit_cursor = line->last_glyph + 1;
         _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
@@ -347,7 +347,7 @@ void Area::insertText(std::u32string str) try
     _updateBufferInfos();
     // Move cursor
     for (size_t i = 0; i < size; ++i) {
-        moveCursor(Cursor::Right);
+        moveCursor(CursorInput::Right);
     }
 }
 __CATCH_AND_RETHROW_METHOD_EXC
