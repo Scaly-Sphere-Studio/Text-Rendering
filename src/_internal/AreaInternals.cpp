@@ -16,28 +16,15 @@ Line::cit Line::which(vector const& lines, size_t cursor)
     return line;
 }
 
-AreaPixels::~AreaPixels()
+void AreaPixels::_asyncFunction(AreaData data)
 {
-    cancel();
-}
-
-void AreaPixels::draw(DrawParameters param, int w, int h, int pixels_h,
-    std::vector<Line> lines, BufferInfoVector buffer_infos)
-{
-    cancel();
-    _w = w;
-    _h = h;
-    _pixels_h = pixels_h;
-    _lines = lines;
-    _buffer_infos = buffer_infos;
-    param.line = Line::which(_lines, param.first_glyph);
-
-    run(param);
-}
-
-void AreaPixels::_asyncFunction(DrawParameters param)
-{
+    // Copy given data
+    _w = data.w;
+    _h = data.h;
+    _pixels_h = data.pixels_h;
+    // Resize if needed
     _pixels.resize(_w * _pixels_h);
+    // Clear
     if constexpr (DEBUGMODE) {
         std::fill(_pixels.begin(), _pixels.end(), RGBA32(0, 0, 0, 122));
     }
@@ -45,35 +32,38 @@ void AreaPixels::_asyncFunction(DrawParameters param)
         std::fill(_pixels.begin(), _pixels.end(), RGBA32(0));
     }
 
+    DrawParameters param;
     // Draw Outline shadows
-    param.type.is_shadow = true;
-    param.type.is_outline = true;
-    _drawGlyphs(param);
+    param.is_shadow = true;
+    param.is_outline = true;
+    _drawGlyphs(data, param);
     if (_beingCanceled()) return;
     
     // Draw Text shadows
-    param.type.is_outline = false;
-    _drawGlyphs(param);
+    param.is_outline = false;
+    _drawGlyphs(data, param);
     if (_beingCanceled()) return;
 
     // Draw Outlines
-    param.type.is_shadow = false;
-    param.type.is_outline = true;
-    _drawGlyphs(param);
+    param.is_shadow = false;
+    param.is_outline = true;
+    _drawGlyphs(data, param);
     if (_beingCanceled()) return;
 
     // Draw Text
-    param.type.is_outline = false;
-    _drawGlyphs(param);
+    param.is_outline = false;
+    _drawGlyphs(data, param);
 }
 
-void AreaPixels::_drawGlyphs(DrawParameters param)
+void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
 {
     // Draw the glyphs
-    for (size_t cursor = param.first_glyph; cursor < param.last_glyph; ++cursor) {
+    Line::cit line = data.lines.cbegin();
+    param.charsize = line->charsize;
+    for (size_t cursor = 0; cursor < data.last_glyph; ++cursor) {
         if (_beingCanceled()) return;
-        GlyphInfo const& glyph_info(_buffer_infos.getGlyph(cursor));
-        BufferInfo const& buffer_info(_buffer_infos.getBuffer(cursor));
+        GlyphInfo const& glyph_info(data.buffer_infos.getGlyph(cursor));
+        BufferInfo const& buffer_info(data.buffer_infos.getBuffer(cursor));
         try {
             _drawGlyph(param, buffer_info, glyph_info);
         }
@@ -82,10 +72,11 @@ void AreaPixels::_drawGlyphs(DrawParameters param)
             throw_exc(__CONTEXT_MSG(str, e.what()));
         }
         // Handle line breaks. Return true if pen goes out of bound
-        if (cursor == param.line->last_glyph && param.line != _lines.end() - 1) {
+        if (cursor == line->last_glyph && line != data.lines.end() - 1) {
             param.pen.x = 5 << 6;
-            param.pen.y -= static_cast<int>(param.line->fullsize) << 6;
-            ++param.line;
+            param.pen.y -= static_cast<int>(line->fullsize) << 6;
+            ++line;
+            param.charsize = line->charsize;
         }
         // Increment pen's coordinates
         else {
@@ -95,12 +86,12 @@ void AreaPixels::_drawGlyphs(DrawParameters param)
     }
 }
 
-void AreaPixels::_drawGlyph(DrawParameters param, BufferInfo const& buffer_info, GlyphInfo const& glyph_info)
+void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffer_info, GlyphInfo const& glyph_info)
 {
     // Skip if the glyph alpha is zero, or if a outline is asked but not available
     if (buffer_info.color.alpha == 0
-        || (param.type.is_outline && (!buffer_info.style.has_outline || buffer_info.style.outline_size <= 0))
-        || (param.type.is_shadow && !buffer_info.style.has_shadow)) {
+        || (param.is_outline && (!buffer_info.style.has_outline || buffer_info.style.outline_size <= 0))
+        || (param.is_shadow && !buffer_info.style.has_shadow)) {
         return;
     }
 
@@ -108,7 +99,7 @@ void AreaPixels::_drawGlyph(DrawParameters param, BufferInfo const& buffer_info,
     Font::Ptr const& font = Lib::getFont(buffer_info.font);
 
     // Get corresponding loaded glyph bitmap
-    Bitmap const& bitmap(!param.type.is_outline
+    Bitmap const& bitmap(!param.is_outline
         ? font->getGlyphBitmap(glyph_info.info.codepoint, buffer_info.style.charsize)
         : font->getOutlineBitmap(glyph_info.info.codepoint, buffer_info.style.charsize, buffer_info.style.outline_size));
     // Skip if bitmap is empty
@@ -116,23 +107,24 @@ void AreaPixels::_drawGlyph(DrawParameters param, BufferInfo const& buffer_info,
         return;
     }
 
+    FT_Vector pen(param.pen);
     // Shadow offset
     // TODO: turn this into an option
-    if (param.type.is_shadow) {
-        param.pen.x += 3 << 6;
-        param.pen.y -= 3 << 6;
+    if (param.is_shadow) {
+        pen.x += 3 << 6;
+        pen.y -= 3 << 6;
     }
 
     // Prepare copy
     _CopyBitmapArgs args(bitmap);
 
     // The (pen.x % 64 > 31) part is used to round up pixel fractions
-    args.x0 = (param.pen.x >> 6) + (param.pen.x % 64 > 31) + bitmap.pen_left;
-    args.y0 = param.line->charsize - (param.pen.y >> 6) - bitmap.pen_top;
+    args.x0 = (pen.x >> 6) + (pen.x % 64 > 31) + bitmap.pen_left;
+    args.y0 = param.charsize - (pen.y >> 6) - bitmap.pen_top;
 
     // Retrieve the color to use : either a plain one, or a function to call
-    args.color = param.type.is_shadow ?
-        buffer_info.color.shadow : param.type.is_outline ?
+    args.color = param.is_shadow ?
+        buffer_info.color.shadow : param.is_outline ?
         buffer_info.color.outline : buffer_info.color.text;
     args.alpha = buffer_info.color.alpha;
 
@@ -171,6 +163,7 @@ void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                     color = args.color.plain;
                     break;
                 case Func::rainbow:
+                    // TODO: make this function time based
                     color = rainbow(x, _w);
                     break;
                 }

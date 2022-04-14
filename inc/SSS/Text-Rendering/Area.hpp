@@ -38,34 +38,21 @@ private:
     std::vector<_internal::Buffer::Ptr> _buffers;
     // Buffer informations
     _internal::BufferInfoVector _buffer_infos;
-
     // Total number of glyphs in all ACTIVE buffers
     size_t _glyph_count{ 0 };
+
     // Cursor's glyph related position
     // Managed in "Cursor" functions, used in "insertText" functions
-    size_t _edit_cursor{ size_t(-1) };
+    // Set to first be at the end of text by default.
+    size_t _edit_cursor{ _CRT_SIZE_MAX };
     // Cursor physical position
     int _edit_x{ 0 }, _edit_y{ 0 };
 
     // TypeWriter -> Current character position, in glyphs
     size_t _tw_cursor{ 0 };
-    // TypeWriter -> Next character position, in glyphs
-    size_t _tw_next_cursor{ 0 };
 
     // Indexes of line breaks & charsizes
     std::vector<_internal::Line> _lines;
-
-    // Updates _scrolling
-    void _scrollingChanged() noexcept;
-    // Updates _lines
-    void _updateLines();
-    // Updates _buffer_infos and _glyph_count, then calls _updateLines();
-    void _updateBufferInfos();
-
-    // Draws current area if _draw is set to true
-    void _drawIfNeeded();
-    // Prepares drawing parameters, which will be used multiple times per draw
-    _internal::DrawParameters _prepareDraw();
 
 public:
     /** All available inputs to move the edit cursor.
@@ -95,7 +82,17 @@ private:
     // Static map of allocated instances
     static Map _instances;
 
+    // Constructor, sets width & height.
+    // Throws an exception if width and/or height are <= 0.
+    Area(int width, int height);
+
 public:
+    /** Destructor, clears internal cache.
+     *  @sa remove(), clearMap().
+     */
+    ~Area() noexcept;
+    
+
     /** Creates an Area instance which will be stored in the internal #Map.
      *  @param[in] id The ID at which the new instance will be stored.
      *  @param[in] width The area's width, in pixels. Must be above 0.
@@ -114,19 +111,11 @@ public:
      */
     static Map const& getMap() noexcept { return _instances; };
     /** Clears the internal instance #Map.
+     *  Equivalent to calling remove() on every single instance.
      *  @sa remove(), getMap().
      */
     static void clearMap() noexcept;
 
-private:
-    // Constructor, sets width & height.
-    // Throws an exception if width and/or height are <= 0.
-    Area(int width, int height);
-public:
-    /** Destructor, clears internal cache.
-     *  @sa remove(), clearMap().
-     */
-    ~Area() noexcept;
 
     /** Modifies internal format for given ID.
      *  @param[in] src The source format to be copied.
@@ -141,6 +130,8 @@ public:
 
     /** Parses a UTF32 string thay may use multiple formats in itself.
      *
+     *  > A call to update() is required for changes to take effect.
+     *  
      *  The last ASCII control character -- US \a "unit separator" \c \\u001F --
      *  is used to parse format IDs.\n
      *  Any number in the given string that is surrounded by two "unit separator"
@@ -150,7 +141,7 @@ public:
      *  single string.
      *
      *  An implicit call to clear() is made before parsing the string.\n
-     *
+     * 
      *  @param[in] str The UTF32 string to be parsed.
      *
      *  @eg
@@ -168,19 +159,50 @@ public:
      *  U"\u001F42\u001FLorem \u001F64\u001Fipsum"
      *  @endcode
      * 
-     *  @sa setFormat()
+     *  @sa setFormat().
      */
     void parseString(std::u32string const& str);
     /** \overload*/
     void parseString(std::string const& str);
 
+    /** Draws modifications when needed, and sets the return value of
+     *  hasNewPixels() to \c true when changes are finished.
+     *  @usage To be called as often as possible in your main loop.
+     *  @sa clear(), getPixels().
+     */
     void update();
-    inline bool hasChangesPending() const noexcept { return _changes_pending; };
-    inline void setChangesAsHandled() noexcept { _changes_pending = false; }
+    /** Returns \c true when internal pixels were modified and the
+     *  user needs to retrieve them.
+     *  When said pixels are retrieved, setPixelsAsRetrieved() needs to
+     *  be called.
+     *  @return \c true when new pixels are to be retrieved, and \c false
+     *  otherwise.
+     *  @sa update(), getPixels().
+     */
+    inline bool hasNewPixels() const noexcept { return _changes_pending; };
+    /** Tells the Area instance that the new pixels were retrieved by the user.
+     *  This effectively sets the return value of hasNewPixels() to \c false.
+     *  @sa update(), getPixels().
+     */
+    inline void setPixelsAsRetrieved() noexcept { _changes_pending = false; }
 
-    // Returns its rendered pixels.
+    /** Returns a pointer to the internal pixel buffer.
+     *  
+     *  The returned pointer stays valid until, at least, the next call
+     *  to update(). After that, there is no guarantee for the pointer
+     *  to be valid.
+     *  
+     *  Accessible range is of <tt>Width * Height * 4</tt>.
+     * 
+     *  @sa update(), clear(), getDimensions().
+     */
     void const* getPixels() const;
-    // Clears stored strings, buffers, and such
+    /** Clears the internal string & pixels.
+     *  Also resets scrolling, editing cursor
+     *  Keeps previous format modifications <em>(see resetFormats())</em>.
+     *  Keeps dimensions.
+     *  @sa parseString(), getPixels();
+     */
     void clear() noexcept;
 
     // Fills width and height with internal values
@@ -213,6 +235,18 @@ public:
     // Second call will render the both the 1st and 2nd character.
     // Etc...
     bool TWprint() noexcept;
+
+private:
+    void _getCursorPhysicalPos(int& x, int& y) const;
+    // Ensures _scrolling has a valid value
+    void _scrollingChanged() noexcept;
+    // Updates _lines
+    void _updateLines();
+    // Updates _buffer_infos and _glyph_count, then calls _updateLines();
+    void _updateBufferInfos();
+
+    // Draws current area if _draw is set to true
+    void _drawIfNeeded();
 };
 
 __SSS_TR_END;

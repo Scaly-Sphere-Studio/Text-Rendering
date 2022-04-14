@@ -24,44 +24,36 @@ struct Line {
 
 // Draw parameters
 struct DrawParameters {
-    // Variables
-    size_t first_glyph{ 0 };// First glyph to draw
-    size_t last_glyph{ 0 }; // Last glyph to draw (excluded)
-    FT_Vector pen{ 0, 0 };  // Pen on the canvas
-    Line::cit line;         // Line of the cursor
-
+    // TODO: get actual pen values based on glyphs
+    FT_Vector pen{ 5 << 6, -5 << 6 }; // Pen on the canvas
+    int charsize{ 0 }; // Current Line::charsize
     // Draw type : { false, false } would draw simple text,
     // and { true, true } would draw the shadows of the outlines
-    struct {
-        // Variables
-        bool is_shadow{ true };     // Draw text or its shadow
-        bool is_outline{ true };    // Draw glyphs or their outlines
-    } type;     // Glyph type
+    bool is_shadow{ true };     // Draw text or its shadow
+    bool is_outline{ true };    // Draw glyphs or their outlines
 };
 
-class AreaPixels : public SSS::AsyncBase<DrawParameters> {
-public:
-    ~AreaPixels();
+struct AreaData {
+    int w{ 0 }; // Width of the Area
+    int h{ 0 }; // Height of the Area
+    int pixels_h{ 0 }; // Real height of the Area
+    size_t last_glyph{ 0 }; // Last glyph to draw (excluded)
+    Line::vector lines; // Line vector    
+    BufferInfoVector buffer_infos; // Glyph infos
+};
 
-private:
-    using AsyncBase::run;
-
+class AreaPixels : public SSS::AsyncBase<AreaData> {
 public:
-    void draw(DrawParameters param, int w, int h, int pixels_h,
-        std::vector<Line> lines, BufferInfoVector glyph_infos);
     inline RGBA32::Vector const& getPixels() const noexcept { return _pixels; };
     inline void getDimensions(int& w, int& h) const noexcept { w = _w; h = _h; };
 
 private:
-    virtual void _asyncFunction(DrawParameters param);
+    virtual void _asyncFunction(AreaData param);
 
     int _w{ 0 };
     int _h{ 0 };
     int _pixels_h{ 0 };
     RGBA32::Vector _pixels;
-
-    std::vector<Line> _lines;
-    BufferInfoVector _buffer_infos;
 
     struct _CopyBitmapArgs {
         inline _CopyBitmapArgs(Bitmap const& _bitmap)
@@ -76,8 +68,8 @@ private:
         uint8_t alpha{ 0 };             // Bitmap's opacity
     };
 
-    void _drawGlyphs(DrawParameters param);
-    void _drawGlyph(DrawParameters param, BufferInfo const& buffer_info, GlyphInfo const& glyph_info);
+    void _drawGlyphs(AreaData const& data, DrawParameters param);
+    void _drawGlyph(DrawParameters const& param, BufferInfo const& buffer_info, GlyphInfo const& glyph_info);
     void _copyBitmap(_CopyBitmapArgs& args);
 };
 

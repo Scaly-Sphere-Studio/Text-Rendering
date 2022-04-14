@@ -22,25 +22,6 @@ Area::~Area() noexcept
 {
 }
 
-// Resets the object to newly constructed state
-void Area::clear() noexcept
-{
-    // Reset scrolling
-    _scrolling = 0;
-    if (_pixels_h != _h) {
-        _pixels_h = _h;
-    }
-    // Reset buffers
-    _buffers.clear();
-    _buffer_infos.clear();
-    _glyph_count = 0;
-    // Reset lines
-    _updateLines();
-    // Reset typewriter
-    _tw_cursor = 0;
-    _tw_next_cursor = 0;
-}
-
 void Area::create(uint32_t id, int width, int height) try
 {
     _instances.try_emplace(id);
@@ -60,14 +41,6 @@ void Area::clearMap() noexcept
 {
     _instances.clear();
 }
-
-void Area::resize(int width, int height) try
-{
-    _w = width;
-    _h = height;
-    _updateLines();
-}
-__CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Basic functions ---
 
@@ -160,10 +133,36 @@ void const* Area::getPixels() const try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
+void Area::clear() noexcept
+{
+    // Reset scrolling
+    _scrolling = 0;
+    if (_pixels_h != _h) {
+        _pixels_h = _h;
+    }
+    // Reset buffers
+    _buffers.clear();
+    _buffer_infos.clear();
+    _glyph_count = 0;
+    _edit_cursor = _CRT_SIZE_MAX;
+    // Reset lines
+    _updateLines();
+    // Reset typewriter
+    _tw_cursor = 0;
+}
+
 void Area::getDimensions(int& w, int& h) const noexcept
 {
     _current_pixels->getDimensions(w, h);
 }
+
+void Area::resize(int width, int height) try
+{
+    _w = width;
+    _h = height;
+    _updateLines();
+}
+__CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Format functions ---
 
@@ -183,12 +182,9 @@ void Area::scroll(int pixels) noexcept
 void Area::placeCursor(int x, int y) try
 {
     if (_glyph_count == 0) {
-        _edit_cursor = 0;
         return;
     }
     y += _scrolling;
-    _edit_x = x;
-    _edit_y = y;
 
     FT_Vector pen{ 0, 0 };
     _internal::Line::cit line = _lines.cbegin();
@@ -212,25 +208,22 @@ void Area::placeCursor(int x, int y) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
+static size_t _move_cursor_line(_internal::BufferInfoVector const& buffer_infos,
+    _internal::Line::cit line, int x)
+{
+    size_t cursor = line->first_glyph;
+    size_t const glyph_count = buffer_infos.glyphCount();
+    for (int new_x = 0; cursor <= line->last_glyph && cursor < glyph_count; ++cursor) {
+        new_x += buffer_infos.getGlyph(cursor).pos.x_advance;
+        if ((new_x >> 6) > x) {
+            break;
+        }
+    }
+    return cursor;
+}
+
 void Area::moveCursor(CursorInput position) try
 {
-    static auto const set_x = [&](size_t cursor, size_t cursor_max) {
-        int x = 0;
-        for (; cursor <= cursor_max && cursor < _glyph_count; ++cursor) {
-            x += _buffer_infos.getGlyph(cursor).pos.x_advance;
-        }
-        return (x >> 6);
-    };
-    static auto const set_cursor = [&](_internal::Line::cit line)->size_t {
-        size_t cursor = line->first_glyph;
-        for (int x = 0; cursor <= line->last_glyph && cursor < _glyph_count; ++cursor) {
-            x += _buffer_infos.getGlyph(cursor).pos.x_advance;
-            if ((x >> 6) > _edit_x) {
-                break;
-            }
-        }
-        return cursor;
-    };
     static auto const ctrl_jump = [&](int coeff) {
         _edit_cursor += coeff;
         while (_edit_cursor > 0 && _edit_cursor < _glyph_count) {
@@ -258,7 +251,9 @@ void Area::moveCursor(CursorInput position) try
     if (_edit_cursor > _glyph_count) {
         _edit_cursor = _glyph_count;
     }
+    
     _internal::Line::cit line = _internal::Line::which(_lines, _edit_cursor);
+    int x, y;
 
     switch (position) {
 
@@ -266,50 +261,46 @@ void Area::moveCursor(CursorInput position) try
         if (_edit_cursor >= _glyph_count) break;
         ++_edit_cursor;
         line = _internal::Line::which(_lines, _edit_cursor);
-        _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case CursorInput::Left:
         if (_edit_cursor == 0) break;
         --_edit_cursor;
         line = _internal::Line::which(_lines, _edit_cursor);
-        _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case CursorInput::Down:
         if (line == _lines.cend() - 1) break;
+        _getCursorPhysicalPos(x, y);
         ++line;
-        _edit_cursor = set_cursor(line);
+        _edit_cursor = _move_cursor_line(_buffer_infos, line, x);
         break;
 
     case CursorInput::Up:
         if (line == _lines.cbegin()) break;
+        _getCursorPhysicalPos(x, y);
         --line;
-        _edit_cursor = set_cursor(line);
+        _edit_cursor = _move_cursor_line(_buffer_infos, line, x);
         break;
 
     case CursorInput::CtrlRight:
         if (_edit_cursor >= _glyph_count) break;
         ctrl_jump(1);
         line = _internal::Line::which(_lines, _edit_cursor);
-        _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case CursorInput::CtrlLeft:
         if (_edit_cursor == 0) break;
         ctrl_jump(-1);
         line = _internal::Line::which(_lines, _edit_cursor);
-        _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case CursorInput::Start:
         _edit_cursor = line->first_glyph;
-        _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
 
     case CursorInput::End:
         _edit_cursor = line->last_glyph + 1;
-        _edit_x = set_x(line->first_glyph, _edit_cursor);
         break;
     }
 }
@@ -366,7 +357,6 @@ void Area::TWset(bool activate) noexcept
 {
     if (_typewriter != activate) {
         _tw_cursor = 0;
-        _tw_next_cursor = 0;
         _draw = true;
         _typewriter = activate;
     }
@@ -379,15 +369,16 @@ void Area::TWset(bool activate) noexcept
 bool Area::TWprint() noexcept
 {
     // Skip if the writing mode is set to default, or if all glyphs have been written
-    if (!_typewriter || _tw_next_cursor >= _glyph_count) {
+    if (!_typewriter) {
         return false;
     }
 
-    ++_tw_next_cursor;
-    _internal::Line::cit line = _internal::Line::which(_lines, _tw_next_cursor);
-    if (line->first_glyph == _tw_next_cursor) {
+    // TODO: auto scroll
+    ++_tw_cursor;
+    _internal::Line::cit line = _internal::Line::which(_lines, _tw_cursor);
+    if (line->first_glyph == _tw_cursor) {
         if (line->scrolling - _scrolling > static_cast<int>(_h)) {
-            --_tw_next_cursor;
+            --_tw_cursor;
             return true;
         }
     }
@@ -395,7 +386,24 @@ bool Area::TWprint() noexcept
     return false;
 }
 
-// Updates _scrolling
+void Area::_getCursorPhysicalPos(int& x, int& y) const
+{
+    _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
+
+    y = 0;
+    for (_internal::Line::cit it = _lines.cbegin(); it != line + 1; ++it) {
+        y += it->charsize;
+    }
+    y >>= 6;
+
+    x = 0;
+    for (size_t n = line->first_glyph; n <= _edit_cursor && n < _glyph_count; ++n) {
+        x += _buffer_infos.getGlyph(n).pos.x_advance;
+    }
+    x >>= 6;
+}
+
+// Ensures _scrolling has a valid value
 void Area::_scrollingChanged() noexcept
 {
     if (_scrolling <= 0) {
@@ -488,6 +496,7 @@ void Area::_updateLines() try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
+// Updates _buffer_infos and _glyph_count, then calls _updateLines();
 void Area::_updateBufferInfos() try
 {
     _buffer_infos.update(_buffers);
@@ -496,7 +505,7 @@ void Area::_updateBufferInfos() try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-// Draws current area if needed & possible
+// Draws current area if _draw is set to true
 void Area::_drawIfNeeded()
 {
     // Skip if drawing is not needed
@@ -515,60 +524,17 @@ void Area::_drawIfNeeded()
         }
     }
 
-    // Determine draw parameters
-    _internal::DrawParameters param(_prepareDraw());
-    if (param.first_glyph > param.last_glyph || param.last_glyph > _glyph_count) {
-        __LOG_METHOD_ERR(ERR_MSG::INVALID_ARGUMENT);
-        return;
-    }
-
-    // Draw in thread
-    _processing_pixels->draw(param, _w, _h, _pixels_h, _lines, _buffer_infos);
+    // Copy internal data
+    _internal::AreaData data;
+    data.w = _w;
+    data.h = _h;
+    data.pixels_h = _pixels_h;
+    data.last_glyph = _typewriter ? _tw_cursor : _glyph_count;
+    data.buffer_infos = _buffer_infos;
+    data.lines = _lines;
+    // Async draw
+    _processing_pixels->run(data);
     _draw = false;
-}
-
-// Prepares drawing parameters, which will be used multiple times per draw
-_internal::DrawParameters Area::_prepareDraw()
-{
-    _internal::DrawParameters param;
-    // Determine range of glyphs to render
-    // If _typewriter is set to false, this means all glyphs
-    if (!_typewriter) {
-        param.first_glyph = 0;
-        param.last_glyph = _glyph_count;
-    }
-    // Else, only render needed glyphs
-    else {
-        param.first_glyph = _tw_cursor;
-        param.last_glyph = _tw_next_cursor;
-        // TypeWriter -> Update current character position
-        for (size_t cursor = _tw_cursor + 1; cursor <= _tw_next_cursor
-            && cursor < _glyph_count; ++cursor) {
-            // It is important to note that we only update the current
-            // character position after a whole word has been written.
-            // This is to avoid drawing over previous glyphs.
-            if (_buffer_infos.getGlyph(cursor).is_word_divider) {
-                _tw_cursor = cursor;
-            }
-        }
-    }
-
-    // Determine first glyph's corresponding line
-    param.line = _internal::Line::which(_lines, param.first_glyph);
-    if (param.line != _lines.cend()) {
-        // Lower pen.y accordingly
-        // TODO: determine exact offsets needed, instead of using 5px
-        param.pen = { 5 * 64, -5 * 64 };
-        param.pen.y -= (param.line->scrolling - param.line->fullsize) << 6;
-
-        // Shift the pen on the line accordingly
-        for (size_t cursor = param.line->first_glyph; cursor < param.first_glyph; ++cursor) {
-            hb_glyph_position_t const pos(_buffer_infos.getGlyph(cursor).pos);
-            param.pen.x += pos.x_advance;
-            param.pen.y += pos.y_advance;
-        }
-    }
-    return param;
 }
 
 __SSS_TR_END;
