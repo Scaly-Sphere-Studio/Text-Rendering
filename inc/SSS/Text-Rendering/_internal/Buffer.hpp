@@ -56,9 +56,16 @@ public:
     // Reshapes the buffer with given parameters
     void changeString(std::u32string const& str);
     void changeString(std::string const& str);
+
+private:
+    uint32_t _getClusterIndex(size_t cursor);
+
+public:
     // Insert text at given position
     void insertText(std::u32string const& str, size_t cursor);
     void insertText(std::string const& str, size_t cursor);
+    // Deletes text, from first (included) to last (excluded)
+    void deleteText(size_t first, size_t last);
     // Reshapes the buffer with given parameters
     void changeFormat(Format const& opt);
 

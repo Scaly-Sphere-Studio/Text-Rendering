@@ -6,25 +6,29 @@ __INTERNAL_BEGIN;
 
 GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) const try
 {
+    if (_glyph_count == 0)
+        throw_exc("Empty buffer");
     for (BufferInfo const& buffer_info : *this) {
         if (buffer_info.glyphs.size() > cursor) {
             return buffer_info.glyphs.at(cursor);
         }
         cursor -= buffer_info.glyphs.size();
     }
-    throw_exc(ERR_MSG::OUT_OF_BOUND);
+    return back().glyphs.back();
 }
 __CATCH_AND_RETHROW_METHOD_EXC;
 
 _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const try
 {
+    if (_glyph_count == 0)
+        throw_exc("Empty buffer");
     for (BufferInfo const& buffer_info : *this) {
         if (buffer_info.glyphs.size() > cursor) {
             return buffer_info;
         }
         cursor -= buffer_info.glyphs.size();
     }
-    throw_exc(ERR_MSG::OUT_OF_BOUND);
+    return back();
 }
 __CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -81,15 +85,17 @@ void Buffer::changeString(std::string const& str)
     changeString(strToStr32(str));
 }
 
+uint32_t Buffer::_getClusterIndex(size_t cursor)
+{
+    if (cursor >= glyphCount()) {
+        return static_cast<uint32_t>(glyphCount());
+    }
+    return _buffer_info.glyphs.at(cursor).info.cluster;
+}
+
 void Buffer::insertText(std::u32string const& str, size_t cursor)
 {
-    uint32_t index;
-    if (cursor >= glyphCount()) {
-        index = static_cast<uint32_t>(glyphCount());
-    }
-    else {
-        index = _buffer_info.glyphs.at(cursor).info.cluster;
-    }
+    uint32_t const index = _getClusterIndex(cursor);
     _str.insert(_str.cbegin() + index, str.cbegin(), str.cend());
     _buffer_info.str = _str;
     _updateBuffer();
@@ -98,6 +104,16 @@ void Buffer::insertText(std::u32string const& str, size_t cursor)
 void Buffer::insertText(std::string const& str, size_t cursor)
 {
     insertText(strToStr32(str), cursor);
+}
+
+void Buffer::deleteText(size_t cursor, size_t count)
+{
+    if (count == 0)
+        return;
+    uint32_t const index = _getClusterIndex(cursor);
+    _str.erase(_str.cbegin() + index, _str.cbegin() + index + count);
+    _buffer_info.str = _str;
+    _updateBuffer();
 }
 
 void Buffer::changeFormat(Format const& opt)

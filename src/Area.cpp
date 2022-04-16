@@ -1,4 +1,5 @@
 #include "SSS/Text-Rendering/Area.hpp"
+#include "SSS/Text-Rendering/Lib.hpp"
 
 __SSS_TR_BEGIN;
 
@@ -95,7 +96,9 @@ void Area::parseString(std::u32string const& str) try
             i = next_unit_separator + 1;
         }
     }
+    size_t tmp = _glyph_count;
     _updateBufferInfos();
+    _edit_cursor += _glyph_count - tmp;
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
@@ -144,7 +147,7 @@ void Area::clear() noexcept
     _buffers.clear();
     _buffer_infos.clear();
     _glyph_count = 0;
-    _edit_cursor = _CRT_SIZE_MAX;
+    _edit_cursor = 0;
     // Reset lines
     _updateLines();
     // Reset typewriter
@@ -179,7 +182,7 @@ void Area::scroll(int pixels) noexcept
     }
 }
 
-void Area::placeCursor(int x, int y) try
+void Area::cursorPlace(int x, int y) try
 {
     if (_glyph_count == 0) {
         return;
@@ -222,91 +225,87 @@ static size_t _move_cursor_line(_internal::BufferInfoVector const& buffer_infos,
     return cursor;
 }
 
-void Area::moveCursor(CursorInput position) try
+static size_t _ctrl_jump(_internal::BufferInfoVector const& buffer_infos,
+    size_t cursor, int coeff)
 {
-    static auto const ctrl_jump = [&](int coeff) {
-        _edit_cursor += coeff;
-        while (_edit_cursor > 0 && _edit_cursor < _glyph_count) {
-            _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(_edit_cursor));
-            _internal::BufferInfo const& buffer(_buffer_infos.getBuffer(_edit_cursor));
+    size_t const glyph_count = buffer_infos.glyphCount();
+    cursor += coeff;
+    while (cursor > 0 && cursor < glyph_count) {
+        _internal::GlyphInfo const& glyph(buffer_infos.getGlyph(cursor));
+        _internal::BufferInfo const& buffer(buffer_infos.getBuffer(cursor));
 
-            char32_t c = buffer.str[glyph.info.cluster];
-            if (std::isalnum(c, buffer.locale))
-                break;
-            _edit_cursor += coeff;
-        }
-        while (_edit_cursor > 0 && _edit_cursor < _glyph_count) {
-            _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(_edit_cursor));
-            _internal::BufferInfo const& buffer(_buffer_infos.getBuffer(_edit_cursor));
-            char32_t c = buffer.str[glyph.info.cluster];
-            if (!std::isalnum(c, buffer.locale))
-                break;
-            _edit_cursor += coeff;
-        }
-        if (coeff == -1 && _edit_cursor != 0) {
-            ++_edit_cursor;
-        }
-    };
-
-    if (_edit_cursor > _glyph_count) {
-        _edit_cursor = _glyph_count;
+        char32_t c = buffer.str[glyph.info.cluster];
+        if (std::isalnum(c, buffer.locale))
+            break;
+        cursor += coeff;
     }
-    
+    while (cursor > 0 && cursor < glyph_count) {
+        _internal::GlyphInfo const& glyph(buffer_infos.getGlyph(cursor));
+        _internal::BufferInfo const& buffer(buffer_infos.getBuffer(cursor));
+        char32_t c = buffer.str[glyph.info.cluster];
+        if (!std::isalnum(c, buffer.locale))
+            break;
+        cursor += coeff;
+    }
+    if (coeff == -1 && cursor != 0) {
+        ++cursor;
+    }
+    return cursor;
+}
+
+void Area::cursorMove(Move direction) try
+{
     _internal::Line::cit line = _internal::Line::which(_lines, _edit_cursor);
     int x, y;
+    _getCursorPhysicalPos(x, y);
 
-    switch (position) {
+    switch (direction) {
 
-    case CursorInput::Right:
+    case Move::Right:
         if (_edit_cursor >= _glyph_count) break;
         ++_edit_cursor;
-        line = _internal::Line::which(_lines, _edit_cursor);
         break;
 
-    case CursorInput::Left:
+    case Move::Left:
         if (_edit_cursor == 0) break;
         --_edit_cursor;
-        line = _internal::Line::which(_lines, _edit_cursor);
         break;
 
-    case CursorInput::Down:
+    case Move::Down:
         if (line == _lines.cend() - 1) break;
-        _getCursorPhysicalPos(x, y);
         ++line;
         _edit_cursor = _move_cursor_line(_buffer_infos, line, x);
         break;
 
-    case CursorInput::Up:
+    case Move::Up:
         if (line == _lines.cbegin()) break;
-        _getCursorPhysicalPos(x, y);
         --line;
         _edit_cursor = _move_cursor_line(_buffer_infos, line, x);
         break;
 
-    case CursorInput::CtrlRight:
+    case Move::CtrlRight:
         if (_edit_cursor >= _glyph_count) break;
-        ctrl_jump(1);
-        line = _internal::Line::which(_lines, _edit_cursor);
+        _edit_cursor = _ctrl_jump(_buffer_infos, _edit_cursor, 1);
         break;
 
-    case CursorInput::CtrlLeft:
+    case Move::CtrlLeft:
         if (_edit_cursor == 0) break;
-        ctrl_jump(-1);
-        line = _internal::Line::which(_lines, _edit_cursor);
+        _edit_cursor = _ctrl_jump(_buffer_infos, _edit_cursor, -1);
         break;
 
-    case CursorInput::Start:
+    case Move::Start:
         _edit_cursor = line->first_glyph;
         break;
 
-    case CursorInput::End:
+    case Move::End:
+        // TODO: fix this working partially on Areas with multiple lines
         _edit_cursor = line->last_glyph + 1;
-        break;
     }
+    _draw = true;
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void Area::insertText(std::u32string str) try
+void Area::cursorAddText(std::u32string str) try
 {
     if (str.empty()) {
         __LOG_OBJ_METHOD_WRN("Empty string.");
@@ -337,23 +336,78 @@ void Area::insertText(std::u32string str) try
     // Update lines as they need to be updated before moving cursor
     _updateBufferInfos();
     // Move cursor
-    for (size_t i = 0; i < size; ++i) {
-        moveCursor(CursorInput::Right);
-    }
+    _edit_cursor += size;
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void Area::insertText(std::string str)
+void Area::cursorAddText(std::string str)
 {
-    insertText(strToStr32(str));
+    cursorAddText(strToStr32(str));
 }
+
+void Area::cursorDeleteText(Delete direction) try
+{
+    size_t cursor = _edit_cursor;
+    size_t count = 0;
+    if (cursor > _glyph_count) {
+        cursor = _glyph_count;
+    }
+
+    size_t tmp;
+    switch (direction) {
+    case Delete::Right:
+          if (cursor >= _glyph_count) break;
+      count = 1;
+        break;
+
+    case Delete::Left:
+        if (cursor == 0) break;
+        count = 1;
+        --cursor;
+        break;
+
+    case Delete::CtrlRight:
+        if (cursor >= _glyph_count) break;
+        tmp = _ctrl_jump(_buffer_infos, cursor, 1);
+        count = tmp - cursor;
+        break;
+
+    case Delete::CtrlLeft:
+        if (cursor == 0) break;
+        tmp = _ctrl_jump(_buffer_infos, cursor, -1);
+        count = cursor - tmp;
+        cursor = tmp;
+        break;
+
+    }
+
+    if (count == 0)
+        return;
+
+    size_t size = 0;
+    for (_internal::Buffer::Ptr const& buffer : _buffers) {
+        if (buffer->glyphCount() > cursor) {
+            size_t const tmp = buffer->glyphCount();
+            buffer->deleteText(cursor, count);
+            size = tmp - buffer->glyphCount();
+            break;
+        }
+        cursor -= buffer->glyphCount();
+    }
+    _updateBufferInfos();
+    if (direction == Delete::Left || direction == Delete::CtrlLeft) {
+        // Move cursor
+        _edit_cursor -= size;
+    }
+}
+__CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Typewriter functions ---
 
 // Sets the writing mode (default: false):
 // - true: Text is rendered char by char, see incrementCursor();
 // - false: Text is fully rendered
-void Area::TWset(bool activate) noexcept
+void Area::twSet(bool activate) noexcept
 {
     if (_typewriter != activate) {
         _tw_cursor = 0;
@@ -366,7 +420,7 @@ void Area::TWset(bool activate) noexcept
 // The first call will render the 1st character.
 // Second call will render the both the 1st and 2nd character.
 // Etc...
-bool Area::TWprint() noexcept
+bool Area::twPrint() noexcept
 {
     // Skip if the writing mode is set to default, or if all glyphs have been written
     if (!_typewriter) {
@@ -390,14 +444,13 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const
 {
     _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
 
-    y = 0;
-    for (_internal::Line::cit it = _lines.cbegin(); it != line + 1; ++it) {
-        y += it->charsize;
+    y = 5 + _lines.cbegin()->charsize; // TODO: related to FT_Pen
+    for (_internal::Line::cit it = _lines.cbegin() + 1; it <= line; ++it) {
+        y += it->fullsize;
     }
-    y >>= 6;
 
-    x = 0;
-    for (size_t n = line->first_glyph; n <= _edit_cursor && n < _glyph_count; ++n) {
+    x = 5 << 6; // TODO: related to FT_Pen
+    for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
         x += _buffer_infos.getGlyph(n).pos.x_advance;
     }
     x >>= 6;
@@ -529,6 +582,8 @@ void Area::_drawIfNeeded()
     data.w = _w;
     data.h = _h;
     data.pixels_h = _pixels_h;
+    _getCursorPhysicalPos(data.cursor_x, data.cursor_y);
+    data.cursor_h = _buffer_infos.getBuffer(_edit_cursor).style.charsize;
     data.last_glyph = _typewriter ? _tw_cursor : _glyph_count;
     data.buffer_infos = _buffer_infos;
     data.lines = _lines;

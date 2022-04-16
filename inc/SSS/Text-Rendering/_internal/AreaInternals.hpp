@@ -34,9 +34,15 @@ struct DrawParameters {
 };
 
 struct AreaData {
+    // Area size
     int w{ 0 }; // Width of the Area
     int h{ 0 }; // Height of the Area
     int pixels_h{ 0 }; // Real height of the Area
+    // Cursor's physical position & height
+    int cursor_x{ 0 }; // Cursor's x pos
+    int cursor_y{ 0 }; // Cursor's y pos
+    int cursor_h{ 0 }; // Cursor's height
+    // Draw infos
     size_t last_glyph{ 0 }; // Last glyph to draw (excluded)
     Line::vector lines; // Line vector    
     BufferInfoVector buffer_infos; // Glyph infos

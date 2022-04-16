@@ -4,6 +4,9 @@
 
 __SSS_TR_BEGIN;
 
+enum class Move;    // Pre-declaration
+enum class Delete;  // Pre-declaration
+
 class Area {
 private:
     // Width of area
@@ -42,9 +45,9 @@ private:
     size_t _glyph_count{ 0 };
 
     // Cursor's glyph related position
-    // Managed in "Cursor" functions, used in "insertText" functions
+    // Managed in "Cursor" functions, used in "cursorAddText" functions
     // Set to first be at the end of text by default.
-    size_t _edit_cursor{ _CRT_SIZE_MAX };
+    size_t _edit_cursor{ 0 };
     // Cursor physical position
     int _edit_x{ 0 }, _edit_y{ 0 };
 
@@ -55,20 +58,6 @@ private:
     std::vector<_internal::Line> _lines;
 
 public:
-    /** All available inputs to move the edit cursor.
-     *  @sa moveCursor().
-     */
-    enum class CursorInput {
-        Right,      /**< Move the cursor one character to the right.*/
-        Left,       /**< Move the cursor one character to the left.*/
-        Down,       /**< Move the cursor one line down.*/
-        Up,         /**< Move the cursor one line up.*/
-        CtrlRight,  /**< Move the cursor one word to the right.*/
-        CtrlLeft,   /**< Move the cursor one word to the left.*/
-        Start,      /**< Move the cursor to the start of the line.*/
-        End,        /**< Move the cursor to the end of the line.*/
-    };
-
     /** Unique instance pointer.
      *  @sa Map, create(), remove().
      */
@@ -209,32 +198,27 @@ public:
     void getDimensions(int& w, int& h) const noexcept;
     void resize(int width, int height);
 
-// --- Format functions ---
-
     // Scrolls up (negative values) or down (positive values).
     // The function returns true if the scrolling didn't change.
     // Any excessive scrolling will be negated, and the function
     // will return false.
     void scroll(int pixels) noexcept;
 
-// --- Edit functions ---
-
-    void placeCursor(int x, int y);
-    void moveCursor(CursorInput position);
-    void insertText(std::u32string str);
-    void insertText(std::string str);
-
-// --- Typewriter functions ---
+    void cursorPlace(int x, int y);
+    void cursorMove(Move direction);
+    void cursorAddText(std::u32string str);
+    void cursorAddText(std::string str);
+    void cursorDeleteText(Delete direction);
 
     // Sets the writing mode (default: false):
     // - true: Text is rendered char by char, see incrementCursor();
     // - false: Text is fully rendered
-    void TWset(bool activate) noexcept;
+    void twSet(bool activate) noexcept;
     // Increments the typewriter's cursor. Start point is 0.
     // The first call will render the 1st character.
     // Second call will render the both the 1st and 2nd character.
     // Etc...
-    bool TWprint() noexcept;
+    bool twPrint() noexcept;
 
 private:
     void _getCursorPhysicalPos(int& x, int& y) const;

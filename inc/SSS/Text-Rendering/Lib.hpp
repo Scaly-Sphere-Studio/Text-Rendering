@@ -4,6 +4,30 @@
 
 __SSS_TR_BEGIN;
 
+/** All available inputs to move Area's edit cursor.
+ *  @sa Area::moveCursor().
+ */
+enum class Move {
+    Right,      /**< Move the cursor one character to the right.*/
+    Left,       /**< Move the cursor one character to the left.*/
+    Down,       /**< Move the cursor one line down.*/
+    Up,         /**< Move the cursor one line up.*/
+    CtrlRight,  /**< Move the cursor one word to the right.*/
+    CtrlLeft,   /**< Move the cursor one word to the left.*/
+    Start,      /**< Move the cursor to the start of the line.*/
+    End,        /**< Move the cursor to the end of the line.*/
+};
+
+/** All available inputs to delete text.
+ *  @sa Area::deleteText().
+ */
+enum class Delete {
+    Right,      /**< Delete the character at the right of the cursor.*/
+    Left,       /**< Delete the character at the left of the cursor.*/
+    CtrlRight,  /**< Delete the word at the right of the cursor.*/
+    CtrlLeft,   /**< Delete the word at the left of the cursor.*/
+};
+
 /** Inits internal libraries.
  *  @usage To be called before any processing operation, and
  *  met with terminate() before exiting the program.
