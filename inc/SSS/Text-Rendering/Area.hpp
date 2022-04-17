@@ -7,6 +7,25 @@ __SSS_TR_BEGIN;
 enum class Move;    // Pre-declaration
 enum class Delete;  // Pre-declaration
 
+/** The class handling most of the text rendering logic.
+ *
+ *  Use static functions to create() instances, and retrieve
+ *  them with getMap().
+ * 
+ *  Customize multiple text formats via setFormat(), which will be used
+ *  in the parseString() functions.
+ * 
+ *  Don't forget to update() the changes, and retrieve resulting pixels
+ *  with pixelsGet() when pixelsWereChanged() returns \c true.
+ * 
+ *  Scroll up and down with scroll(), or use setDimensions() to resize
+ *  the text area.
+ * 
+ *  Place and move the editing cursor with cursorPlace() and cursorMove(),
+ *  and add or remove text with cursorAddText() and cursorDeleteText().
+ * 
+ *  @sa Format, init(), loadFont()
+ */
 class Area {
 private:
     // Width of area
@@ -23,14 +42,14 @@ private:
     // True -> display characters one by one
     bool _typewriter{ false };
 
-    // Managed by update(), used in "ChangesPending" functions
+    // Managed by update(), used in "pixelsXXX" functions
     bool _changes_pending{ false };
 
     // Double-Buffer array
     using _PixelBuffers = std::array<_internal::AreaPixels, 2>;
     // Async processing buffers
     _PixelBuffers _pixels;
-    // Const iterator used in getPixels(), managed by update()
+    // Const iterator used in pixelsGet(), managed by update()
     _PixelBuffers::const_iterator _current_pixels{ _pixels.cbegin() };
     // Iterator managed by _drawIfNeeded()
     _PixelBuffers::iterator _processing_pixels{ _pixels.begin() };
@@ -58,11 +77,13 @@ private:
     std::vector<_internal::Line> _lines;
 
 public:
-    /** Unique instance pointer.
-     *  @sa Map, create(), remove().
+    /** Unique instance pointer, which are stored in a Map.
+     *  This is the only way to refer to Area instances.
+     *  @sa create(), remove().
      */
     using Ptr = std::unique_ptr<Area>;
     /** Instance map, stored by IDs.
+     *  This is the only way to refer to Area instances.
      *  @sa create(), remove(), getMap(), clearMap().
      */
     using Map = std::map<uint32_t, Ptr>;
@@ -77,7 +98,8 @@ private:
 
 public:
     /** Destructor, clears internal cache.
-     *  @sa remove(), clearMap().
+     *  Can only be indirectly called.
+     *  @sa remove() and clearMap().
      */
     ~Area() noexcept;
     
@@ -109,13 +131,9 @@ public:
     /** Modifies internal format for given ID.
      *  @param[in] src The source format to be copied.
      *  @param[in] id The format ID to be modified. Default: \c 0.
-     *  @sa Format, clearFormats().
+     *  @sa Format.
      */
     void setFormat(Format const& src, uint32_t id = 0);
-    /** Resets all internal formats to default value.
-     *  @sa Format, setFormat().
-     */
-    void resetFormats() noexcept;
 
     /** Parses a UTF32 string thay may use multiple formats in itself.
      *
@@ -153,31 +171,37 @@ public:
     void parseString(std::u32string const& str);
     /** \overload*/
     void parseString(std::string const& str);
-
+    
+    /** Clears the internal string & pixels.
+     *  Also resets scrolling, cursors.\n
+     *  Keeps previous format modifications & dimensions.
+     *  @sa update(), parseString(), pixelsGet();
+     */
+    void clear() noexcept;
     /** Draws modifications when needed, and sets the return value of
-     *  hasNewPixels() to \c true when changes are finished.
+     *  pixelsWereChanged() to \c true when changes are finished.
      *  @usage To be called as often as possible in your main loop.
-     *  @sa clear(), getPixels().
+     *  @sa clear(), pixelsGet().
      */
     void update();
+    
     /** Returns \c true when internal pixels were modified and the
      *  user needs to retrieve them.
-     *  When said pixels are retrieved, setPixelsAsRetrieved() needs to
+     *  When said pixels are retrieved, pixelsAreRetrieved() needs to
      *  be called.
      *  @return \c true when new pixels are to be retrieved, and \c false
      *  otherwise.
-     *  @sa update(), getPixels().
+     *  @sa update(), pixelsGet().
      */
-    inline bool hasNewPixels() const noexcept { return _changes_pending; };
+    inline bool pixelsWereChanged() const noexcept { return _changes_pending; };
     /** Tells the Area instance that the new pixels were retrieved by the user.
-     *  This effectively sets the return value of hasNewPixels() to \c false.
-     *  @sa update(), getPixels().
+     *  This effectively sets the return value of pixelsWereChanged() to \c false.
+     *  @sa update(), pixelsGet().
      */
-    inline void setPixelsAsRetrieved() noexcept { _changes_pending = false; }
-
-    /** Returns a pointer to the internal pixel buffer.
+    inline void pixelsAreRetrieved() noexcept { _changes_pending = false; }
+    /** Returns a const pointer to the internal pixels array.
      *  
-     *  The returned pointer stays valid until, at least, the next call
+     *  The returned pointer stays valid until -- at least -- the next call
      *  to update(). After that, there is no guarantee for the pointer
      *  to be valid.
      *  
@@ -185,43 +209,73 @@ public:
      * 
      *  @sa update(), clear(), getDimensions().
      */
-    void const* getPixels() const;
-    /** Clears the internal string & pixels.
-     *  Also resets scrolling, editing cursor
-     *  Keeps previous format modifications <em>(see resetFormats())</em>.
-     *  Keeps dimensions.
-     *  @sa parseString(), getPixels();
+    void const* pixelsGet() const;
+
+    /** Retrieves dimensions of current pixels.
+     *  Current pixels are the ones returned by pixelsGet().\n
+     *  If you just called setDimensions(), this function won't retrieve
+     *  new values until pixelsWereChanged() returns \c true.
+     *  @param[out] width Will be filled with pixels width.
+     *  @param[out] height Will be filled with pixels height.
      */
-    void clear() noexcept;
-
-    // Fills width and height with internal values
-    void getDimensions(int& w, int& h) const noexcept;
-    void resize(int width, int height);
-
-    // Scrolls up (negative values) or down (positive values).
-    // The function returns true if the scrolling didn't change.
-    // Any excessive scrolling will be negated, and the function
-    // will return false.
+    void getDimensions(int& width, int& height) const noexcept;
+    /** Sets new dimensions values for internal pixels.
+     *  A call to update() is necessary for changes to take effect.
+     *  @param[in] width Defines the pixels width. Must be above \c 0.
+     *  @param[in] height Defines the pixels height. Must be above \c 0.
+     *  @throw std::runtime_error If at least one of the given values
+     *  
+     */
+    void setDimensions(int width, int height);
+    /** Scrolls up with negative values, and down with positive values.
+     *  Takes effect immediatley and sets pixelsWereChanged() to \c true.\n
+     *  Trying to scroll too high or too low will have no effect.
+     *  param[in] pixels The amount of pixels to scroll in either direction.
+     */
     void scroll(int pixels) noexcept;
 
+    /** Places the editing cursor at given coordinates.
+     *  The cursor is by default at the end of the text.
+     *  @param[in] x The X coordinate to place the cursor to.
+     *  @param[in] x The Y coordinate to place the cursor to.
+     *  @sa cursorMove(), cursorAddText(), cursorDeleteText()
+     */
     void cursorPlace(int x, int y);
+    /** Moves the editing cursor in given direction.
+     *  The cursor is by default at the end of the text.
+     *  @param[in] direction The direction for the cursor to be moved.
+     *  @sa Move, cursorPlace(), cursorAddText(), cursorDeleteText()
+     */
     void cursorMove(Move direction);
+    /** Inserts text at the cursor's position.
+     *  The cursor is by default at the end of the text.
+     *  @param[in] str The UTF32 string to be added to existing text.
+     *  @sa cursorPlace(), cursorMove(), cursorDeleteText()
+     */
     void cursorAddText(std::u32string str);
+    /** \overload*/
     void cursorAddText(std::string str);
+    /** Deletes text at the cursor's position, in the given direction.
+     *  The cursor is by default at the end of the text.
+     *  @param[in] str The UTF32 string to be added to existing text.
+     *  @sa Delete, cursorPlace(), cursorMove(), cursorAddText()
+     */
     void cursorDeleteText(Delete direction);
 
-    // Sets the writing mode (default: false):
-    // - true: Text is rendered char by char, see incrementCursor();
-    // - false: Text is fully rendered
+    /** Enables or disables the \b typewriter mode (disabled by default).
+     *  The typewriter mode makes characters being written one by one
+     *  instead of being all rendered instantly.\n
+     *  This is typically useful in Visual Novel games.
+     */
     void twSet(bool activate) noexcept;
-    // Increments the typewriter's cursor. Start point is 0.
-    // The first call will render the 1st character.
-    // Second call will render the both the 1st and 2nd character.
-    // Etc...
+
+    /** \cond TODO*/
     bool twPrint() noexcept;
+    /** \endcond*/
 
 private:
-    void _getCursorPhysicalPos(int& x, int& y) const;
+    // Computes _edit_cursor's relative position on the Area
+    void _getCursorPhysicalPos(int& x, int& y) const noexcept;
     // Ensures _scrolling has a valid value
     void _scrollingChanged() noexcept;
     // Updates _lines

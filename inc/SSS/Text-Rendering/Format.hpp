@@ -4,7 +4,7 @@
 
 __SSS_TR_BEGIN;
 
-/** Structure defining different formats to be used in Area instances.
+/** Structure defining text formats to be used in Area instances.
  *  @sa Style, Color, Language.
  */
 struct Format {

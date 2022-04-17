@@ -56,11 +56,6 @@ void Area::setFormat(Format const& format, uint32_t id) try
 }
 __CATCH_AND_RETHROW_METHOD_EXC
 
-void Area::resetFormats() noexcept
-{
-    _formats.clear();
-}
-
 void Area::parseString(std::u32string const& str) try
 {
     clear();
@@ -117,7 +112,7 @@ void Area::update()
     _drawIfNeeded();
 }
 
-void const* Area::getPixels() const try
+void const* Area::pixelsGet() const try
 {
     RGBA32::Vector const& pixels = _current_pixels->getPixels();
     if (pixels.empty()) {
@@ -159,7 +154,7 @@ void Area::getDimensions(int& w, int& h) const noexcept
     _current_pixels->getDimensions(w, h);
 }
 
-void Area::resize(int width, int height) try
+void Area::setDimensions(int width, int height) try
 {
     _w = width;
     _h = height;
@@ -440,7 +435,7 @@ bool Area::twPrint() noexcept
     return false;
 }
 
-void Area::_getCursorPhysicalPos(int& x, int& y) const
+void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
 {
     _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
 

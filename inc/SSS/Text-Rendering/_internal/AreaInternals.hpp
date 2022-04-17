@@ -19,7 +19,7 @@ struct Line {
     using it = vector::iterator;
     using cit = vector::const_iterator;
     
-    static cit which(vector const& lines, size_t cursor);
+    static cit which(vector const& lines, size_t cursor) noexcept;
 };
 
 // Draw parameters

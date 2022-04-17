@@ -4,7 +4,7 @@
 __SSS_TR_BEGIN;
 __INTERNAL_BEGIN;
 
-Line::cit Line::which(vector const& lines, size_t cursor)
+Line::cit Line::which(vector const& lines, size_t cursor) noexcept
 {
     Line::cit line = lines.cbegin();
     while (line != lines.cend() - 1) {

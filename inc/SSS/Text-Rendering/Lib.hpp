@@ -5,7 +5,7 @@
 __SSS_TR_BEGIN;
 
 /** All available inputs to move Area's edit cursor.
- *  @sa Area::moveCursor().
+ *  @sa Area::cursorMove().
  */
 enum class Move {
     Right,      /**< Move the cursor one character to the right.*/
@@ -19,7 +19,7 @@ enum class Move {
 };
 
 /** All available inputs to delete text.
- *  @sa Area::deleteText().
+ *  @sa Area::cursorDeleteText().
  */
 enum class Delete {
     Right,      /**< Delete the character at the right of the cursor.*/
