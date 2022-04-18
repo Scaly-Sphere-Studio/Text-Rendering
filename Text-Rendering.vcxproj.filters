@@ -23,7 +23,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="InstallScripts.ps1" />
+    <None Include="DownloadVcpkgScripts.ps1" />
     <None Include="CONTROL" />
     <None Include="vcpkg_scripts\Remove.ps1">
       <Filter>vcpkg_scripts</Filter>

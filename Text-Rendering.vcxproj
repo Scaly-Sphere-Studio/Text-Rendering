@@ -21,7 +21,7 @@
   <ItemGroup>
     <None Include="CONTROL" />
     <None Include="Doxyfile" />
-    <None Include="InstallScripts.ps1" />
+    <None Include="DownloadVcpkgScripts.ps1" />
     <None Include="vcpkg_scripts\Install.ps1" />
     <None Include="vcpkg_scripts\Remove.ps1" />
   </ItemGroup>
