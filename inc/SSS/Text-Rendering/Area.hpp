@@ -237,7 +237,7 @@ public:
     /** Places the editing cursor at given coordinates.
      *  The cursor is by default at the end of the text.
      *  @param[in] x The X coordinate to place the cursor to.
-     *  @param[in] x The Y coordinate to place the cursor to.
+     *  @param[in] y The Y coordinate to place the cursor to.
      *  @sa cursorMove(), cursorAddText(), cursorDeleteText()
      */
     void cursorPlace(int x, int y);
@@ -257,7 +257,7 @@ public:
     void cursorAddText(std::string str);
     /** Deletes text at the cursor's position, in the given direction.
      *  The cursor is by default at the end of the text.
-     *  @param[in] str The UTF32 string to be added to existing text.
+     *  @param[in] direction The deletion direction.
      *  @sa Delete, cursorPlace(), cursorMove(), cursorAddText()
      */
     void cursorDeleteText(Delete direction);

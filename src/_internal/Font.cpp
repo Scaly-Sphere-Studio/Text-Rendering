@@ -115,7 +115,7 @@ void Font::_throw_if_bad_charsize(int &charsize) const
         charsize = 1;
     }
     if (_font_sizes.count(charsize) == 0) {
-        throw_exc(ERR_MSG::NOTHING_FOUND);
+        throw_exc("No loaded charsize of given parameter");
     }
 }
 

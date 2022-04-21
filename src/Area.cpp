@@ -13,7 +13,7 @@ Area::Area(int width, int height) try
     : _w(width), _h(height)
 {
     if (_w <= 0 || _h <= 0) {
-        throw_exc(ERR_MSG::INVALID_ARGUMENT);
+        throw_exc("Width & Height should both be above 0.");
     }
 }
 __CATCH_AND_RETHROW_METHOD_EXC
@@ -125,7 +125,7 @@ void const* Area::pixelsGet() const try
     // Ensure current scrolling doesn't go past the pixels vector
     size_t const index = static_cast<size_t>(_scrolling) * static_cast<size_t>(w);
     if (index > pixels.size() - size) {
-        throw_exc(ERR_MSG::OUT_OF_BOUND);
+        throw_exc("Scrolling error");
     }
     return &pixels.at(index);
 }

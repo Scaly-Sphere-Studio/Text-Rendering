@@ -136,7 +136,7 @@ __CATCH_AND_RETHROW_METHOD_EXC;
 Bitmap const& FontSize::getGlyphBitmap(FT_UInt glyph_index) const try
 {
     if (_originals.count(glyph_index) == 0) {
-        throw_exc(ERR_MSG::NOTHING_FOUND);
+        throw_exc("No glyph found for given index.");
     }
     // Retrieve bitmap from cache
     return _originals.at(glyph_index);
@@ -146,9 +146,11 @@ __CATCH_AND_RETHROW_METHOD_EXC;
 // Returns the corresponding glyph outline's bitmap. Throws if not found.
 Bitmap const& FontSize::getOutlineBitmap(FT_UInt glyph_index, int outline_size) const try
 {
-    if (_outlined.count(outline_size) == 0
-        || _outlined.at(outline_size).count(glyph_index) == 0) {
-        throw_exc(ERR_MSG::NOTHING_FOUND);
+    if (_outlined.count(outline_size) == 0) {
+        throw_exc("No map found for given outline size.");
+    }
+    if (_outlined.at(outline_size).count(glyph_index) == 0) {
+        throw_exc("No glyph found for given index & outline size.");
     }
     // Retrieve bitmap from cache
     return _outlined.at(outline_size).at(glyph_index);

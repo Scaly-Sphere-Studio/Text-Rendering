@@ -78,7 +78,7 @@ void addFontDir(std::string const& font_dir) try
         _internal::Lib::font_dirs.push_front(font_dir);
     }
     else {
-        __LOG_FUNC_CTX_WRN(ERR_MSG::INVALID_ARGUMENT, font_dir);
+        __LOG_FUNC_CTX_WRN("Could not find a directory given path", font_dir);
     }
 }
 __CATCH_AND_RETHROW_FUNC_EXC;
