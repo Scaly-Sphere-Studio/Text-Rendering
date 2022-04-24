@@ -2,6 +2,10 @@
 
 #include "_internal/Font.hpp"
 
+/** @file
+ *  Defines global functions and enums.
+ */
+
 __SSS_TR_BEGIN;
 
 /** All available inputs to move Area's edit cursor.

@@ -3,6 +3,10 @@
 #include "Font.hpp"
 #include "../Format.hpp"
 
+/** @file
+ *  Defines internal glyph and kerning info classes.
+ */
+
 __SSS_TR_BEGIN;
 __INTERNAL_BEGIN;
 // Pre-declaration

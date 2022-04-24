@@ -2,6 +2,10 @@
 
 #include "pointers.hpp"
 
+/** @file
+ *  Defines internal font sizes management classes.
+ */
+
 __SSS_TR_BEGIN;
 __INTERNAL_BEGIN;
 

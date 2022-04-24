@@ -2,6 +2,10 @@
 
 #include "_includes.hpp"
 
+/** @file
+ *  Defines internal SSS::C_Ptr alias declarations.
+ */
+
 __SSS_TR_BEGIN;
 __INTERNAL_BEGIN;
 

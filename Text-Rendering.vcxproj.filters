@@ -61,7 +61,7 @@
     <ClInclude Include="inc\SSS\Text-Rendering\Area.hpp">
       <Filter>inc\TR</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Lib.hpp">
+    <ClInclude Include="inc\SSS\Text-Rendering\Globals.hpp">
       <Filter>inc\TR</Filter>
     </ClInclude>
   </ItemGroup>
@@ -81,7 +81,7 @@
     <ClCompile Include="src\_internal\Font.cpp">
       <Filter>src\internal</Filter>
     </ClCompile>
-    <ClCompile Include="src\Lib.cpp">
+    <ClCompile Include="src\Globals.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

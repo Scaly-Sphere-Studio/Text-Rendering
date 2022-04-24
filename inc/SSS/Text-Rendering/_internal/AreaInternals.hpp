@@ -2,6 +2,10 @@
 
 #include "Buffer.hpp"
 
+/** @file
+ *  Defines internal asynchronous drawing classes.
+ */
+
 __SSS_TR_BEGIN;
 __INTERNAL_BEGIN;
 

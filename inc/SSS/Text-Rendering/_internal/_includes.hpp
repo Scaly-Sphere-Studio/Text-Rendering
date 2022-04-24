@@ -1,6 +1,12 @@
 #pragma once
 
-    // --- Includes ---
+/** @dir SSS/Text-Rendering/_internal
+ *  Holds \b internal headers for the %SSS/Text-Rendering library.
+ */
+
+/** @file
+ *  Base header including resources and defining macros used by other headers.
+ */
 
 // FreeType2
 #include <ft2build.h>

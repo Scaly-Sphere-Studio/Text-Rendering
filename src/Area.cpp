@@ -1,5 +1,5 @@
 #include "SSS/Text-Rendering/Area.hpp"
-#include "SSS/Text-Rendering/Lib.hpp"
+#include "SSS/Text-Rendering/Globals.hpp"
 
 __SSS_TR_BEGIN;
 

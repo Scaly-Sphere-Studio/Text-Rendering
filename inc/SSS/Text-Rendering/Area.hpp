@@ -2,6 +2,10 @@
 
 #include "_internal/AreaInternals.hpp"
 
+/** @file
+ *  Defines SSS::TR::Area.
+ */
+
 __SSS_TR_BEGIN;
 
 enum class Move;    // Pre-declaration

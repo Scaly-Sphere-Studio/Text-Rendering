@@ -1,5 +1,5 @@
 #include "SSS/Text-Rendering/_internal/AreaInternals.hpp"
-#include "SSS/Text-Rendering/Lib.hpp"
+#include "SSS/Text-Rendering/Globals.hpp"
 
 __SSS_TR_BEGIN;
 __INTERNAL_BEGIN;
@@ -132,7 +132,7 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     _CopyBitmapArgs args(bitmap);
 
     // The (pen.x % 64 > 31) part is used to round up pixel fractions
-    args.x0 = (pen.x >> 6) + (pen.x % 64 > 31) + bitmap.pen_left;
+    args.x0 = (pen.x >> 6) + bitmap.pen_left;
     args.y0 = param.charsize - (pen.y >> 6) - bitmap.pen_top;
 
     // Retrieve the color to use : either a plain one, or a function to call

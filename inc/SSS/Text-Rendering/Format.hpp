@@ -2,6 +2,10 @@
 
 #include "_internal/_includes.hpp"
 
+/** @file
+ *  Defines SSS::TR::Format and subsequent classes.
+ */
+
 __SSS_TR_BEGIN;
 
 /** Structure defining text formats to be used in Area instances.

@@ -1,4 +1,4 @@
-#include "SSS/Text-Rendering/Lib.hpp"
+#include "SSS/Text-Rendering/Globals.hpp"
 #include "SSS/Text-Rendering/Area.hpp"
 
 __SSS_TR_BEGIN;

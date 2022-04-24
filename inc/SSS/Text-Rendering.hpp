@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Text-Rendering/Lib.hpp"
+#include "Text-Rendering/Globals.hpp"
 #include "Text-Rendering/Area.hpp"
 
 /** @file
  *  Header of the
- *  [SSS/TR](https://github.com/Scaly-Sphere-Studio/TR)
- *  library, includes all \c SSS/TR/ headers.
+ *  [SSS/Text-Rendering](https://github.com/Scaly-Sphere-Studio/Text-Rendering)
+ *  library, includes all \c SSS/Text-Rendering/ headers.
  */
 
 /** @dir SSS/Text-Rendering
- *  Holds all \b %SSS/TR headers.
+ *  Holds all \b %SSS/Text-Rendering headers.
  */
 
 /** @namespace SSS::TR

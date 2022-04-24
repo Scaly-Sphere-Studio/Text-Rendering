@@ -35,10 +35,10 @@
     <ClInclude Include="inc\SSS\Text-Rendering\Area.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\Format.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\_internal\AreaInternals.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Lib.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Globals.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Lib.cpp" />
+    <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\_internal\FontSize.cpp" />
     <ClCompile Include="src\_internal\Buffer.cpp" />
     <ClCompile Include="src\_internal\Font.cpp" />

@@ -2,6 +2,10 @@
 
 #include "FontSize.hpp"
 
+/** @file
+ *  Defines the internal font management class.
+ */
+
 __SSS_TR_BEGIN;
 /** \cond INTERNAL */
 void loadFont(std::string const& font_name); // Pre-declaration
