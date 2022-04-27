@@ -6,12 +6,12 @@
  *  Defines the internal font management class.
  */
 
-__SSS_TR_BEGIN;
+SSS_TR_BEGIN;
 /** \cond INTERNAL */
 void loadFont(std::string const& font_name); // Pre-declaration
 /** \endcond */
 
-__INTERNAL_BEGIN;
+INTERNAL_BEGIN;
 
 class Font {
     friend void SSS::TR::loadFont(std::string const& font_file);
@@ -62,5 +62,5 @@ private:
 };
 
 
-__INTERNAL_END;
-__SSS_TR_END;
+INTERNAL_END;
+SSS_TR_END;

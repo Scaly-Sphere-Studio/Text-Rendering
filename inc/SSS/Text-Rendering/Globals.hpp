@@ -6,7 +6,7 @@
  *  Defines global functions and enums.
  */
 
-__SSS_TR_BEGIN;
+SSS_TR_BEGIN;
 
 /** All available inputs to move Area's edit cursor.
  *  @sa Area::cursorMove().
@@ -72,7 +72,7 @@ void setDPI(FT_UInt hdpi, FT_UInt vdpi);
 void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept;
 /** \endcond*/
 
-__INTERNAL_BEGIN;
+INTERNAL_BEGIN;
 
 class Lib {
     friend void ::SSS::TR::init();
@@ -106,6 +106,6 @@ public:
 
 };
 
-__INTERNAL_END;
+INTERNAL_END;
 
-__SSS_TR_END;
+SSS_TR_END;

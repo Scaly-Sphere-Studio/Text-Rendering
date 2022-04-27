@@ -1,9 +1,9 @@
 #include "SSS/Text-Rendering/Globals.hpp"
 #include "SSS/Text-Rendering/Area.hpp"
 
-__SSS_TR_BEGIN;
+SSS_TR_BEGIN;
 
-__INTERNAL_BEGIN;
+INTERNAL_BEGIN;
 
 // FreeType library initialization
 _internal::FT_Library_Ptr Lib::ptr{ };
@@ -23,12 +23,12 @@ std::deque<std::string> Lib::font_dirs{
             }
         }
         #elif defined(_APPLE_) && defined(_MACH_)
-        __LOG_FUNC_WRN("The local font directories of this OS aren't listed yet."));
-        #elif defined(linux) || defined(__linux)
-        __LOG_FUNC_WRN("The local font directories of this OS aren't listed yet."));
+        LOG_FUNC_WRN("The local font directories of this OS aren't listed yet."));
+        #elif defined(linux) || defined(linux)
+        LOG_FUNC_WRN("The local font directories of this OS aren't listed yet."));
         #endif
         if (ret.empty()) {
-            __LOG_FUNC_WRN("No local font directory could be found.");
+            LOG_FUNC_WRN("No local font directory could be found.");
         }
         return ret;
     }()
@@ -42,24 +42,24 @@ FT_UInt Lib::vdpi{ 0 };
 Font::Ptr const& Lib::getFont(std::string const& font_filename) try
 {
     if (fonts.count(font_filename) == 0) {
-        throw_exc(__CONTEXT_MSG("No loaded font with name", font_filename));
+        throw_exc(CONTEXT_MSG("No loaded font with name", font_filename));
     }
     return fonts.at(font_filename);
 }
-__CATCH_AND_RETHROW_FUNC_EXC;
+CATCH_AND_RETHROW_FUNC_EXC;
 
-__INTERNAL_END;
+INTERNAL_END;
 
 void init() try
 {
     _internal::Lib::ptr.reset([]()->FT_Library {
         FT_Library lib;
         FT_Error error = FT_Init_FreeType(&lib);
-        __THROW_IF_FT_ERROR("FT_Init_FreeType()");
+        THROW_IF_FT_ERROR("FT_Init_FreeType()");
         return lib;
         }());
 }
-__CATCH_AND_RETHROW_FUNC_EXC;
+CATCH_AND_RETHROW_FUNC_EXC;
 
 void terminate() noexcept
 {
@@ -78,10 +78,10 @@ void addFontDir(std::string const& font_dir) try
         _internal::Lib::font_dirs.push_front(font_dir);
     }
     else {
-        __LOG_FUNC_CTX_WRN("Could not find a directory given path", font_dir);
+        LOG_FUNC_CTX_WRN("Could not find a directory given path", font_dir);
     }
 }
-__CATCH_AND_RETHROW_FUNC_EXC;
+CATCH_AND_RETHROW_FUNC_EXC;
 
 void loadFont(std::string const& font_filename) try
 {
@@ -90,7 +90,7 @@ void loadFont(std::string const& font_filename) try
         font.reset(new _internal::Font(font_filename));
     }
 }
-__CATCH_AND_RETHROW_FUNC_EXC;
+CATCH_AND_RETHROW_FUNC_EXC;
 
 void unloadFont(std::string const& font_filename)
 {
@@ -119,4 +119,4 @@ void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept
 
 
 
-__SSS_TR_END;
+SSS_TR_END;

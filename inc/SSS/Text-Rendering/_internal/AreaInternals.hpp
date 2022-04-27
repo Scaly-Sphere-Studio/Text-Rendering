@@ -6,8 +6,8 @@
  *  Defines internal asynchronous drawing classes.
  */
 
-__SSS_TR_BEGIN;
-__INTERNAL_BEGIN;
+SSS_TR_BEGIN;
+INTERNAL_BEGIN;
 
 // Stores line informations
 struct Line {
@@ -83,5 +83,5 @@ private:
     void _copyBitmap(_CopyBitmapArgs& args);
 };
 
-__INTERNAL_END;
-__SSS_TR_END;
+INTERNAL_END;
+SSS_TR_END;

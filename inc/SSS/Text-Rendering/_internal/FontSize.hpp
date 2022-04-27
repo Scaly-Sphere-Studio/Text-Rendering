@@ -6,8 +6,8 @@
  *  Defines internal font sizes management classes.
  */
 
-__SSS_TR_BEGIN;
-__INTERNAL_BEGIN;
+SSS_TR_BEGIN;
+INTERNAL_BEGIN;
 
 struct Bitmap {
     int pen_left;
@@ -67,5 +67,5 @@ private:
     std::map<FT_UInt, std::map<FT_UInt, Bitmap>> _outlined;
 };
 
-__INTERNAL_END;
-__SSS_TR_END;
+INTERNAL_END;
+SSS_TR_END;

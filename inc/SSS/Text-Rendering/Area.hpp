@@ -6,7 +6,7 @@
  *  Defines SSS::TR::Area.
  */
 
-__SSS_TR_BEGIN;
+SSS_TR_BEGIN;
 
 enum class Move;    // Pre-declaration
 enum class Delete;  // Pre-declaration
@@ -291,4 +291,4 @@ private:
     void _drawIfNeeded();
 };
 
-__SSS_TR_END;
+SSS_TR_END;

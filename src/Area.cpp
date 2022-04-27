@@ -1,7 +1,7 @@
 #include "SSS/Text-Rendering/Area.hpp"
 #include "SSS/Text-Rendering/Globals.hpp"
 
-__SSS_TR_BEGIN;
+SSS_TR_BEGIN;
 
 Area::Map Area::_instances{};
 
@@ -16,7 +16,7 @@ Area::Area(int width, int height) try
         throw_exc("Width & Height should both be above 0.");
     }
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 // Destructor, clears out buffer cache.
 Area::~Area() noexcept
@@ -28,7 +28,7 @@ void Area::create(uint32_t id, int width, int height) try
     _instances.try_emplace(id);
     _instances.at(id).reset(new Area(width, height));
 }
-__CATCH_AND_RETHROW_FUNC_EXC
+CATCH_AND_RETHROW_FUNC_EXC
 
 void Area::remove(uint32_t id) try
 {
@@ -36,7 +36,7 @@ void Area::remove(uint32_t id) try
         _instances.erase(id);
     }
 }
-__CATCH_AND_RETHROW_FUNC_EXC
+CATCH_AND_RETHROW_FUNC_EXC
 
 void Area::clearMap() noexcept
 {
@@ -54,7 +54,7 @@ void Area::setFormat(Format const& format, uint32_t id) try
         _formats.at(id) = format;
     }
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 void Area::parseString(std::u32string const& str) try
 {
@@ -95,7 +95,7 @@ void Area::parseString(std::u32string const& str) try
     _updateBufferInfos();
     _edit_cursor += _glyph_count - tmp;
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 void Area::parseString(std::string const& str)
 {
@@ -129,7 +129,7 @@ void const* Area::pixelsGet() const try
     }
     return &pixels.at(index);
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 void Area::clear() noexcept
 {
@@ -160,7 +160,7 @@ void Area::setDimensions(int width, int height) try
     _h = height;
     _updateLines();
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Format functions ---
 
@@ -204,7 +204,7 @@ void Area::cursorPlace(int x, int y) try
     }
     _edit_cursor = line->last_glyph + 1;
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 static size_t _move_cursor_line(_internal::BufferInfoVector const& buffer_infos,
     _internal::Line::cit line, int x)
@@ -298,12 +298,12 @@ void Area::cursorMove(Move direction) try
     }
     _draw = true;
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 void Area::cursorAddText(std::u32string str) try
 {
     if (str.empty()) {
-        __LOG_OBJ_METHOD_WRN("Empty string.");
+        LOG_OBJ_METHOD_WRN("Empty string.");
         return;
     }
     if (_buffers.empty()) {
@@ -333,7 +333,7 @@ void Area::cursorAddText(std::u32string str) try
     // Move cursor
     _edit_cursor += size;
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 void Area::cursorAddText(std::string str)
 {
@@ -395,7 +395,7 @@ void Area::cursorDeleteText(Delete direction) try
         _edit_cursor -= size;
     }
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
     // --- Typewriter functions ---
 
@@ -542,7 +542,7 @@ void Area::_updateLines() try
     }
     _draw = true;
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 // Updates _buffer_infos and _glyph_count, then calls _updateLines();
 void Area::_updateBufferInfos() try
@@ -551,7 +551,7 @@ void Area::_updateBufferInfos() try
     _glyph_count = _buffer_infos.glyphCount();
     _updateLines();
 }
-__CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC
 
 // Draws current area if _draw is set to true
 void Area::_drawIfNeeded()
@@ -587,4 +587,4 @@ void Area::_drawIfNeeded()
     _draw = false;
 }
 
-__SSS_TR_END;
+SSS_TR_END;

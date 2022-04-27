@@ -38,12 +38,12 @@
     <ClInclude Include="inc\SSS\Text-Rendering\Globals.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\_internal\FontSize.cpp" />
-    <ClCompile Include="src\_internal\Buffer.cpp" />
     <ClCompile Include="src\_internal\Font.cpp" />
-    <ClCompile Include="src\Area.cpp" />
+    <ClCompile Include="src\_internal\Buffer.cpp" />
     <ClCompile Include="src\_internal\AreaInternals.cpp" />
+    <ClCompile Include="src\Area.cpp" />
+    <ClCompile Include="src\Globals.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

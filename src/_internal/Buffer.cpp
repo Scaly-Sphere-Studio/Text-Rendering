@@ -1,8 +1,8 @@
 #include "SSS/Text-Rendering/_internal/Buffer.hpp"
 #include "SSS/Text-Rendering/Globals.hpp"
 
-__SSS_TR_BEGIN;
-__INTERNAL_BEGIN;
+SSS_TR_BEGIN;
+INTERNAL_BEGIN;
 
 GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) const try
 {
@@ -16,7 +16,7 @@ GlyphInfo const& BufferInfoVector::getGlyph(size_t cursor) const try
     }
     return back().glyphs.back();
 }
-__CATCH_AND_RETHROW_METHOD_EXC;
+CATCH_AND_RETHROW_METHOD_EXC;
 
 _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const try
 {
@@ -30,7 +30,7 @@ _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const tr
     }
     return back();
 }
-__CATCH_AND_RETHROW_METHOD_EXC;
+CATCH_AND_RETHROW_METHOD_EXC;
 
 void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
 {
@@ -64,7 +64,7 @@ Buffer::Buffer(Format const& opt) try
 
     _changeFormat(opt);
 }
-__CATCH_AND_RETHROW_METHOD_EXC;
+CATCH_AND_RETHROW_METHOD_EXC;
 
 // Destructor
 Buffer::~Buffer()
@@ -148,7 +148,7 @@ void Buffer::_changeFormat(Format const& opt) try
         _wd_indexes.push_back(index);
     }
 }
-__CATCH_AND_RETHROW_METHOD_EXC;
+CATCH_AND_RETHROW_METHOD_EXC;
 
 void Buffer::_updateBuffer()
 {
@@ -199,7 +199,7 @@ void Buffer::_shape() try
     // (this does NOT free the buffer itself, only its contents)
     hb_buffer_reset(_buffer.get());
 }
-__CATCH_AND_RETHROW_METHOD_EXC;
+CATCH_AND_RETHROW_METHOD_EXC;
 
 void Buffer::_loadGlyphs()
 {
@@ -217,5 +217,5 @@ void Buffer::_loadGlyphs()
     }
 }
 
-__INTERNAL_END;
-__SSS_TR_END;
+INTERNAL_END;
+SSS_TR_END;

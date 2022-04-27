@@ -6,8 +6,8 @@
  *  Defines internal SSS::C_Ptr alias declarations.
  */
 
-__SSS_TR_BEGIN;
-__INTERNAL_BEGIN;
+SSS_TR_BEGIN;
+INTERNAL_BEGIN;
 
 using FT_Library_Ptr = C_Ptr
     <FT_LibraryRec_, FT_Error(*)(FT_Library), FT_Done_FreeType>;
@@ -24,5 +24,5 @@ using HB_Font_Ptr = C_Ptr
 using HB_Buffer_Ptr = C_Ptr
     <hb_buffer_t, void(*)(hb_buffer_t*), hb_buffer_destroy>;
 
-__INTERNAL_END;
-__SSS_TR_END;
+INTERNAL_END;
+SSS_TR_END;

@@ -1,8 +1,8 @@
 #include "SSS/Text-Rendering/_internal/AreaInternals.hpp"
 #include "SSS/Text-Rendering/Globals.hpp"
 
-__SSS_TR_BEGIN;
-__INTERNAL_BEGIN;
+SSS_TR_BEGIN;
+INTERNAL_BEGIN;
 
 Line::cit Line::which(vector const& lines, size_t cursor) noexcept
 {
@@ -82,7 +82,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
         }
         catch (std::exception const& e) {
             std::string str(toString("cursor #") + toString(cursor));
-            throw_exc(__CONTEXT_MSG(str, e.what()));
+            throw_exc(CONTEXT_MSG(str, e.what()));
         }
         // Handle line breaks. Return true if pen goes out of bound
         if (cursor == line->last_glyph && line != data.lines.end() - 1) {
@@ -189,12 +189,12 @@ void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                 break;
             }
             default:
-                __LOG_METHOD_ERR("Unkown bitmap pixel mode.");
+                LOG_METHOD_ERR("Unkown bitmap pixel mode.");
                 return;
             }
         }
     }
 }
 
-__INTERNAL_END;
-__SSS_TR_END;
+INTERNAL_END;
+SSS_TR_END;

@@ -6,7 +6,7 @@
  *  Defines SSS::TR::Format and subsequent classes.
  */
 
-__SSS_TR_BEGIN;
+SSS_TR_BEGIN;
 
 /** Structure defining text formats to be used in Area instances.
  *  @sa Style, Color, Language.
@@ -121,4 +121,4 @@ struct Format {
     Language lng;
 };
 
-__SSS_TR_END;
+SSS_TR_END;

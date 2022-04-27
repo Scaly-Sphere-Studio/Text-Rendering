@@ -7,8 +7,8 @@
  *  Defines internal glyph and kerning info classes.
  */
 
-__SSS_TR_BEGIN;
-__INTERNAL_BEGIN;
+SSS_TR_BEGIN;
+INTERNAL_BEGIN;
 // Pre-declaration
 class Buffer;
 
@@ -105,5 +105,5 @@ private:
     void _loadGlyphs();
 };
 
-__INTERNAL_END;
-__SSS_TR_END;
+INTERNAL_END;
+SSS_TR_END;
