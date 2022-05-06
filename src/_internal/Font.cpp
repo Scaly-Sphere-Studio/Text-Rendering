@@ -28,8 +28,13 @@ Font::Font(std::string const& font_file) try
     FT_Error error = FT_New_Face(Lib::getPtr().get(), font_path.c_str(), 0, &face);
     THROW_IF_FT_ERROR("FT_New_Face()");
     _face.reset(face);
+    _font_name = _face->family_name;
 
-    LOG_CONSTRUCTOR;
+    if (Log::TR::Fonts::query(Log::TR::Fonts::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Loaded '%s'", _font_name.c_str());
+        LOG_TR_MSG(buff);
+    }
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -39,7 +44,12 @@ Font::~Font() noexcept
 {
     _font_sizes.clear();
     _face.release();
-    LOG_DESTRUCTOR;
+
+    if (Log::TR::Fonts::query(Log::TR::Fonts::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Unloaded '%s'", _font_name.c_str());
+        LOG_TR_MSG(buff);
+    }
 }
 
 // --- Glyph functions ---
@@ -76,6 +86,11 @@ CATCH_AND_RETHROW_METHOD_EXC;
 void Font::unloadGlyphs() noexcept
 {
     _font_sizes.clear();
+    if (Log::TR::Fonts::query(Log::TR::Fonts::get().glyph_load)) {
+        char buff[256];
+        sprintf_s(buff, "Unloaded all glyphs from '%s'", _face->family_name);
+        LOG_TR_MSG(buff);
+    }
 }
 
     // --- Get functions ---

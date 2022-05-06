@@ -63,12 +63,23 @@ Buffer::Buffer(Format const& opt) try
     }
 
     _changeFormat(opt);
+
+    if (Log::TR::Buffers::query(Log::TR::Buffers::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Created an internal Buffer.");
+        LOG_TR_MSG(buff);
+    }
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
 // Destructor
 Buffer::~Buffer()
 {
+    if (Log::TR::Buffers::query(Log::TR::Buffers::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Deleted an internal Buffer.");
+        LOG_TR_MSG(buff);
+    }
 }
 
 // --- Basic functions ---

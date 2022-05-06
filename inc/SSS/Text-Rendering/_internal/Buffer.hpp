@@ -7,6 +7,13 @@
  *  Defines internal glyph and kerning info classes.
  */
 
+namespace SSS::Log::TR {
+    struct Buffers : public LogBase<Buffers> {
+        using LOG_STRUCT_BASICS(TR, Buffers);
+        bool life_state = false;
+    };
+}
+
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;
 // Pre-declaration

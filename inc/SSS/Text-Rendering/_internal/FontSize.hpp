@@ -6,6 +6,14 @@
  *  Defines internal font sizes management classes.
  */
 
+namespace SSS::Log::TR {
+    struct Fonts : public LogBase<Fonts> {
+        using LOG_STRUCT_BASICS(TR, Fonts);
+        bool life_state = false;
+        bool glyph_load = false;
+    };
+}
+
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;
 
@@ -55,7 +63,7 @@ public:
 private:
 // --- Private Variables ---
 
-    int _charsize;                  // Charsize
+    int const _charsize;            // Charsize set in constructor
     int _last_outline_size{ 0 };    // Last outline size used with this charsize
     HB_Font_Ptr _hb_font;           // HarfBuzz font, created here
     FT_Stroker_Ptr _stroker;        // FreeType stroker, created here

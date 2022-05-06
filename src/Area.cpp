@@ -15,12 +15,23 @@ Area::Area(int width, int height) try
     if (_w <= 0 || _h <= 0) {
         throw_exc("Width & Height should both be above 0.");
     }
+
+    if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Created an Area of dimensions (%dx%d).", _w, _h);
+        LOG_TR_MSG(buff);
+    }
 }
 CATCH_AND_RETHROW_METHOD_EXC
 
 // Destructor, clears out buffer cache.
 Area::~Area() noexcept
 {
+    if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Deleted an Area of dimensions (%dx%d).", _w, _h);
+        LOG_TR_MSG(buff);
+    }
 }
 
 void Area::create(uint32_t id, int width, int height) try

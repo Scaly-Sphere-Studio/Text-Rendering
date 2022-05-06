@@ -6,6 +6,13 @@
  *  Defines global functions and enums.
  */
 
+namespace SSS::Log::TR {
+    struct Lib : public LogBase<Lib> {
+        using LOG_STRUCT_BASICS(TR, Lib);
+        bool init = false;
+    };
+}
+
 SSS_TR_BEGIN;
 
 /** All available inputs to move Area's edit cursor.

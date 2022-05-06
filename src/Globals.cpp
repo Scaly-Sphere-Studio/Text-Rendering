@@ -57,7 +57,11 @@ void init() try
         FT_Error error = FT_Init_FreeType(&lib);
         THROW_IF_FT_ERROR("FT_Init_FreeType()");
         return lib;
-        }());
+    }());
+
+    if (Log::TR::Lib::query(Log::TR::Lib::get().init)) {
+        LOG_TR_MSG("Initialised library");
+    }
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 
@@ -66,6 +70,10 @@ void terminate() noexcept
     Area::clearMap();
     clearFonts();
     _internal::Lib::ptr.reset();
+
+    if (Log::TR::Lib::query(Log::TR::Lib::get().init)) {
+        LOG_TR_MSG("Terminated library");
+    }
 }
 
 void addFontDir(std::string const& font_dir) try
@@ -78,7 +86,7 @@ void addFontDir(std::string const& font_dir) try
         _internal::Lib::font_dirs.push_front(font_dir);
     }
     else {
-        LOG_FUNC_CTX_WRN("Could not find a directory given path", font_dir);
+        LOG_FUNC_CTX_WRN("Could not find a directory for given path", font_dir);
     }
 }
 CATCH_AND_RETHROW_FUNC_EXC;

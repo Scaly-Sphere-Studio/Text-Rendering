@@ -6,6 +6,13 @@
  *  Defines SSS::TR::Area.
  */
 
+namespace SSS::Log::TR {
+    struct Areas : public LogBase<Areas> {
+        using LOG_STRUCT_BASICS(TR, Areas);
+        bool life_state = false;
+    };
+}
+
 SSS_TR_BEGIN;
 
 enum class Move;    // Pre-declaration

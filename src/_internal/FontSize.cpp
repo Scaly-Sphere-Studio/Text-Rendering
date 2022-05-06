@@ -3,7 +3,6 @@
 
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;
-    // --- Constructor & Destructor ---
 
 // Constructor, throws if invalid charsize
 FontSize::FontSize(FT_Face_Ptr const& ft_face, int charsize) try
@@ -22,7 +21,11 @@ FontSize::FontSize(FT_Face_Ptr const& ft_face, int charsize) try
     THROW_IF_FT_ERROR("FT_Stroker_New()");
     _stroker.reset(stroker);
 
-    LOG_CONSTRUCTOR;
+    if (Log::TR::Fonts::query(Log::TR::Fonts::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Loaded '%s' -> size %03d", _ft_face->family_name, _charsize);
+        LOG_TR_MSG(buff);
+    }
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -33,7 +36,12 @@ FontSize::~FontSize()
     _outlined.clear();
     _hb_font.release();
     _stroker.release();
-    LOG_DESTRUCTOR;
+    
+    if (Log::TR::Fonts::query(Log::TR::Fonts::get().life_state)) {
+        char buff[256];
+        sprintf_s(buff, "Unloaded '%s' -> size %03d", _ft_face->family_name, _charsize);
+        LOG_TR_MSG(buff);
+    }
 }
 
     // --- Glyph functions ---
@@ -126,6 +134,13 @@ bool FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
         // Convert the glyph to bitmap
         error = _convertGlyph(outlined, _outlined[outline_size][glyph_index]);
         LOG_FT_ERROR_AND_RETURN("FT_Glyph_To_Bitmap()", true);
+    }
+
+    if (Log::TR::Fonts::query(Log::TR::Fonts::get().glyph_load)) {
+        char buff[256];
+        sprintf_s(buff, "Loaded '%s' -> size %03d -> glyph id '%u'",
+            _ft_face->family_name, _charsize, glyph_index);
+        LOG_TR_MSG(buff);
     }
 
     return false;

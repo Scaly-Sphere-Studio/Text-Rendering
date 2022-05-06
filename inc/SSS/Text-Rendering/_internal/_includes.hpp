@@ -51,6 +51,9 @@
 
 /** \cond INTERNAL */
 
+/** Logs the given message with "SSS/TR: " prepended to it.*/
+#define LOG_TR_MSG(X) LOG_CTX_MSG("SSS/TR", X);
+
 /** Logs FT_Error if there is one, then return given value.*/
 #define LOG_FT_ERROR_AND_RETURN(X, Y) if (error) { \
     LOG_METHOD_CTX_ERR(X, FT_Error_String(error)); \
@@ -62,3 +65,10 @@
 }
 
 /** \endcond */
+
+/** Holds all SSS::TR related log flags.*/
+namespace SSS::Log::TR {
+    LOG_NAMESPACE_BASICS(Log);
+}
+
+

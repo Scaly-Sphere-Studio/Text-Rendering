@@ -50,6 +50,8 @@ public:
 private:
 // --- Private Variables ---
 
+    // Font family name
+    std::string _font_name;
     // Font face
     FT_Face_Ptr _face;
     // Map of different font charsizes
