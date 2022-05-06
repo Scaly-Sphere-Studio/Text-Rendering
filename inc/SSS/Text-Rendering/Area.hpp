@@ -7,8 +7,10 @@
  */
 
 namespace SSS::Log::TR {
+    /** Logging properties for SSS::TR::Area instances.*/
     struct Areas : public LogBase<Areas> {
         using LOG_STRUCT_BASICS(TR, Areas);
+        /** Logs both constructor and destructor.*/
         bool life_state = false;
     };
 }

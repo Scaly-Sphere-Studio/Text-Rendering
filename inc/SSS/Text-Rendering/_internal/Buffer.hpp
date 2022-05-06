@@ -8,8 +8,10 @@
  */
 
 namespace SSS::Log::TR {
+    /** Logging properties for SSS::TR internal buffers.*/
     struct Buffers : public LogBase<Buffers> {
         using LOG_STRUCT_BASICS(TR, Buffers);
+        /** Logs both constructor and destructor.*/
         bool life_state = false;
     };
 }

@@ -7,8 +7,10 @@
  */
 
 namespace SSS::Log::TR {
+    /** Logging properties for SSS::TR globals.*/
     struct Lib : public LogBase<Lib> {
         using LOG_STRUCT_BASICS(TR, Lib);
+        /** Logs both SSS::TR::init() and SSS::TR::terminate().*/
         bool init = false;
     };
 }

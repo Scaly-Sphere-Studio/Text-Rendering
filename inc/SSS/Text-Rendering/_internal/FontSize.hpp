@@ -7,9 +7,12 @@
  */
 
 namespace SSS::Log::TR {
+    /** Logging properties for SSS::TR internal fonts.*/
     struct Fonts : public LogBase<Fonts> {
         using LOG_STRUCT_BASICS(TR, Fonts);
+        /** Logs constructors and destructors of fonts and font sizes.*/
         bool life_state = false;
+        /** Logs loading and unloading of glyphs.*/
         bool glyph_load = false;
     };
 }
