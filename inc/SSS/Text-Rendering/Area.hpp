@@ -41,6 +41,8 @@ enum class Delete;  // Pre-declaration
  */
 class Area {
 private:
+    // Map ID of the area
+    uint32_t const _id;
     // Width of area
     int _w;
     // Height of area
@@ -107,7 +109,7 @@ private:
 
     // Constructor, sets width & height.
     // Throws an exception if width and/or height are <= 0.
-    Area(int width, int height);
+    Area(uint32_t id, int width, int height);
 
 public:
     /** Destructor, clears internal cache.
@@ -121,10 +123,14 @@ public:
      *  @param[in] id The ID at which the new instance will be stored.
      *  @param[in] width The area's width, in pixels. Must be above 0.
      *  @param[in] height The area's height, in pixels. Must be above 0.
+     *  @return A const-ref to the created Area::Ptr.
      *  @throw std::runtime_error If \c width or \c height are <= 0.
      *  @sa remove(), getMap().
      */
-    static void create(uint32_t id, int width, int height);
+    static Ptr const& create(uint32_t id, int width, int height);
+
+    static Ptr const& create(int width, int height);
+    
     /** Removes an Area instance from the internal #Map.
      *  @param[in] id The ID of instance to be deleted.
      *  @sa create(), clearMap().
@@ -140,6 +146,9 @@ public:
      */
     static void clearMap() noexcept;
 
+    inline uint32_t getID() const noexcept { return _id; };
+
+    Format getFormat(uint32_t id = 0);
 
     /** Modifies internal format for given ID.
      *  @param[in] src The source format to be copied.

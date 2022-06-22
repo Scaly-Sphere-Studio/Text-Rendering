@@ -9,8 +9,8 @@ Area::Map Area::_instances{};
 
 // Constructor, sets width & height.
 // Throws an exception if width and/or height are <= 0.
-Area::Area(int width, int height) try
-    : _w(width), _h(height)
+Area::Area(uint32_t id, int width, int height) try
+    : _id(id), _w(width), _h(height)
 {
     if (_w <= 0 || _h <= 0) {
         throw_exc("Width & Height should both be above 0.");
@@ -34,12 +34,23 @@ Area::~Area() noexcept
     }
 }
 
-void Area::create(uint32_t id, int width, int height) try
+Area::Ptr const& Area::create(uint32_t id, int width, int height) try
 {
-    _instances.try_emplace(id);
-    _instances.at(id).reset(new Area(width, height));
+    Area::Ptr& area = _instances[id];
+    area.reset(new Area(id, width, height));
+    return area;
 }
 CATCH_AND_RETHROW_FUNC_EXC
+
+Area::Ptr const& Area::create(int width, int height)
+{
+    uint32_t id = 0;
+    // Increment ID until no similar value is found
+    while (_instances.count(id) != 0) {
+        ++id;
+    }
+    return create(id, width, height);
+}
 
 void Area::remove(uint32_t id) try
 {
@@ -52,6 +63,14 @@ CATCH_AND_RETHROW_FUNC_EXC
 void Area::clearMap() noexcept
 {
     _instances.clear();
+}
+
+Format Area::getFormat(uint32_t id)
+{
+    if (_formats.count(id) != 0) {
+        return _formats.at(id);
+    }
+    return Format();
 }
 
     // --- Basic functions ---
