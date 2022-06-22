@@ -7,14 +7,14 @@
  */
 
 SSS_TR_BEGIN;
-/** \cond INTERNAL */
-void loadFont(std::string const& font_name); // Pre-declaration
-/** \endcond */
-
 INTERNAL_BEGIN;
 
+/** \cond INTERNAL */
+class Lib; // Pre-declaration
+/** \endcond */
+
 class Font {
-    friend void SSS::TR::loadFont(std::string const& font_file);
+    friend Lib;
 public:
     using Ptr = std::unique_ptr<Font>;
 

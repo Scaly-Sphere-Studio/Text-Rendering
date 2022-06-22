@@ -78,10 +78,11 @@ Lib::FontDirs const& Lib::getFontDirs() noexcept
 Font::Ptr const& Lib::getFont(std::string const& font_filename) try
 {
     Ptr const& instance = getInstance();
-    if (instance->_fonts.count(font_filename) == 0) {
-        throw_exc(CONTEXT_MSG("No loaded font with name", font_filename));
+    Font::Ptr& font = instance->_fonts[font_filename];
+    if (!font) {
+        font.reset(new Font(font_filename));
     }
-    return instance->_fonts.at(font_filename);
+    return font;
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 
@@ -106,11 +107,7 @@ CATCH_AND_RETHROW_FUNC_EXC;
 
 void loadFont(std::string const& font_filename) try
 {
-    _internal::Lib::Ptr const& instance = _internal::Lib::getInstance();
-    _internal::Font::Ptr& font = instance->_fonts[font_filename];
-    if (!font) {
-        font.reset(new _internal::Font(font_filename));
-    }
+    _internal::Lib::getFont(font_filename);
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 
