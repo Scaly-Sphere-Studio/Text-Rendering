@@ -41,17 +41,6 @@ enum class Delete {
     CtrlLeft,   /**< Delete the word at the left of the cursor.*/
 };
 
-/** Inits internal libraries.
- *  @usage To be called before any processing operation, and
- *  met with terminate() before exiting the program.
- */
-void init();
-/** Clears cached data & terminates internal libraries.
- *  @usage To be called before exiting the program, to meet
- *  previous init() call.
- */
-void terminate() noexcept;
-
 /** Adds user-defined font directory, along with system-defined ones.
  *  @param[in] dir_path The directory path to be added. Can be
  *  relative or absolute.
@@ -84,9 +73,6 @@ void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept;
 INTERNAL_BEGIN;
 
 class Lib {
-    friend void ::SSS::TR::init();
-    friend void ::SSS::TR::terminate() noexcept;
-
     friend void ::SSS::TR::addFontDir(std::string const&);
     friend void ::SSS::TR::loadFont(std::string const&);
     friend void ::SSS::TR::unloadFont(std::string const&);
@@ -96,20 +82,26 @@ class Lib {
     friend void ::SSS::TR::getDPI(FT_UInt&, FT_UInt&) noexcept;
 
 private:
-    static FT_Library_Ptr ptr; // FreeType library pointer
+    FT_Library_Ptr _ptr;    // FreeType library pointer
 
-    static FT_UInt hdpi;   // Screen's horizontal dpi
-    static FT_UInt vdpi;   // Screen's vertical dpi
+    FT_UInt _hdpi{ 96 };    // Screen's horizontal dpi
+    FT_UInt _vdpi{ 0 };     // Screen's vertical dpi
 
     using FontDirs = std::deque<std::string>;
-    static FontDirs font_dirs;  // Font directories
+    FontDirs _font_dirs;    // Font directories
     using FontMap = std::map<std::string, Font::Ptr>;
-    static FontMap fonts;       // Fonts
+    FontMap _fonts;         // Fonts
 
+    using Ptr = std::unique_ptr<Lib>;
+    static Ptr const& getInstance();
+    
+    Lib();
 public:
-    static inline FT_Library_Ptr const& getPtr() noexcept { return ptr; };
+    ~Lib();
 
-    static inline FontDirs const& getFontDirs() noexcept { return font_dirs; };
+    static FT_Library_Ptr const& getPtr() noexcept;
+
+    static FontDirs const& getFontDirs() noexcept;
 
     static Font::Ptr const& getFont(std::string const& font_filename);
 
