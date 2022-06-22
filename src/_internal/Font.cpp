@@ -13,7 +13,7 @@ Font::Font(std::string const& font_file) try
     // Find the first occurence of the font in _font_dirs
     std::string font_path;
     for (std::string const& dir : Lib::getFontDirs()) {
-        std::string const path = dir + font_file;
+        std::string const path = dir + "/" + font_file;
         if (pathIsFile(path)) {
             font_path = path;
             break;
