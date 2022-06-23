@@ -41,6 +41,42 @@ enum class Delete {
     CtrlLeft,   /**< Delete the word at the left of the cursor.*/
 };
 
+INTERNAL_BEGIN;
+
+class Lib {
+private:
+    FT_Library_Ptr _ptr;    // FreeType library pointer
+
+    FT_UInt _hdpi{ 96 };    // Screen's horizontal dpi
+    FT_UInt _vdpi{ 0 };     // Screen's vertical dpi
+
+    using FontDirs = std::deque<std::string>;
+    FontDirs _font_dirs;    // Font directories
+    using FontMap = std::map<std::string, Font::Ptr>;
+    FontMap _fonts;         // Fonts
+
+    using Ptr = std::unique_ptr<Lib>;
+    static Ptr const& getInstance();
+    
+    Lib();
+public:
+    ~Lib();
+
+    static FT_Library_Ptr const& getPtr() noexcept;
+
+    static void addFontDir(std::string const&);
+    static FontDirs const& getFontDirs() noexcept;
+
+    static Font::Ptr const& getFont(std::string const& font_filename);
+    static void unloadFont(std::string const&);
+    static void clearFonts() noexcept;
+
+    static void setDPI(FT_UInt, FT_UInt);
+    static void getDPI(FT_UInt&, FT_UInt&) noexcept;
+};
+
+INTERNAL_END;
+
 /** Adds user-defined font directory, along with system-defined ones.
  *  @param[in] dir_path The directory path to be added. Can be
  *  relative or absolute.
@@ -69,44 +105,5 @@ void clearFonts() noexcept;
 void setDPI(FT_UInt hdpi, FT_UInt vdpi);
 void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept;
 /** \endcond*/
-
-INTERNAL_BEGIN;
-
-class Lib {
-    friend void ::SSS::TR::addFontDir(std::string const&);
-    friend void ::SSS::TR::loadFont(std::string const&);
-    friend void ::SSS::TR::unloadFont(std::string const&);
-    friend void ::SSS::TR::clearFonts() noexcept;
-
-    friend void ::SSS::TR::setDPI(FT_UInt, FT_UInt);
-    friend void ::SSS::TR::getDPI(FT_UInt&, FT_UInt&) noexcept;
-
-private:
-    FT_Library_Ptr _ptr;    // FreeType library pointer
-
-    FT_UInt _hdpi{ 96 };    // Screen's horizontal dpi
-    FT_UInt _vdpi{ 0 };     // Screen's vertical dpi
-
-    using FontDirs = std::deque<std::string>;
-    FontDirs _font_dirs;    // Font directories
-    using FontMap = std::map<std::string, Font::Ptr>;
-    FontMap _fonts;         // Fonts
-
-    using Ptr = std::unique_ptr<Lib>;
-    static Ptr const& getInstance();
-    
-    Lib();
-public:
-    ~Lib();
-
-    static FT_Library_Ptr const& getPtr() noexcept;
-
-    static FontDirs const& getFontDirs() noexcept;
-
-    static Font::Ptr const& getFont(std::string const& font_filename);
-
-};
-
-INTERNAL_END;
 
 SSS_TR_END;
