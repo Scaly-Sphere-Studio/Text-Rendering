@@ -84,5 +84,8 @@
     <ClCompile Include="src\Globals.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\DemoMain.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
