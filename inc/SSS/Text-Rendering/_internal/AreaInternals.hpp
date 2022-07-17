@@ -29,7 +29,7 @@ struct Line {
 // Draw parameters
 struct DrawParameters {
     // TODO: get actual pen values based on glyphs
-    FT_Vector pen{ 5 << 6, -5 << 6 }; // Pen on the canvas
+    FT_Vector pen{ 0, 0 }; // Pen on the canvas
     int charsize{ 0 }; // Current Line::charsize
     // Draw type : { false, false } would draw simple text,
     // and { true, true } would draw the shadows of the outlines
@@ -50,6 +50,7 @@ struct AreaData {
     size_t last_glyph{ 0 }; // Last glyph to draw (excluded)
     Line::vector lines; // Line vector    
     BufferInfoVector buffer_infos; // Glyph infos
+    RGBA32 bg_color{ 0 };    // Area's background clear color
 };
 
 class AreaPixels : public SSS::AsyncBase<AreaData> {

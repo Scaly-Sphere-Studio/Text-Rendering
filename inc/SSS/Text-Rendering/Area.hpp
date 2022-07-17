@@ -69,6 +69,7 @@ private:
     // Iterator managed by _drawIfNeeded()
     _PixelBuffers::iterator _processing_pixels{ _pixels.begin() };
 
+    RGBA32 _bg_color{ 0, 0, 0, 0 };
     // Map of formats to feed to internal buffers
     std::map<uint32_t, Format> _formats;
     // Buffer vector, one for each differing format
@@ -156,6 +157,9 @@ public:
      *  @sa Format.
      */
     void setFormat(Format const& src, uint32_t id = 0);
+
+    void setClearColor(RGBA32 color);
+    inline RGBA32 getClearColor(RGBA32 color) const noexcept { return _bg_color; };
 
     /** Parses a UTF32 string thay may use multiple formats in itself.
      *

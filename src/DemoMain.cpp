@@ -1,11 +1,54 @@
 #include "SSS/Text-Rendering.hpp"
 #include <SSS/GL.hpp>
 
+static uint32_t area_id = 0;
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_KP_0 || key == GLFW_KEY_ESCAPE) {
         glfwSetWindowShouldClose(window, true);
     }
+
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        bool const ctrl = mods & GLFW_MOD_CONTROL;
+        switch (key) {
+        case GLFW_KEY_LEFT:
+            SSS::TR::Area::getMap().at(area_id)->cursorMove(
+                ctrl ? SSS::TR::Move::CtrlLeft : SSS::TR::Move::Left);
+            break;
+        case GLFW_KEY_RIGHT:
+            SSS::TR::Area::getMap().at(area_id)->cursorMove(
+                ctrl ? SSS::TR::Move::CtrlRight : SSS::TR::Move::Right);
+            break;
+        case GLFW_KEY_DOWN:
+            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::Down);
+            break;
+        case GLFW_KEY_UP:
+            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::Up);
+            break;
+        case GLFW_KEY_HOME:
+            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::Start);
+            break;
+        case GLFW_KEY_END:
+            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::End);
+            break;
+        case GLFW_KEY_BACKSPACE:
+            SSS::TR::Area::getMap().at(area_id)->cursorDeleteText(
+                ctrl ? SSS::TR::Delete::CtrlLeft : SSS::TR::Delete::Left);
+            break;
+        case GLFW_KEY_DELETE:
+            SSS::TR::Area::getMap().at(area_id)->cursorDeleteText(
+                ctrl ? SSS::TR::Delete::CtrlRight : SSS::TR::Delete::Right);
+            break;
+        }
+    }
+}
+
+void char_callback(GLFWwindow* window, unsigned int codepoint)
+{
+    std::u32string str;
+    str.append(1, static_cast<char32_t>(codepoint));
+    SSS::TR::Area::getMap().at(area_id)->cursorAddText(str);
 }
 
 int main() try
@@ -29,6 +72,7 @@ int main() try
 
     window->setVSYNC(true);
     window->setCallback(glfwSetKeyCallback, key_callback);
+    window->setCallback(glfwSetCharCallback, char_callback);
 
     // SSS/GL objects
 
@@ -40,6 +84,8 @@ int main() try
 
     // Text
     auto const& area = TR::Area::create(300, 300);
+    area_id = area->getID();
+    area->setClearColor(SSS::RGBA32(0xFF, 0, 0, 0x44));
     auto fmt = area->getFormat();
     fmt.style.charsize = 50;
     fmt.color.text.func = TR::Format::Color::Func::rainbow;

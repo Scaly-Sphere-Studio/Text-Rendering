@@ -84,7 +84,12 @@ void Area::setFormat(Format const& format, uint32_t id) try
         _formats.at(id) = format;
     }
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
+
+void Area::setClearColor(RGBA32 color)
+{
+    _bg_color = color;
+}
 
 void Area::parseString(std::u32string const& str) try
 {
@@ -612,6 +617,7 @@ void Area::_drawIfNeeded()
     data.last_glyph = _typewriter ? _tw_cursor : _glyph_count;
     data.buffer_infos = _buffer_infos;
     data.lines = _lines;
+    data.bg_color = _bg_color;
     // Async draw
     _processing_pixels->run(data);
     _draw = false;

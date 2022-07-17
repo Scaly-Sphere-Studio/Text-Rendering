@@ -25,12 +25,7 @@ void AreaPixels::_asyncFunction(AreaData data)
     // Resize if needed
     _pixels.resize(_w * _pixels_h);
     // Clear
-    if constexpr (DEBUGMODE) {
-        std::fill(_pixels.begin(), _pixels.end(), RGBA32(0, 0, 0, 122));
-    }
-    else {
-        std::fill(_pixels.begin(), _pixels.end(), RGBA32(0));
-    }
+    std::fill(_pixels.begin(), _pixels.end(), data.bg_color);
 
     DrawParameters param;
     // Draw Outline shadows
@@ -86,7 +81,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
         }
         // Handle line breaks. Return true if pen goes out of bound
         if (cursor == line->last_glyph && line != data.lines.end() - 1) {
-            param.pen.x = 5 << 6;
+            param.pen.x = 0;
             param.pen.y -= static_cast<int>(line->fullsize) << 6;
             ++line;
             param.charsize = line->charsize;
