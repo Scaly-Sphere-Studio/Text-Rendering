@@ -1,4 +1,5 @@
-#include "SSS/GL.hpp"
+#include "SSS/Text-Rendering.hpp"
+#include <SSS/GL.hpp>
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
