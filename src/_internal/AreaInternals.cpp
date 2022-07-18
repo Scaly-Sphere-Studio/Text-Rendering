@@ -119,10 +119,9 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
 
     FT_Vector pen(param.pen);
     // Shadow offset
-    // TODO: turn this into an option
     if (param.is_shadow) {
-        pen.x += 3 << 6;
-        pen.y -= 3 << 6;
+        pen.x += buffer_info.style.shadow_offset.x << 6;
+        pen.y -= buffer_info.style.shadow_offset.y << 6;
     }
 
     // Prepare copy

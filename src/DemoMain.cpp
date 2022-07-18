@@ -26,6 +26,22 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             fmt.style.outline_size -= 1;
             area->setFormat(fmt);
             break;
+        case GLFW_KEY_W:
+            fmt.style.shadow_offset.y -= 1;
+            area->setFormat(fmt);
+            break;
+        case GLFW_KEY_S:
+            fmt.style.shadow_offset.y += 1;
+            area->setFormat(fmt);
+            break;
+        case GLFW_KEY_A:
+            fmt.style.shadow_offset.x -= 1;
+            area->setFormat(fmt);
+            break;
+        case GLFW_KEY_D:
+            fmt.style.shadow_offset.x += 1;
+            area->setFormat(fmt);
+            break;
         case GLFW_KEY_LEFT:
             area->cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
             break;
@@ -100,10 +116,9 @@ int main() try
     area->setClearColor(0xFF888888);
     auto fmt = area->getFormat();
     fmt.style.charsize = 50;
-    //fmt.style.has_shadow = true;
-    fmt.style.has_outline = true;
+    fmt.style.has_shadow = true;
+    //fmt.style.has_outline = true;
     fmt.style.outline_size = 2;
-    //fmt.color.text.func = TR::Format::Color::Func::rainbow;
     area->setFormat(fmt);
     area->parseString("Lorem\nipsum dolor sit amet.");
     texture->setTextAreaID(area->getID());

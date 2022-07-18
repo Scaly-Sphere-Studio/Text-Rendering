@@ -32,6 +32,11 @@ struct Format {
          *  @default \c false
          */
         bool has_shadow{ false };
+        /** Shadow offset, if any.
+         *  @default <tt>(3, 3)</tt>
+         *  @sa #has_shadow.
+         */
+        FT_Vector shadow_offset{ 3, 3 };
         /** Spacing between lines.
          *  @default \c 1.5
          */
