@@ -83,6 +83,7 @@ void Area::setFormat(Format const& format, uint32_t id) try
     else {
         _formats.at(id) = format;
     }
+    parseString(_buffer_infos.getString());
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 

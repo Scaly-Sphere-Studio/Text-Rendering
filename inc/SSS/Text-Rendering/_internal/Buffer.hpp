@@ -45,6 +45,7 @@ public:
     inline size_t glyphCount() const { return _glyph_count; };
     GlyphInfo const& getGlyph(size_t cursor) const;
     BufferInfo const& getBuffer(size_t cursor) const;
+    std::u32string getString() const;
     void update(std::vector<std::unique_ptr<Buffer>> const& buffers);
     void clear() noexcept;
 private:

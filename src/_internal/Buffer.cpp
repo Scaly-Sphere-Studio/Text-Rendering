@@ -32,6 +32,15 @@ _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const tr
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
+std::u32string BufferInfoVector::getString() const
+{
+    std::u32string str;
+    for (BufferInfo const& buffer_info : *this) {
+        str += buffer_info.str;
+    }
+    return str;
+}
+
 void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
 {
     _glyph_count = 0;

@@ -11,34 +11,44 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         using namespace SSS::TR;
+        Area::Ptr const& area = Area::getMap().at(areaID);
+        Format fmt = area->getFormat();
         bool const ctrl = mods & GLFW_MOD_CONTROL;
         switch (key) {
         case GLFW_KEY_ENTER:
-            Area::getMap().at(areaID)->cursorAddText("\n");
+            area->cursorAddText("\n");
+            break;
+        case GLFW_KEY_KP_ADD:
+            fmt.style.outline_size += 1;
+            area->setFormat(fmt);
+            break;
+        case GLFW_KEY_KP_SUBTRACT:
+            fmt.style.outline_size -= 1;
+            area->setFormat(fmt);
             break;
         case GLFW_KEY_LEFT:
-            Area::getMap().at(areaID)->cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
+            area->cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
             break;
         case GLFW_KEY_RIGHT:
-            Area::getMap().at(areaID)->cursorMove(ctrl ? Move::CtrlRight : Move::Right);
+            area->cursorMove(ctrl ? Move::CtrlRight : Move::Right);
             break;
         case GLFW_KEY_DOWN:
-            Area::getMap().at(areaID)->cursorMove(Move::Down);
+            area->cursorMove(Move::Down);
             break;
         case GLFW_KEY_UP:
-            Area::getMap().at(areaID)->cursorMove(Move::Up);
+            area->cursorMove(Move::Up);
             break;
         case GLFW_KEY_HOME:
-            Area::getMap().at(areaID)->cursorMove(Move::Start);
+            area->cursorMove(Move::Start);
             break;
         case GLFW_KEY_END:
-            Area::getMap().at(areaID)->cursorMove(Move::End);
+            area->cursorMove(Move::End);
             break;
         case GLFW_KEY_BACKSPACE:
-            Area::getMap().at(areaID)->cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
+            area->cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
             break;
         case GLFW_KEY_DELETE:
-            Area::getMap().at(areaID)->cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
+            area->cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
             break;
         }
     }
@@ -84,12 +94,16 @@ int main() try
     auto const& plane_renderer = GL::Plane::Renderer::create();
 
     // Text
-    auto const& area = TR::Area::create(300, 300);
+    constexpr int area_size = 300;
+    auto const& area = TR::Area::create(area_size, area_size);
     areaID = area->getID();
-    area->setClearColor(SSS::RGBA32(0xFF, 0, 0, 0x44));
+    area->setClearColor(0xFF888888);
     auto fmt = area->getFormat();
-    fmt.style.charsize = 30;
-    fmt.color.text.func = TR::Format::Color::Func::rainbow;
+    fmt.style.charsize = 50;
+    //fmt.style.has_shadow = true;
+    fmt.style.has_outline = true;
+    fmt.style.outline_size = 2;
+    //fmt.color.text.func = TR::Format::Color::Func::rainbow;
     area->setFormat(fmt);
     area->parseString("Lorem\nipsum dolor sit amet.");
     texture->setTextAreaID(area->getID());
@@ -101,7 +115,7 @@ int main() try
 
     // Plane
     plane->setTextureID(texture->getID());
-    plane->scale(glm::vec3(300));
+    plane->scale(glm::vec3(area_size));
     plane_renderer->chunks.emplace_back();
     plane_renderer->chunks[0].reset_depth_before = true;
     plane_renderer->chunks[0].objects.push_back(0);

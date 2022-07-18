@@ -23,11 +23,11 @@ struct Format {
          *  @sa #outline_size.
          */
         bool has_outline{ false };
-        /** Outline size, if any.
-         *  @default \c 0
+        /** Outline size in pixels, if any.
+         *  @default \c 2
          *  @sa #has_outline.
          */
-        int outline_size{ 0 };
+        int outline_size{ 2 };
         /** Whether the text has a shadow.
          *  @default \c false
          */

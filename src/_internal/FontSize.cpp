@@ -114,7 +114,7 @@ bool FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
         // Update stroker if needed
         if (outline_size != _last_outline_size) {
             _last_outline_size = outline_size;
-            FT_Stroker_Set(_stroker.get(), ((_charsize * outline_size) << 6) / 300,
+            FT_Stroker_Set(_stroker.get(), outline_size << 6,
                 FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
         }
 
