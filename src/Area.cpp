@@ -227,9 +227,15 @@ void Area::clear() noexcept
     _tw_cursor = 0;
 }
 
-void Area::getDimensions(int& w, int& h) const noexcept
+void Area::pixelsGetDimensions(int& w, int& h) const noexcept
 {
     _current_pixels->getDimensions(w, h);
+}
+
+void Area::getDimensions(int& width, int& height) const noexcept
+{
+    width = _w;
+    height = _h;
 }
 
 void Area::setDimensions(int width, int height) try

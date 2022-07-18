@@ -131,7 +131,7 @@ int main() try
     int w, h;
     area->getDimensions(w, h);
     plane->setTextureID(texture->getID());
-    plane->scale(glm::vec3(100));
+    plane->scale(glm::vec3(h));
     plane_renderer->chunks.emplace_back();
     plane_renderer->chunks[0].reset_depth_before = true;
     plane_renderer->chunks[0].objects.push_back(0);

@@ -236,10 +236,9 @@ public:
      *  
      *  Accessible range is of <tt>Width * Height * 4</tt>.
      * 
-     *  @sa update(), clear(), getDimensions().
+     *  @sa update(), clear(), pixelsGetDimensions().
      */
     void const* pixelsGet() const;
-
     /** Retrieves dimensions of current pixels.
      *  Current pixels are the ones returned by pixelsGet().\n
      *  If you just called setDimensions(), this function won't retrieve
@@ -247,6 +246,8 @@ public:
      *  @param[out] width Will be filled with pixels width.
      *  @param[out] height Will be filled with pixels height.
      */
+    void pixelsGetDimensions(int& width, int& height) const noexcept;
+
     void getDimensions(int& width, int& height) const noexcept;
     /** Sets new dimensions values for internal pixels.
      *  A call to update() is necessary for changes to take effect.
