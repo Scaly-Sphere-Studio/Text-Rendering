@@ -131,6 +131,9 @@ public:
     static Ptr const& create(uint32_t id, int width, int height);
 
     static Ptr const& create(int width, int height);
+
+    static Ptr const& create(std::u32string const& str, Format fmt = Format());
+    static Ptr const& create(std::string const& str, Format fmt = Format());
     
     /** Removes an Area instance from the internal #Map.
      *  @param[in] id The ID of instance to be deleted.

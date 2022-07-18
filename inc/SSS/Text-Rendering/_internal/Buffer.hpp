@@ -89,6 +89,7 @@ public:
     inline std::u32string getString() const noexcept { return _str; };
     inline Format getFormat() const noexcept { return _opt; };
 
+    inline BufferInfo const& getInfo() const noexcept { return _buffer_info; };
 private:
 
     // Original string converted in uint32 vector

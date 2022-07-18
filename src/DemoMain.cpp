@@ -110,17 +110,16 @@ int main() try
     auto const& plane_renderer = GL::Plane::Renderer::create();
 
     // Text
-    constexpr int area_size = 300;
-    auto const& area = TR::Area::create(area_size, area_size);
-    areaID = area->getID();
-    area->setClearColor(0xFF888888);
-    auto fmt = area->getFormat();
+    TR::Format fmt;
     fmt.style.charsize = 50;
     fmt.style.has_shadow = true;
     //fmt.style.has_outline = true;
     fmt.style.outline_size = 2;
-    area->setFormat(fmt);
-    area->parseString("Lorem\nipsum dolor sit amet.");
+
+    auto const& area = TR::Area::create("Lorem ipsum dolor sit amet.", fmt);
+    area->setClearColor(0xFF888888);
+    areaID = area->getID();
+
     texture->setTextAreaID(area->getID());
     texture->setType(GL::Texture::Type::Text);
 
@@ -129,8 +128,10 @@ int main() try
     camera->setProjectionType(GL::Camera::Projection::OrthoFixed);
 
     // Plane
+    int w, h;
+    area->getDimensions(w, h);
     plane->setTextureID(texture->getID());
-    plane->scale(glm::vec3(area_size));
+    plane->scale(glm::vec3(100));
     plane_renderer->chunks.emplace_back();
     plane_renderer->chunks[0].reset_depth_before = true;
     plane_renderer->chunks[0].objects.push_back(0);

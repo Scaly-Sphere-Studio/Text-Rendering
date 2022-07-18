@@ -52,6 +52,47 @@ Area::Ptr const& Area::create(int width, int height)
     return create(id, width, height);
 }
 
+static void _eol(int& x, int& y, FT_Vector const& src, Format const& fmt)
+{
+    if (x < src.x)
+        x = src.x;
+    y += static_cast<int>(static_cast<float>(fmt.style.charsize)
+        * fmt.style.line_spacing);
+}
+
+Area::Ptr const& Area::create(std::u32string const& str, Format fmt)
+{
+
+    int x = 0, y = 0;
+    // Get values
+    {
+        _internal::Buffer::Ptr buffer = std::make_unique<_internal::Buffer>(fmt);
+        buffer->changeString(str);
+        FT_Vector pen({ 0, 0 });
+        for (_internal::GlyphInfo const& glyph : buffer->getInfo().glyphs) {
+            if (glyph.is_new_line) {
+                _eol(x, y, pen, fmt);
+                pen = { 0, 0 };
+            }
+            else {
+                pen.x += glyph.pos.x_advance;
+            }
+        }
+        _eol(x, y, pen, fmt);
+        x = (x >> 6) + 1;
+    }
+    
+    Ptr const& ptr = ::SSS::TR::Area::create(x, y);
+    ptr->setFormat(fmt);
+    ptr->parseString(str);
+    return ptr;
+}
+
+Area::Ptr const& Area::create(std::string const& str, Format fmt)
+{
+    return create(strToStr32(str), fmt);
+}
+
 void Area::remove(uint32_t id) try
 {
     if (_instances.count(id) != 0) {
@@ -90,6 +131,7 @@ CATCH_AND_RETHROW_METHOD_EXC;
 void Area::setClearColor(RGBA32 color)
 {
     _bg_color = color;
+    _draw = true;
 }
 
 void Area::parseString(std::u32string const& str) try
