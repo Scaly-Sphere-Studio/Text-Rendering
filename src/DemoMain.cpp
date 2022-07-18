@@ -1,7 +1,7 @@
 #include "SSS/Text-Rendering.hpp"
 #include <SSS/GL.hpp>
 
-static uint32_t area_id = 0;
+static uint32_t areaID = 0;
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -10,35 +10,35 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        using namespace SSS::TR;
         bool const ctrl = mods & GLFW_MOD_CONTROL;
         switch (key) {
+        case GLFW_KEY_ENTER:
+            Area::getMap().at(areaID)->cursorAddText("\n");
+            break;
         case GLFW_KEY_LEFT:
-            SSS::TR::Area::getMap().at(area_id)->cursorMove(
-                ctrl ? SSS::TR::Move::CtrlLeft : SSS::TR::Move::Left);
+            Area::getMap().at(areaID)->cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
             break;
         case GLFW_KEY_RIGHT:
-            SSS::TR::Area::getMap().at(area_id)->cursorMove(
-                ctrl ? SSS::TR::Move::CtrlRight : SSS::TR::Move::Right);
+            Area::getMap().at(areaID)->cursorMove(ctrl ? Move::CtrlRight : Move::Right);
             break;
         case GLFW_KEY_DOWN:
-            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::Down);
+            Area::getMap().at(areaID)->cursorMove(Move::Down);
             break;
         case GLFW_KEY_UP:
-            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::Up);
+            Area::getMap().at(areaID)->cursorMove(Move::Up);
             break;
         case GLFW_KEY_HOME:
-            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::Start);
+            Area::getMap().at(areaID)->cursorMove(Move::Start);
             break;
         case GLFW_KEY_END:
-            SSS::TR::Area::getMap().at(area_id)->cursorMove(SSS::TR::Move::End);
+            Area::getMap().at(areaID)->cursorMove(Move::End);
             break;
         case GLFW_KEY_BACKSPACE:
-            SSS::TR::Area::getMap().at(area_id)->cursorDeleteText(
-                ctrl ? SSS::TR::Delete::CtrlLeft : SSS::TR::Delete::Left);
+            Area::getMap().at(areaID)->cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
             break;
         case GLFW_KEY_DELETE:
-            SSS::TR::Area::getMap().at(area_id)->cursorDeleteText(
-                ctrl ? SSS::TR::Delete::CtrlRight : SSS::TR::Delete::Right);
+            Area::getMap().at(areaID)->cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
             break;
         }
     }
@@ -46,14 +46,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void char_callback(GLFWwindow* window, unsigned int codepoint)
 {
-    std::u32string str;
-    str.append(1, static_cast<char32_t>(codepoint));
-    SSS::TR::Area::getMap().at(area_id)->cursorAddText(str);
+    std::u32string str(1, static_cast<char32_t>(codepoint));
+    SSS::TR::Area::getMap().at(areaID)->cursorAddText(str);
 }
 
 int main() try
 {
     using namespace SSS;
+
+    Log::TR::Fonts::get().glyph_load = true;
 
     // Create Window
     GL::Window::CreateArgs args;
@@ -84,13 +85,13 @@ int main() try
 
     // Text
     auto const& area = TR::Area::create(300, 300);
-    area_id = area->getID();
+    areaID = area->getID();
     area->setClearColor(SSS::RGBA32(0xFF, 0, 0, 0x44));
     auto fmt = area->getFormat();
-    fmt.style.charsize = 50;
+    fmt.style.charsize = 30;
     fmt.color.text.func = TR::Format::Color::Func::rainbow;
     area->setFormat(fmt);
-    area->parseString("Lorem ipsum dolor sit amet.");
+    area->parseString("Lorem\nipsum dolor sit amet.");
     texture->setTextAreaID(area->getID());
     texture->setType(GL::Texture::Type::Text);
 

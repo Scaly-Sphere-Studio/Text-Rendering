@@ -474,12 +474,12 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
 {
     _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
 
-    y = 5 + _lines.cbegin()->charsize; // TODO: related to FT_Pen
+    y = _lines.cbegin()->charsize;
     for (_internal::Line::cit it = _lines.cbegin() + 1; it <= line; ++it) {
         y += it->fullsize;
     }
 
-    x = 5 << 6; // TODO: related to FT_Pen
+    x = 0;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
         x += _buffer_infos.getGlyph(n).pos.x_advance;
     }
@@ -536,7 +536,7 @@ void Area::_updateLines() try
         pen.x += glyph.pos.x_advance;
         pen.y += glyph.pos.y_advance;
         // If the pen is now out of bound, we should line break
-        if (pen.x < 0 || (pen.x >> 6) >= _w) {
+        if (pen.x < 0 || (pen.x >> 6) >= _w || glyph.is_new_line) {
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
                 --cursor;

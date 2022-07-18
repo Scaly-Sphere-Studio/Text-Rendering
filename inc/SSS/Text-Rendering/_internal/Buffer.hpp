@@ -28,6 +28,7 @@ struct GlyphInfo {
     hb_glyph_info_t info{};         // The glyph's informations
     hb_glyph_position_t pos{};      // The glyph's position
     bool is_word_divider{ false };  // Whether the glyph is a word divider
+    bool is_new_line{ false };      // Whether the glyph is a \n (new line)
 };
 
 struct BufferInfo {

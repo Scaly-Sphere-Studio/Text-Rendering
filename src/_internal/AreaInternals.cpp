@@ -72,12 +72,14 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
         if (_beingCanceled()) return;
         GlyphInfo const& glyph_info(data.buffer_infos.getGlyph(cursor));
         BufferInfo const& buffer_info(data.buffer_infos.getBuffer(cursor));
-        try {
-            _drawGlyph(param, buffer_info, glyph_info);
-        }
-        catch (std::exception const& e) {
-            std::string str(toString("cursor #") + toString(cursor));
-            throw_exc(CONTEXT_MSG(str, e.what()));
+        if (!glyph_info.is_new_line) {
+            try {
+                _drawGlyph(param, buffer_info, glyph_info);
+            }
+            catch (std::exception const& e) {
+                std::string str(toString("cursor #") + toString(cursor));
+                throw_exc(CONTEXT_MSG(str, e.what()));
+            }
         }
         // Handle line breaks. Return true if pen goes out of bound
         if (cursor == line->last_glyph && line != data.lines.end() - 1) {
