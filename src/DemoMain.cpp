@@ -3,6 +3,21 @@
 
 static uint32_t areaID = 0;
 
+static std::string const lorem_ipsum =
+"Lorem ipsum dolor sit amet,\n"
+"consectetur adipiscing elit.\n"
+"Pellentesque vitae velit ante.\n"
+"Suspendisse nulla lacus,\n"
+"tempor sit amet iaculis non,\n"
+"scelerisque sed est.\n"
+"Aenean pharetra ipsum sit amet sem lobortis,\n"
+"a cursus felis semper.\n"
+"Integer nec tortor ex.\n"
+"Etiam quis consectetur turpis.\n"
+"Proin ultrices bibendum imperdiet.\n"
+"Suspendisse vitae fermentum ante,\n"
+"eget cursus dolor.";
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_KP_0 || key == GLFW_KEY_ESCAPE) {
@@ -80,7 +95,8 @@ int main() try
 {
     using namespace SSS;
 
-    Log::TR::Fonts::get().glyph_load = true;
+    //Log::TR::Fonts::get().glyph_load = true;
+    //Log::GL::Window::get().fps = true;
 
     // Create Window
     GL::Window::CreateArgs args;
@@ -111,13 +127,15 @@ int main() try
 
     // Text
     TR::Format fmt;
-    fmt.style.charsize = 50;
+    fmt.style.charsize = 20;
     fmt.style.has_shadow = true;
     //fmt.style.has_outline = true;
     fmt.style.outline_size = 2;
 
-    auto const& area = TR::Area::create("Lorem ipsum dolor sit amet.", fmt);
+    auto const& area = TR::Area::create(lorem_ipsum, fmt);
     area->setClearColor(0xFF888888);
+    area->setPrintMode(TR::Area::PrintMode::Typewriter);
+    //area->setTypeWriterSpeed(60);
     areaID = area->getID();
 
     texture->setTextAreaID(area->getID());

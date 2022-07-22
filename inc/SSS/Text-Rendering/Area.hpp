@@ -40,6 +40,13 @@ enum class Delete;  // Pre-declaration
  *  @sa Format, init(), loadFont()
  */
 class Area {
+public:
+    enum class PrintMode {
+        Instant,
+        Typewriter,
+        // More later?
+    };
+
 private:
     // Map ID of the area
     uint32_t const _id;
@@ -54,11 +61,17 @@ private:
 
     // True -> enables _drawIfNeeded()
     bool _draw{ true };
-    // True -> display characters one by one
-    bool _typewriter{ false };
+    // Print mode, default = instantaneous
+    PrintMode _print_mode{ PrintMode::Instant };
+    // TypeWriter -> characters per second.
+    int _tw_cps{ 60 };
+    // TypeWriter -> cursor advance
+    float _tw_cursor{ 0.f };
 
     // Managed by update(), used in "pixelsXXX" functions
     bool _changes_pending{ false };
+    // Last time the update() function was called
+    std::chrono::steady_clock::time_point _last_update{ std::chrono::steady_clock::now() };
 
     // Double-Buffer array
     using _PixelBuffers = std::array<_internal::AreaPixels, 2>;
@@ -86,8 +99,6 @@ private:
     // Cursor physical position
     int _edit_x{ 0 }, _edit_y{ 0 };
 
-    // TypeWriter -> Current character position, in glyphs
-    size_t _tw_cursor{ 0 };
 
     // Indexes of line breaks & charsizes
     std::vector<_internal::Line> _lines;
@@ -292,16 +303,11 @@ public:
      */
     void cursorDeleteText(Delete direction);
 
-    /** Enables or disables the \b typewriter mode (disabled by default).
-     *  The typewriter mode makes characters being written one by one
-     *  instead of being all rendered instantly.\n
-     *  This is typically useful in Visual Novel games.
-     */
-    void twSet(bool activate) noexcept;
+    void setPrintMode(PrintMode mode) noexcept;
+    inline PrintMode getPrintMode() const noexcept { return _print_mode; };
 
-    /** \cond TODO*/
-    bool twPrint() noexcept;
-    /** \endcond*/
+    void setTypeWriterSpeed(int char_per_second);
+    int getTypeWriterSpeed() const noexcept { return _tw_cps; };
 
 private:
     // Computes _edit_cursor's relative position on the Area

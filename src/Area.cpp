@@ -188,6 +188,7 @@ void Area::update()
         _changes_pending = true;
     }
     _drawIfNeeded();
+    _last_update = std::chrono::steady_clock::now();
 }
 
 void const* Area::pixelsGet() const try
@@ -224,7 +225,7 @@ void Area::clear() noexcept
     // Reset lines
     _updateLines();
     // Reset typewriter
-    _tw_cursor = 0;
+    _tw_cursor = 0.f;
 }
 
 void Area::pixelsGetDimensions(int& w, int& h) const noexcept
@@ -414,7 +415,10 @@ void Area::cursorAddText(std::u32string str) try
     }
     // Update lines as they need to be updated before moving cursor
     _updateBufferInfos();
-    // Move cursor
+    // Move cursors
+    if (static_cast<size_t>(_tw_cursor) < _edit_cursor) {
+        _tw_cursor += static_cast<float>(size);
+    }
     _edit_cursor += size;
 }
 CATCH_AND_RETHROW_METHOD_EXC
@@ -479,44 +483,21 @@ void Area::cursorDeleteText(Delete direction) try
         _edit_cursor -= size;
     }
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
-    // --- Typewriter functions ---
-
-// Sets the writing mode (default: false):
-// - true: Text is rendered char by char, see incrementCursor();
-// - false: Text is fully rendered
-void Area::twSet(bool activate) noexcept
+void Area::setPrintMode(PrintMode mode) noexcept
 {
-    if (_typewriter != activate) {
-        _tw_cursor = 0;
-        _draw = true;
-        _typewriter = activate;
+    if (_print_mode == mode) {
+        return;
     }
+    _tw_cursor = 0.f;
+    _print_mode = mode;
+    _draw = true;
 }
 
-// Increments the typewriter's cursor. Start point is 0.
-// The first call will render the 1st character.
-// Second call will render the both the 1st and 2nd character.
-// Etc...
-bool Area::twPrint() noexcept
+void Area::setTypeWriterSpeed(int char_per_second)
 {
-    // Skip if the writing mode is set to default, or if all glyphs have been written
-    if (!_typewriter) {
-        return false;
-    }
-
-    // TODO: auto scroll
-    ++_tw_cursor;
-    _internal::Line::cit line = _internal::Line::which(_lines, _tw_cursor);
-    if (line->first_glyph == _tw_cursor) {
-        if (line->scrolling - _scrolling > static_cast<int>(_h)) {
-            --_tw_cursor;
-            return true;
-        }
-    }
-    _draw = true;
-    return false;
+    _tw_cps = char_per_second;
 }
 
 void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
@@ -611,8 +592,6 @@ void Area::_updateLines() try
     line->last_glyph = cursor;
     line->scrolling += line->fullsize;
     
-    _tw_cursor = 0;
-
     // Update size & scrolling
     size_t const size_before = _pixels_h;
     _pixels_h = line->scrolling;
@@ -640,6 +619,18 @@ CATCH_AND_RETHROW_METHOD_EXC
 // Draws current area if _draw is set to true
 void Area::_drawIfNeeded()
 {
+    auto const now = std::chrono::steady_clock::now();
+    auto const diff = now - _last_update;
+
+    // Determine if TypeWriter is needed
+    if (_print_mode == PrintMode::Typewriter && static_cast<size_t>(_tw_cursor) < _glyph_count) {
+        auto const ns_per_char = std::chrono::duration<float>(1) / _tw_cps;
+        _tw_cursor += diff / ns_per_char;
+        if (static_cast<size_t>(_tw_cursor) > _glyph_count) {
+            _tw_cursor = static_cast<float>(_glyph_count);
+        }
+        _draw = true;
+    }
     // Skip if drawing is not needed
     if (!_draw) {
         return;
@@ -663,7 +654,7 @@ void Area::_drawIfNeeded()
     data.pixels_h = _pixels_h;
     _getCursorPhysicalPos(data.cursor_x, data.cursor_y);
     data.cursor_h = _buffer_infos.getBuffer(_edit_cursor).style.charsize;
-    data.last_glyph = _typewriter ? _tw_cursor : _glyph_count;
+    data.last_glyph = _print_mode == PrintMode::Typewriter ? static_cast<size_t>(_tw_cursor) : _glyph_count;
     data.buffer_infos = _buffer_infos;
     data.lines = _lines;
     data.bg_color = _bg_color;
