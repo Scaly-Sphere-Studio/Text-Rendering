@@ -4,6 +4,8 @@
 SSS_TR_BEGIN;
 
 Area::Map Area::_instances{};
+bool Area::_focused_state{ false };
+uint32_t Area::_focused_id{ 0 };
 
     // --- Constructor, destructor & clear function ---
 
@@ -226,6 +228,8 @@ void Area::clear() noexcept
     _updateLines();
     // Reset typewriter
     _tw_cursor = 0.f;
+    // Reset cursor timer
+    _edit_timer = std::chrono::nanoseconds(0);
 }
 
 void Area::pixelsGetDimensions(int& w, int& h) const noexcept
@@ -262,6 +266,56 @@ void Area::scroll(int pixels) noexcept
     }
 }
 
+void Area::resetFocus()
+{
+    _focused_state = false;
+    if (_instances.count(_focused_id) != 0) {
+        Ptr const& area = _instances.at(_focused_id);
+        if (area) {
+            area->setFocus(false);
+        }
+    }
+}
+
+Area::Ptr const& Area::getFocused() noexcept
+{
+    if (_focused_state && _instances.count(_focused_id) != 0) {
+        return _instances.at(_focused_id);
+    }
+    static Ptr const n;
+    return n;
+}
+
+void Area::setFocus(bool state)
+{
+    // Make this window focused
+    if (state) {
+        // Unfocus previous window if different
+        if (_focused_id != _id && _instances.count(_focused_id) != 0) {
+            Ptr const& area = _instances.at(_focused_id);
+            if (area) {
+                area->setFocus(false);
+            }
+        }
+        _focused_id = _id;
+        _focused_state = true;
+        _edit_display_cursor = true;
+        _edit_timer = std::chrono::nanoseconds(0);
+        _draw = true;
+    }
+    // Unfocus this window
+    else if (_focused_id == _id) {
+        _focused_state = false;
+        _edit_display_cursor = false;
+        _draw = true;
+    }
+}
+
+bool Area::isFocused() const noexcept
+{
+    return _focused_state && _focused_id == _id;
+}
+
 void Area::cursorPlace(int x, int y) try
 {
     if (_glyph_count == 0) {
@@ -288,6 +342,8 @@ void Area::cursorPlace(int x, int y) try
         }
     }
     _edit_cursor = line->last_glyph + 1;
+    _edit_display_cursor = true;
+    _edit_timer = std::chrono::nanoseconds(0);
 }
 CATCH_AND_RETHROW_METHOD_EXC
 
@@ -382,6 +438,8 @@ void Area::cursorMove(Move direction) try
         _edit_cursor = line->last_glyph + 1;
     }
     _draw = true;
+    _edit_display_cursor = true;
+    _edit_timer = std::chrono::nanoseconds(0);
 }
 CATCH_AND_RETHROW_METHOD_EXC
 
@@ -420,6 +478,8 @@ void Area::cursorAddText(std::u32string str) try
         _tw_cursor += static_cast<float>(size);
     }
     _edit_cursor += size;
+    _edit_display_cursor = true;
+    _edit_timer = std::chrono::nanoseconds(0);
 }
 CATCH_AND_RETHROW_METHOD_EXC
 
@@ -482,6 +542,8 @@ void Area::cursorDeleteText(Delete direction) try
         // Move cursor
         _edit_cursor -= size;
     }
+    _edit_display_cursor = true;
+    _edit_timer = std::chrono::nanoseconds(0);
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -504,7 +566,7 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
 {
     _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
 
-    y = _lines.cbegin()->charsize;
+    y = _lines.cbegin()->charsize * 4 / 3;
     for (_internal::Line::cit it = _lines.cbegin() + 1; it <= line; ++it) {
         y += it->fullsize;
     }
@@ -631,6 +693,16 @@ void Area::_drawIfNeeded()
         }
         _draw = true;
     }
+    // Determine if cursor needs to be drawn
+    if (isFocused()) {
+        _edit_timer += diff;
+        using namespace std::chrono_literals;
+        if (_edit_timer >= 500ms) {
+            _edit_timer %= 500ms;
+            _edit_display_cursor = !_edit_display_cursor;
+            _draw = true;
+        }
+    }
     // Skip if drawing is not needed
     if (!_draw) {
         return;
@@ -652,8 +724,9 @@ void Area::_drawIfNeeded()
     data.w = _w;
     data.h = _h;
     data.pixels_h = _pixels_h;
+    data.draw_cursor = _edit_display_cursor;
     _getCursorPhysicalPos(data.cursor_x, data.cursor_y);
-    data.cursor_h = _buffer_infos.getBuffer(_edit_cursor).style.charsize;
+    data.cursor_h = _internal::Line::which(_lines, _edit_cursor)->fullsize;
     data.last_glyph = _print_mode == PrintMode::Typewriter ? static_cast<size_t>(_tw_cursor) : _glyph_count;
     data.buffer_infos = _buffer_infos;
     data.lines = _lines;

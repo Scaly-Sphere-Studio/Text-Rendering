@@ -43,6 +43,7 @@ struct AreaData {
     int h{ 0 }; // Height of the Area
     int pixels_h{ 0 }; // Real height of the Area
     // Cursor's physical position & height
+    bool draw_cursor{ false };
     int cursor_x{ 0 }; // Cursor's x pos
     int cursor_y{ 0 }; // Cursor's y pos
     int cursor_h{ 0 }; // Cursor's height

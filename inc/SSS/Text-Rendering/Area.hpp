@@ -98,6 +98,10 @@ private:
     size_t _edit_cursor{ 0 };
     // Cursor physical position
     int _edit_x{ 0 }, _edit_y{ 0 };
+    // Timer determining if the edit cursor should be displayed
+    std::chrono::nanoseconds _edit_timer{ 0 };
+    // Whether to display the edit cursor
+    bool _edit_display_cursor{ false };
 
 
     // Indexes of line breaks & charsizes
@@ -118,6 +122,9 @@ public:
 private:
     // Static map of allocated instances
     static Map _instances;
+
+    static bool _focused_state;
+    static uint32_t _focused_id;
 
     // Constructor, sets width & height.
     // Throws an exception if width and/or height are <= 0.
@@ -274,6 +281,11 @@ public:
      *  param[in] pixels The amount of pixels to scroll in either direction.
      */
     void scroll(int pixels) noexcept;
+
+    void setFocus(bool state);
+    bool isFocused() const noexcept;
+    static void resetFocus();
+    static Ptr const& getFocused() noexcept;
 
     /** Places the editing cursor at given coordinates.
      *  The cursor is by default at the end of the text.

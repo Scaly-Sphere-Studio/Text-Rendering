@@ -50,14 +50,13 @@ void AreaPixels::_asyncFunction(AreaData data)
     _drawGlyphs(data, param);
 
     // Draw cursor
-    int const w = 2 + data.cursor_h / 16;
-    int const x_min = data.cursor_x - w / 2;
-    int const x_max = x_min + w;
-    for (int y = data.cursor_y - data.cursor_h; y < data.cursor_y; ++y) {
-        for (int x = x_min; x < x_max; ++x) {
-            size_t const i = x + y * _w;
-            if (i < _pixels.size()) {
-                _pixels[i] = 0xFFFFFFFF;
+    if (data.draw_cursor) {
+        for (int y = data.cursor_y - data.cursor_h; y < data.cursor_y; ++y) {
+            for (int x = data.cursor_x; x < data.cursor_x + 2; ++x) {
+                size_t const i = x + y * _w;
+                if (x < data.w && i < _pixels.size()) {
+                    _pixels[i] = 0xFFFFFFFF;
+                }
             }
         }
     }
