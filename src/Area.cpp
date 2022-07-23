@@ -318,6 +318,7 @@ bool Area::isFocused() const noexcept
 
 void Area::cursorPlace(int x, int y) try
 {
+    setFocus(true);
     if (_glyph_count == 0) {
         return;
     }
@@ -342,8 +343,6 @@ void Area::cursorPlace(int x, int y) try
         }
     }
     _edit_cursor = line->last_glyph + 1;
-    _edit_display_cursor = true;
-    _edit_timer = std::chrono::nanoseconds(0);
 }
 CATCH_AND_RETHROW_METHOD_EXC
 
@@ -389,7 +388,7 @@ static size_t _ctrl_jump(_internal::BufferInfoVector const& buffer_infos,
     return cursor;
 }
 
-void Area::cursorMove(Move direction) try
+void Area::_cursorMove(Move direction) try
 {
     _internal::Line::cit line = _internal::Line::which(_lines, _edit_cursor);
     int x, y;
@@ -443,7 +442,7 @@ void Area::cursorMove(Move direction) try
 }
 CATCH_AND_RETHROW_METHOD_EXC
 
-void Area::cursorAddText(std::u32string str) try
+void Area::_cursorAddText(std::u32string str) try
 {
     if (str.empty()) {
         LOG_OBJ_METHOD_WRN("Empty string.");
@@ -483,12 +482,7 @@ void Area::cursorAddText(std::u32string str) try
 }
 CATCH_AND_RETHROW_METHOD_EXC
 
-void Area::cursorAddText(std::string str)
-{
-    cursorAddText(strToStr32(str));
-}
-
-void Area::cursorDeleteText(Delete direction) try
+void Area::_cursorDeleteText(Delete direction) try
 {
     size_t cursor = _edit_cursor;
     size_t count = 0;
@@ -546,6 +540,35 @@ void Area::cursorDeleteText(Delete direction) try
     _edit_timer = std::chrono::nanoseconds(0);
 }
 CATCH_AND_RETHROW_METHOD_EXC;
+
+void Area::cursorMove(Move direction)
+{
+    Ptr const& area = getFocused();
+    if (area) {
+        area->_cursorMove(direction);
+    }
+}
+
+void Area::cursorAddText(std::u32string str)
+{
+    Ptr const& area = getFocused();
+    if (area) {
+        area->_cursorAddText(str);
+    }
+}
+
+void Area::cursorAddText(std::string str)
+{
+    cursorAddText(strToStr32(str));
+}
+
+void Area::cursorDeleteText(Delete direction)
+{
+    Ptr const& area = getFocused();
+    if (area) {
+        area->_cursorDeleteText(direction);
+    }
+}
 
 void Area::setPrintMode(PrintMode mode) noexcept
 {

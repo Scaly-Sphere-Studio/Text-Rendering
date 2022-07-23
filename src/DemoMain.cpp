@@ -36,69 +36,44 @@ static std::string const lorem_ipsum2 =
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_KP_0 || key == GLFW_KEY_ESCAPE) {
+    if (key == GLFW_KEY_KP_0) {
         glfwSetWindowShouldClose(window, true);
     }
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         using namespace SSS::TR;
         bool const ctrl = mods & GLFW_MOD_CONTROL;
-        Area::Ptr const& area = Area::getFocused();
-        if (area) {
-            Format fmt = area->getFormat();
-            switch (key) {
-            case GLFW_KEY_ENTER:
-                area->cursorAddText("\n");
-                break;
-            case GLFW_KEY_KP_ADD:
-                fmt.style.outline_size += 1;
-                area->setFormat(fmt);
-                break;
-            case GLFW_KEY_KP_SUBTRACT:
-                fmt.style.outline_size -= 1;
-                area->setFormat(fmt);
-                break;
-            case GLFW_KEY_W:
-                fmt.style.shadow_offset.y -= 1;
-                area->setFormat(fmt);
-                break;
-            case GLFW_KEY_S:
-                fmt.style.shadow_offset.y += 1;
-                area->setFormat(fmt);
-                break;
-            case GLFW_KEY_A:
-                fmt.style.shadow_offset.x -= 1;
-                area->setFormat(fmt);
-                break;
-            case GLFW_KEY_D:
-                fmt.style.shadow_offset.x += 1;
-                area->setFormat(fmt);
-                break;
-            case GLFW_KEY_LEFT:
-                area->cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
-                break;
-            case GLFW_KEY_RIGHT:
-                area->cursorMove(ctrl ? Move::CtrlRight : Move::Right);
-                break;
-            case GLFW_KEY_DOWN:
-                area->cursorMove(Move::Down);
-                break;
-            case GLFW_KEY_UP:
-                area->cursorMove(Move::Up);
-                break;
-            case GLFW_KEY_HOME:
-                area->cursorMove(Move::Start);
-                break;
-            case GLFW_KEY_END:
-                area->cursorMove(Move::End);
-                break;
-            case GLFW_KEY_BACKSPACE:
-                area->cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
-                break;
-            case GLFW_KEY_DELETE:
-                area->cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
-                break;
-            }
+        switch (key) {
+        case GLFW_KEY_ESCAPE:
+            Area::resetFocus();
+            break;
+        case GLFW_KEY_ENTER:
+            Area::cursorAddText("\n");
+            break;
+        case GLFW_KEY_LEFT:
+            Area::cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
+            break;
+        case GLFW_KEY_RIGHT:
+            Area::cursorMove(ctrl ? Move::CtrlRight : Move::Right);
+            break;
+        case GLFW_KEY_DOWN:
+            Area::cursorMove(Move::Down);
+            break;
+        case GLFW_KEY_UP:
+            Area::cursorMove(Move::Up);
+            break;
+        case GLFW_KEY_HOME:
+            Area::cursorMove(Move::Start);
+            break;
+        case GLFW_KEY_END:
+            Area::cursorMove(Move::End);
+            break;
+        case GLFW_KEY_BACKSPACE:
+            Area::cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
+            break;
+        case GLFW_KEY_DELETE:
+            Area::cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
+            break;
         }
     }
 }
@@ -106,9 +81,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void char_callback(GLFWwindow* window, unsigned int codepoint)
 {
     std::u32string str(1, static_cast<char32_t>(codepoint));
-    auto const& area = SSS::TR::Area::getFocused();
-    if (area)
-        area->cursorAddText(str);
+    SSS::TR::Area::cursorAddText(str);
 }
 
 void func(SSS::GL::Window::Shared win, SSS::GL::Plane::Ptr const& plane,
@@ -121,10 +94,6 @@ void func(SSS::GL::Window::Shared win, SSS::GL::Plane::Ptr const& plane,
             int x, y;
             plane->getRelativeCoords(x, y);
             tex->getTextArea()->cursorPlace(x, y);
-            tex->getTextArea()->setFocus(true);
-        }
-        else if (button == GLFW_MOUSE_BUTTON_2) {
-            tex->getTextArea()->setFocus(false);
         }
     }
 }

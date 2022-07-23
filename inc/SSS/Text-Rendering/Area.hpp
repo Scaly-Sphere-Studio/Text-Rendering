@@ -294,26 +294,33 @@ public:
      *  @sa cursorMove(), cursorAddText(), cursorDeleteText()
      */
     void cursorPlace(int x, int y);
+
+private:
+    void _cursorMove(Move direction);
+    void _cursorAddText(std::u32string str);
+    void _cursorDeleteText(Delete direction);
+
+public:
     /** Moves the editing cursor in given direction.
      *  The cursor is by default at the end of the text.
      *  @param[in] direction The direction for the cursor to be moved.
      *  @sa Move, cursorPlace(), cursorAddText(), cursorDeleteText()
      */
-    void cursorMove(Move direction);
+    static void cursorMove(Move direction);
     /** Inserts text at the cursor's position.
      *  The cursor is by default at the end of the text.
      *  @param[in] str The UTF32 string to be added to existing text.
      *  @sa cursorPlace(), cursorMove(), cursorDeleteText()
      */
-    void cursorAddText(std::u32string str);
+    static void cursorAddText(std::u32string str);
     /** \overload*/
-    void cursorAddText(std::string str);
+    static void cursorAddText(std::string str);
     /** Deletes text at the cursor's position, in the given direction.
      *  The cursor is by default at the end of the text.
      *  @param[in] direction The deletion direction.
      *  @sa Delete, cursorPlace(), cursorMove(), cursorAddText()
      */
-    void cursorDeleteText(Delete direction);
+    static void cursorDeleteText(Delete direction);
 
     void setPrintMode(PrintMode mode) noexcept;
     inline PrintMode getPrintMode() const noexcept { return _print_mode; };
