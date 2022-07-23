@@ -74,6 +74,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_DELETE:
             Area::cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
             break;
+        case GLFW_KEY_KP_ADD:
+            Area::getMap().at(areaID)->setMarginV(Area::getMap().at(areaID)->getMarginV() + 1);
+            break;
+        case GLFW_KEY_KP_SUBTRACT:
+            Area::getMap().at(areaID)->setMarginV(Area::getMap().at(areaID)->getMarginV() - 1);
+            break;
         }
     }
 }
@@ -141,8 +147,9 @@ int main() try
     fmt.style.has_outline = true;
     fmt.style.outline_size = 1;
 
+    TR::Area::setDefaultMargins(30, 30);
     auto const& area = TR::Area::create(lorem_ipsum, fmt);
-    //area->setClearColor(0xFF888888);
+    area->setClearColor(0xFF888888);
     //area->setPrintMode(TR::Area::PrintMode::Typewriter);
     //area->setTypeWriterSpeed(60);
     areaID = area->getID();
@@ -166,8 +173,11 @@ int main() try
     auto const& plane2 = GL::Plane::create();
     plane2->setHitbox(GL::Plane::Hitbox::Full);
     plane2->setOnClickFuncID(1);
+    TR::Area::setDefaultMargins(40, 70);
+    auto const& area2 = TR::Area::create(lorem_ipsum2, fmt);
+    area2->setClearColor(0xFF888888);
     auto const& texture2 = GL::Texture::create();
-    texture2->setTextAreaID(TR::Area::create(lorem_ipsum2, fmt)->getID());
+    texture2->setTextAreaID(area2->getID());
     texture2->setType(GL::Texture::Type::Text);
     plane2->setTextureID(texture2->getID());
     plane2->scale(glm::vec3(static_cast<float>(h) * 0.99f));

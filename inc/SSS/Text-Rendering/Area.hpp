@@ -59,6 +59,15 @@ private:
     // Scrolling index, in pixels
     int _scrolling{ 0 };
 
+    // Default vertical margin, in pixels
+    static int _default_margin_v;
+    // Default horizontal margin, in pixels
+    static int _default_margin_h;
+    // Vertical margin, in pixels
+    int _margin_v{ _default_margin_v };
+    // Horizontal margin, in pixels
+    int _margin_h{ _default_margin_h };
+
     // True -> enables _drawIfNeeded()
     bool _draw{ true };
     // Print mode, default = instantaneous
@@ -178,6 +187,15 @@ public:
      *  @sa Format.
      */
     void setFormat(Format const& src, uint32_t id = 0);
+
+    static void setDefaultMargins(int marginV, int marginH) noexcept;
+    static void getDefaultMargins(int& marginV, int& marginH) noexcept;
+
+    void setMargins(int marginH, int marginV);
+    void setMarginH(int marginH);
+    void setMarginV(int marginV);
+    inline int getMarginH() const noexcept { return _margin_h; };
+    inline int getMarginV() const noexcept { return _margin_v; };
 
     void setClearColor(RGBA32 color);
     inline RGBA32 getClearColor(RGBA32 color) const noexcept { return _bg_color; };

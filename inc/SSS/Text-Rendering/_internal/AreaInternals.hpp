@@ -28,7 +28,6 @@ struct Line {
 
 // Draw parameters
 struct DrawParameters {
-    // TODO: get actual pen values based on glyphs
     FT_Vector pen{ 0, 0 }; // Pen on the canvas
     int charsize{ 0 }; // Current Line::charsize
     // Draw type : { false, false } would draw simple text,
@@ -42,6 +41,8 @@ struct AreaData {
     int w{ 0 }; // Width of the Area
     int h{ 0 }; // Height of the Area
     int pixels_h{ 0 }; // Real height of the Area
+    int margin_v{ 0 }; // Vertical margin of the Area, in pixels
+    int margin_h{ 0 }; // Horizontal margin of the Area, in pixels
     // Cursor's physical position & height
     bool draw_cursor{ false };
     int cursor_x{ 0 }; // Cursor's x pos

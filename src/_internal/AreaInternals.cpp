@@ -28,6 +28,8 @@ void AreaPixels::_asyncFunction(AreaData data)
     std::fill(_pixels.begin(), _pixels.end(), data.bg_color);
 
     DrawParameters param;
+    param.pen.x += data.margin_v << 6;
+    param.pen.y -= data.margin_h << 6;
     // Draw Outline shadows
     param.is_shadow = true;
     param.is_outline = true;
@@ -82,7 +84,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
         }
         // Handle line breaks. Return true if pen goes out of bound
         if (cursor == line->last_glyph && line != data.lines.end() - 1) {
-            param.pen.x = 0;
+            param.pen.x = data.margin_v << 6;
             param.pen.y -= static_cast<int>(line->fullsize) << 6;
             ++line;
             param.charsize = line->charsize;

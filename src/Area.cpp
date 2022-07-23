@@ -4,6 +4,8 @@
 SSS_TR_BEGIN;
 
 Area::Map Area::_instances{};
+int Area::_default_margin_h{ 10 };
+int Area::_default_margin_v{ 10 };
 bool Area::_focused_state{ false };
 uint32_t Area::_focused_id{ 0 };
 
@@ -84,7 +86,7 @@ Area::Ptr const& Area::create(std::u32string const& str, Format fmt)
         x = (x >> 6) + 1;
     }
     
-    Ptr const& ptr = ::SSS::TR::Area::create(x, y);
+    Ptr const& ptr = ::SSS::TR::Area::create(x + _default_margin_v * 2, y + _default_margin_h * 2);
     ptr->setFormat(fmt);
     ptr->parseString(str);
     return ptr;
@@ -129,6 +131,37 @@ void Area::setFormat(Format const& format, uint32_t id) try
     parseString(_buffer_infos.getString());
 }
 CATCH_AND_RETHROW_METHOD_EXC;
+
+void Area::setDefaultMargins(int marginV, int marginH) noexcept
+{
+    _default_margin_v = marginV;
+    _default_margin_h = marginH;
+}
+
+void Area::getDefaultMargins(int& marginV, int& marginH) noexcept
+{
+    marginV = _default_margin_v;
+    marginH = _default_margin_h;
+}
+
+void Area::setMargins(int marginH, int marginV)
+{
+    if (_margin_h != marginH || _margin_v != marginV) {
+        _margin_h = marginH;
+        _margin_v = marginV;
+        _updateLines();
+    }
+}
+
+void Area::setMarginH(int marginH)
+{
+    setMargins(marginH, _margin_v);
+}
+
+void Area::setMarginV(int marginV)
+{
+    setMargins(_margin_h, marginV);
+}
 
 void Area::setClearColor(RGBA32 color)
 {
@@ -324,7 +357,7 @@ void Area::cursorPlace(int x, int y) try
     }
     y += _scrolling;
 
-    FT_Vector pen{ 0, 0 };
+    FT_Vector pen{ _margin_v << 6, _margin_h };
     _internal::Line::cit line = _lines.cbegin();
     for (; line != _lines.cend(); ++line) {
         pen.y += line->fullsize;
@@ -589,12 +622,12 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
 {
     _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
 
-    y = _lines.cbegin()->charsize * 4 / 3;
+    y = _margin_h + _lines.cbegin()->charsize * 4 / 3;
     for (_internal::Line::cit it = _lines.cbegin() + 1; it <= line; ++it) {
         y += it->fullsize;
     }
 
-    x = 0;
+    x = _margin_v << 6;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
         x += _buffer_infos.getGlyph(n).pos.x_advance;
     }
@@ -627,7 +660,7 @@ void Area::_updateLines() try
 
     // Place pen at (0, 0), we don't take scrolling into account
     size_t last_divider(0);
-    FT_Vector pen({ 0, 0 });
+    FT_Vector pen({ _margin_v << 6, _margin_h << 6 });
     while (cursor < _glyph_count) {
         // Retrieve glyph infos
         _internal::GlyphInfo const& glyph = _buffer_infos.getGlyph(cursor);
@@ -651,7 +684,7 @@ void Area::_updateLines() try
         pen.x += glyph.pos.x_advance;
         pen.y += glyph.pos.y_advance;
         // If the pen is now out of bound, we should line break
-        if (pen.x < 0 || (pen.x >> 6) >= _w || glyph.is_new_line) {
+        if ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v)|| glyph.is_new_line) {
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
                 --cursor;
@@ -668,7 +701,7 @@ void Area::_updateLines() try
             line->first_glyph = cursor + 1;
             line->scrolling = (line - 1)->scrolling;
             // Reset pen
-            pen = { 0, 0 };
+            pen = { _margin_v << 6, _margin_h << 6 };
         }
         // Only increment cursor if not a line break
         ++cursor;
@@ -747,6 +780,8 @@ void Area::_drawIfNeeded()
     data.w = _w;
     data.h = _h;
     data.pixels_h = _pixels_h;
+    data.margin_v = _margin_v;
+    data.margin_h = _margin_h;
     data.draw_cursor = _edit_display_cursor;
     _getCursorPhysicalPos(data.cursor_x, data.cursor_y);
     data.cursor_h = _internal::Line::which(_lines, _edit_cursor)->fullsize;
