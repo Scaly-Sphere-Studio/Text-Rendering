@@ -36,70 +36,21 @@ static std::string const lorem_ipsum2 =
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_KP_0) {
+    if (action == GLFW_PRESS && (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_KP_0)) {
         glfwSetWindowShouldClose(window, true);
     }
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         using namespace SSS::TR;
-        bool const ctrl = mods & GLFW_MOD_CONTROL;
         switch (key) {
-        case GLFW_KEY_ESCAPE:
-            Area::resetFocus();
-            break;
-        case GLFW_KEY_ENTER:
-            Area::cursorAddText("\n");
-            break;
-        case GLFW_KEY_LEFT:
-            Area::cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
-            break;
-        case GLFW_KEY_RIGHT:
-            Area::cursorMove(ctrl ? Move::CtrlRight : Move::Right);
-            break;
-        case GLFW_KEY_DOWN:
-            Area::cursorMove(Move::Down);
-            break;
-        case GLFW_KEY_UP:
-            Area::cursorMove(Move::Up);
-            break;
-        case GLFW_KEY_HOME:
-            Area::cursorMove(Move::Start);
-            break;
-        case GLFW_KEY_END:
-            Area::cursorMove(Move::End);
-            break;
-        case GLFW_KEY_BACKSPACE:
-            Area::cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
-            break;
-        case GLFW_KEY_DELETE:
-            Area::cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
-            break;
-        case GLFW_KEY_KP_ADD:
-            Area::getMap().at(areaID)->setMarginV(Area::getMap().at(areaID)->getMarginV() + 1);
-            break;
-        case GLFW_KEY_KP_SUBTRACT:
-            Area::getMap().at(areaID)->setMarginV(Area::getMap().at(areaID)->getMarginV() - 1);
-            break;
-        }
-    }
-}
-
-void char_callback(GLFWwindow* window, unsigned int codepoint)
-{
-    std::u32string str(1, static_cast<char32_t>(codepoint));
-    SSS::TR::Area::cursorAddText(str);
-}
-
-void func(SSS::GL::Window::Shared win, SSS::GL::Plane::Ptr const& plane,
-    int button, int action, int mod)
-{
-    if (action == GLFW_PRESS) {
-        auto const& objects = win->getObjects();
-        auto const& tex = objects.textures.at(plane->getTextureID());
-        if (button == GLFW_MOUSE_BUTTON_1) {
-            int x, y;
-            plane->getRelativeCoords(x, y);
-            tex->getTextArea()->cursorPlace(x, y);
+        case GLFW_KEY_KP_ADD: {
+            auto const& area = Area::getMap().at(areaID);
+            area->setMarginV(area->getMarginV() + 1);
+        }   break;
+        case GLFW_KEY_KP_SUBTRACT: {
+            auto const& area = Area::getMap().at(areaID);
+            area->setMarginV(area->getMarginV() - 1);
+        }   break;
         }
     }
 }
@@ -107,8 +58,6 @@ void func(SSS::GL::Window::Shared win, SSS::GL::Plane::Ptr const& plane,
 int main() try
 {
     using namespace SSS;
-
-    SSS::GL::Plane::on_click_funcs = { { 1, func } };
 
     //Log::TR::Fonts::get().glyph_load = true;
     //Log::GL::Window::get().fps = true;
@@ -118,6 +67,7 @@ int main() try
     args.title = "SSS/Text-Rendering - Demo Window";
     args.w = static_cast<int>(600);
     args.h = static_cast<int>(600);
+    args.maximized = true;
     GL::Window::Shared window = GL::Window::create(args);
 
     // Set context
@@ -130,7 +80,6 @@ int main() try
 
     window->setVSYNC(true);
     window->setCallback(glfwSetKeyCallback, key_callback);
-    window->setCallback(glfwSetCharCallback, char_callback);
 
     // SSS/GL objects
 
@@ -138,7 +87,7 @@ int main() try
     auto const& texture = GL::Texture::create();
     auto const& camera = GL::Camera::create();
     auto const& plane = GL::Plane::create();
-    auto const& plane_renderer = GL::Plane::Renderer::create();
+    auto const& plane_renderer = GL::Renderer::create<GL::PlaneRenderer>();
 
     // Text
     TR::Format fmt;
@@ -163,7 +112,6 @@ int main() try
 
     // Plane
     plane->setHitbox(GL::Plane::Hitbox::Full);
-    plane->setOnClickFuncID(1);
     plane->setTextureID(texture->getID());
     int w, h;
     area->getDimensions(w, h);
@@ -172,7 +120,6 @@ int main() try
 
     auto const& plane2 = GL::Plane::create();
     plane2->setHitbox(GL::Plane::Hitbox::Full);
-    plane2->setOnClickFuncID(1);
     TR::Area::setDefaultMargins(40, 70);
     auto const& area2 = TR::Area::create(lorem_ipsum2, fmt);
     area2->setClearColor(0xFF888888);
@@ -183,10 +130,10 @@ int main() try
     plane2->scale(glm::vec3(static_cast<float>(h) * 0.99f));
     plane2->translate(glm::vec3(w / 2 + 20, 0, 0));
     
-    plane_renderer->chunks.emplace_back();
-    plane_renderer->chunks[0].reset_depth_before = true;
-    plane_renderer->chunks[0].objects.push_back(plane->getID());
-    plane_renderer->chunks[0].objects.push_back(plane2->getID());
+    auto& chunks = plane_renderer->castAs<GL::PlaneRenderer>().chunks;
+    chunks.emplace_back(camera, true);
+    chunks.back().planes.emplace_back(plane);
+    chunks.back().planes.emplace_back(plane2);
 
     // Main loop
     while (!window->shouldClose()) {
