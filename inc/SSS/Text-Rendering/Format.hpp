@@ -41,6 +41,13 @@ struct Format {
          *  @default \c 1.5
          */
         float line_spacing{ 1.5f };
+        /** */
+        enum class Alignment {
+            Left,
+            Center,
+            Right
+        };
+        Alignment aligmnent{ Alignment::Left };
     };
 
     /** Sets the color of corresponding text (& style features).
@@ -125,5 +132,8 @@ struct Format {
     /** See Language documentation.*/
     Language lng;
 };
+
+using Alignment = Format::Style::Alignment;
+using ColorFunc = Format::Color::Func;
 
 SSS_TR_END;

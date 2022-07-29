@@ -366,6 +366,7 @@ void Area::cursorPlace(int x, int y) try
     if (line == _lines.cend()) {
         --line;
     }
+    pen.x += line->x_offset() << 6;
 
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
         _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(i));
@@ -384,7 +385,10 @@ static size_t _move_cursor_line(_internal::BufferInfoVector const& buffer_infos,
 {
     size_t cursor = line->first_glyph;
     size_t const glyph_count = buffer_infos.glyphCount();
-    for (int new_x = 0; cursor <= line->last_glyph && cursor < glyph_count; ++cursor) {
+    for (int new_x = line->x_offset() << 6;
+        cursor <= line->last_glyph && cursor < glyph_count;
+        ++cursor)
+    {
         new_x += buffer_infos.getGlyph(cursor).pos.x_advance;
         if ((new_x >> 6) > x) {
             break;
@@ -627,7 +631,7 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
         y += it->fullsize;
     }
 
-    x = _margin_v << 6;
+    x = (_margin_v  + line->x_offset()) << 6;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
         x += _buffer_infos.getGlyph(n).pos.x_advance;
     }
@@ -656,6 +660,9 @@ void Area::_updateLines() try
     _lines.clear();
     _lines.emplace_back();
     _internal::Line::it line = _lines.begin();
+    if (!_buffer_infos.empty()) {
+        line->alignment = _buffer_infos.front().style.aligmnent;
+    }
     size_t cursor = 0;
 
     // Place pen at (0, 0), we don't take scrolling into account
@@ -681,8 +688,10 @@ void Area::_updateLines() try
         }
 
         // Update pen position
-        pen.x += glyph.pos.x_advance;
-        pen.y += glyph.pos.y_advance;
+        if (!glyph.is_new_line) {
+            pen.x += glyph.pos.x_advance;
+            pen.y += glyph.pos.y_advance;
+        }
         // If the pen is now out of bound, we should line break
         if ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v)|| glyph.is_new_line) {
             // If no word divider was found, hard break the line
@@ -694,12 +703,14 @@ void Area::_updateLines() try
             }
             line->last_glyph = cursor;
             line->scrolling += line->fullsize;
+            line->unused_width = _w - _margin_v - (pen.x >> 6);
             last_divider = 0;
             // Add line if needed
-            _lines.push_back({ 0, 0, 0, 0, 0 });
+            _lines.emplace_back();
             line = _lines.end() - 1;
             line->first_glyph = cursor + 1;
             line->scrolling = (line - 1)->scrolling;
+            line->alignment = buffer.style.aligmnent;
             // Reset pen
             pen = { _margin_v << 6, _margin_h << 6 };
         }
@@ -709,6 +720,7 @@ void Area::_updateLines() try
 
     line->last_glyph = cursor;
     line->scrolling += line->fullsize;
+    line->unused_width = (_w - _margin_v - (pen.x >> 6));
     
     // Update size & scrolling
     size_t const size_before = _pixels_h;

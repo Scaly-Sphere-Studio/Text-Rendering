@@ -16,6 +16,20 @@ Line::cit Line::which(vector const& lines, size_t cursor) noexcept
     return line;
 }
 
+int Line::x_offset() const noexcept
+{
+    switch (alignment) {
+    case Alignment::Left:
+        return 0;
+    case Alignment::Center:
+        return unused_width / 2;
+    case Alignment::Right:
+        return unused_width;
+    default:
+        return 0;
+    }
+}
+
 void AreaPixels::_asyncFunction(AreaData data)
 {
     // Copy given data
@@ -28,7 +42,7 @@ void AreaPixels::_asyncFunction(AreaData data)
     std::fill(_pixels.begin(), _pixels.end(), data.bg_color);
 
     DrawParameters param;
-    param.pen.x += data.margin_v << 6;
+    param.pen.x += (data.margin_v + data.lines.front().x_offset()) << 6;
     param.pen.y -= data.margin_h << 6;
     // Draw Outline shadows
     param.is_shadow = true;
@@ -87,6 +101,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
             param.pen.x = data.margin_v << 6;
             param.pen.y -= static_cast<int>(line->fullsize) << 6;
             ++line;
+            param.pen.x += line->x_offset() << 6;
             param.charsize = line->charsize;
         }
         // Increment pen's coordinates

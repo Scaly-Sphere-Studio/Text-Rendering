@@ -33,6 +33,20 @@ static std::string const lorem_ipsum2 =
 "egestas vitae commodo euismod,\n"
 "sodales vitae nunc.";
 
+static std::string const arabic_lorem_ipsum =
+"لكن لا بد أن أوضح لك أن كل هذه الأفكار المغلوطة حول\n"
+"استنكار  النشوة وتمجيد الألم نشأت بالفعل،\n"
+"وسأعرض لك التفاصيل لتكتشف حقيقة وأساس تلك السعادة البشرية،\n"
+"فلا أحد يرفض أو يكره أو يتجنب الشعور بالسعادة،\n"
+"ولكن بفضل هؤلاء الأشخاص الذين لا يدركون بأن السعادة لا بد أن نستشعرها\n"
+"بصورة أكثر عقلانية ومنطقية فيعرضهم هذا لمواجهة الظروف الأليمة،\n"
+"وأكرر بأنه لا يوجد من يرغب في الحب ونيل المنال ويتلذذ بالآلام،\n"
+"الألم هو الألم ولكن نتيجة لظروف ما قد تكمن السعاده فيما نتحمله من كد .\n"
+"و سأعرض مثال حي لهذا،\n"
+"من منا لم يتحمل جهد بدني شاق إلا من أجل الحصول على ميزة أو\n"
+"فائدة؟ ولكن من لديه الحق أن ينتقد شخص ما أراد أن يشعر بالسعادة التي لا\n"
+"تشوبها عواقب أليمة أو آخر أراد أن يتجنب الألم الذي ربما تنجم عنه بعض ؟\n"
+"علي الجانب الآخر نشجب ونستنكر هؤلاء الرجال المفتونون بنش";
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -67,7 +81,7 @@ int main() try
     args.title = "SSS/Text-Rendering - Demo Window";
     args.w = static_cast<int>(600);
     args.h = static_cast<int>(600);
-    args.maximized = true;
+    //args.maximized = true;
     GL::Window::Shared window = GL::Window::create(args);
 
     // Set context
@@ -92,11 +106,19 @@ int main() try
     // Text
     TR::Format fmt;
     fmt.style.charsize = 30;
-    fmt.style.has_shadow = true;
     fmt.style.has_outline = true;
+    fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
+    fmt.style.aligmnent = TR::Alignment::Right;
 
-    TR::Area::setDefaultMargins(30, 30);
+    //fmt.color.text.func = TR::ColorFunc::rainbow;
+
+    //fmt.lng.direction = "rtl";
+    //fmt.lng.script = "Arab";
+    //fmt.lng.language = "ar";
+    //fmt.font = "LateefRegOT.ttf";
+    //TR::addFontDir("C:/dev/fonts");
+
     auto const& area = TR::Area::create(lorem_ipsum, fmt);
     area->setClearColor(0xFF888888);
     //area->setPrintMode(TR::Area::PrintMode::Typewriter);
@@ -115,19 +137,20 @@ int main() try
     plane->setTextureID(texture->getID());
     int w, h;
     area->getDimensions(w, h);
-    plane->scale(glm::vec3(static_cast<float>(h) * 0.99f));
+    glfwSetWindowSize(window->getGLFWwindow(), w, h);
+    plane->scale(glm::vec3(static_cast<float>(h)));
     plane->translate(glm::vec3(-w / 2 - 20, 0, 0));
 
     auto const& plane2 = GL::Plane::create();
     plane2->setHitbox(GL::Plane::Hitbox::Full);
-    TR::Area::setDefaultMargins(40, 70);
+    fmt.style.aligmnent = TR::Alignment::Left;
     auto const& area2 = TR::Area::create(lorem_ipsum2, fmt);
     area2->setClearColor(0xFF888888);
     auto const& texture2 = GL::Texture::create();
     texture2->setTextAreaID(area2->getID());
     texture2->setType(GL::Texture::Type::Text);
     plane2->setTextureID(texture2->getID());
-    plane2->scale(glm::vec3(static_cast<float>(h) * 0.99f));
+    plane2->scale(glm::vec3(static_cast<float>(h)));
     plane2->translate(glm::vec3(w / 2 + 20, 0, 0));
     
     auto& chunks = plane_renderer->castAs<GL::PlaneRenderer>().chunks;
