@@ -401,26 +401,27 @@ static size_t _ctrl_jump(_internal::BufferInfoVector const& buffer_infos,
     size_t cursor, int coeff)
 {
     size_t const glyph_count = buffer_infos.glyphCount();
-    cursor += coeff;
+    bool flag = true;
+    if (coeff == -1 || cursor == 0) {
+        cursor += coeff;
+    }
     while (cursor > 0 && cursor < glyph_count) {
         _internal::GlyphInfo const& glyph(buffer_infos.getGlyph(cursor));
         _internal::BufferInfo const& buffer(buffer_infos.getBuffer(cursor));
 
-        char32_t c = buffer.str[glyph.info.cluster];
-        if (std::isalnum(c, buffer.locale))
-            break;
+        char32_t const c = buffer.str[glyph.info.cluster];
+        if (std::isalnum(c, buffer.locale) == flag) {
+            if (flag)
+                flag = false;
+            else
+                break;
+        }
         cursor += coeff;
-    }
-    while (cursor > 0 && cursor < glyph_count) {
-        _internal::GlyphInfo const& glyph(buffer_infos.getGlyph(cursor));
-        _internal::BufferInfo const& buffer(buffer_infos.getBuffer(cursor));
-        char32_t c = buffer.str[glyph.info.cluster];
-        if (!std::isalnum(c, buffer.locale))
+        if (glyph.is_new_line)
             break;
-        cursor += coeff;
     }
     if (coeff == -1 && cursor != 0) {
-        ++cursor;
+        cursor -= coeff;
     }
     return cursor;
 }
