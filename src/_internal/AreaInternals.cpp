@@ -40,6 +40,8 @@ void AreaPixels::_asyncFunction(AreaData data)
     _pixels.resize(_w * _pixels_h);
     // Clear
     std::fill(_pixels.begin(), _pixels.end(), data.bg_color);
+    // Reset time
+    _time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
 
     DrawParameters param;
     param.pen.x += (data.margin_v + data.lines.front().x_offset()) << 6;
@@ -188,8 +190,10 @@ void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                     color = args.color.plain;
                     break;
                 case Func::rainbow:
-                    // TODO: make this function time based
-                    color = rainbow(x, _w);
+                    color = rainbow((_time.count() / 2 - x - y * 2) % _w, _w);
+                    break;
+                case Func::rainbowFixed:
+                    color = rainbow((x + y * 2) % _w, _w);
                     break;
                 }
                 // Blend with existing pixel, using the glyph's pixel value as an alpha

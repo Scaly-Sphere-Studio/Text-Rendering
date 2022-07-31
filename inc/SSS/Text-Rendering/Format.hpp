@@ -56,8 +56,9 @@ struct Format {
     struct Color {
         /** Used in Config to determine the color at runtime.*/
         enum class Func {
-            none,   /**< No function, the Config::plain color is used.*/
-            rainbow /**< The color is determined by the width ratio*/
+            none,           /**< No function, the Config::plain color is used.*/
+            rainbow,        /**< The color is determined by width ratio and time.*/
+            rainbowFixed,   /**< Same as #rainbow, but not time-based.*/
         };
         /** Stores a "final color" in a single struct,
          *  whether it's plain or computed from a function.

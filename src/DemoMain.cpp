@@ -112,7 +112,7 @@ int main() try
     fmt.style.outline_size = 1;
     fmt.style.aligmnent = TR::Alignment::Left;
 
-    //fmt.color.text.func = TR::ColorFunc::rainbow;
+    fmt.color.text.func = TR::ColorFunc::rainbowFixed;
 
     //fmt.lng.direction = "rtl";
     //fmt.lng.script = "Arab";
@@ -145,6 +145,7 @@ int main() try
     plane2->setHitbox(GL::Plane::Hitbox::Full);
     fmt.style.aligmnent = TR::Alignment::Right;
     fmt.style.shadow_offset = { -3, 3 };
+    fmt.color.text.func = TR::ColorFunc::rainbow;
     auto const& area2 = TR::Area::create(w - 100, h);
     area2->setFormat(fmt);
     area2->parseString(lorem_ipsum2);

@@ -779,6 +779,16 @@ void Area::_drawIfNeeded()
             _draw = true;
         }
     }
+    // Determine if a function needs to be edited
+    for (auto const& buffer : _buffer_infos) {
+        if (buffer.color.text.func == ColorFunc::rainbow
+            || (buffer.style.has_outline && buffer.color.outline.func == ColorFunc::rainbow)
+            || (buffer.style.has_shadow && buffer.color.shadow.func == ColorFunc::rainbow))
+        {
+            _draw = true;
+            break;
+        }
+    }
     // Skip if drawing is not needed
     if (!_draw) {
         return;

@@ -70,6 +70,7 @@ private:
     int _h{ 0 };
     int _pixels_h{ 0 };
     RGBA32::Vector _pixels;
+    std::chrono::milliseconds _time;
 
     struct _CopyBitmapArgs {
         inline _CopyBitmapArgs(Bitmap const& _bitmap)
