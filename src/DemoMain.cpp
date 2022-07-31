@@ -19,18 +19,18 @@ static std::string const lorem_ipsum =
 "eget cursus dolor.";
 
 static std::string const lorem_ipsum2 =
-"Lorem ipsum dolor sit amet,\n"
-"consectetur adipiscing elit.\n"
-"Nam ornare arcu turpis,\n"
-"at suscipit purus rhoncus eu.\n"
-"Donec vitae diam eget ante imperdiet mollis.\n"
-"Maecenas id est sit amet sapien eleifend gravida.\n"
-"Curabitur sit amet felis condimentum.\n"
-"varius augue eu,\n"
-"maximus nunc.\n"
-"Curabitur quis laoreet tellus.\n"
-"Donec urna arcu,\n"
-"egestas vitae commodo euismod,\n"
+"Lorem ipsum dolor sit amet, "
+"consectetur adipiscing elit. "
+"Nam ornare arcu turpis, "
+"at suscipit purus rhoncus eu. "
+"Donec vitae diam eget ante imperdiet mollis. "
+"Maecenas id est sit amet sapien eleifend gravida. "
+"Curabitur sit amet felis condimentum. "
+"varius augue eu, "
+"maximus nunc. "
+"Curabitur quis laoreet tellus. "
+"Donec urna arcu, "
+"egestas vitae commodo euismod, "
 "sodales vitae nunc.";
 
 static std::string const arabic_lorem_ipsum =
@@ -81,7 +81,8 @@ int main() try
     args.title = "SSS/Text-Rendering - Demo Window";
     args.w = static_cast<int>(600);
     args.h = static_cast<int>(600);
-    //args.maximized = true;
+    args.maximized = true;
+    args.monitor_id = 1;
     GL::Window::Shared window = GL::Window::create(args);
 
     // Set context
@@ -109,7 +110,7 @@ int main() try
     fmt.style.has_outline = true;
     fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
-    fmt.style.aligmnent = TR::Alignment::Right;
+    fmt.style.aligmnent = TR::Alignment::Left;
 
     //fmt.color.text.func = TR::ColorFunc::rainbow;
 
@@ -137,14 +138,16 @@ int main() try
     plane->setTextureID(texture->getID());
     int w, h;
     area->getDimensions(w, h);
-    glfwSetWindowSize(window->getGLFWwindow(), w, h);
     plane->scale(glm::vec3(static_cast<float>(h)));
     plane->translate(glm::vec3(-w / 2 - 20, 0, 0));
 
     auto const& plane2 = GL::Plane::create();
     plane2->setHitbox(GL::Plane::Hitbox::Full);
-    fmt.style.aligmnent = TR::Alignment::Left;
-    auto const& area2 = TR::Area::create(lorem_ipsum2, fmt);
+    fmt.style.aligmnent = TR::Alignment::Right;
+    fmt.style.shadow_offset = { -3, 3 };
+    auto const& area2 = TR::Area::create(w - 100, h);
+    area2->setFormat(fmt);
+    area2->parseString(lorem_ipsum2);
     area2->setClearColor(0xFF888888);
     auto const& texture2 = GL::Texture::create();
     texture2->setTextAreaID(area2->getID());

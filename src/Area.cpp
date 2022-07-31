@@ -26,7 +26,7 @@ Area::Area(uint32_t id, int width, int height) try
         LOG_TR_MSG(buff);
     }
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 // Destructor, clears out buffer cache.
 Area::~Area() noexcept
@@ -208,7 +208,7 @@ void Area::parseString(std::u32string const& str) try
     _updateBufferInfos();
     _edit_cursor += _glyph_count - tmp;
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::parseString(std::string const& str)
 {
@@ -243,7 +243,7 @@ void const* Area::pixelsGet() const try
     }
     return &pixels.at(index);
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::clear() noexcept
 {
@@ -282,7 +282,7 @@ void Area::setDimensions(int width, int height) try
     _h = height;
     _updateLines();
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
     // --- Format functions ---
 
@@ -378,7 +378,7 @@ void Area::cursorPlace(int x, int y) try
     }
     _edit_cursor = line->last_glyph + 1;
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 static size_t _move_cursor_line(_internal::BufferInfoVector const& buffer_infos,
     _internal::Line::cit line, int x)
@@ -386,7 +386,7 @@ static size_t _move_cursor_line(_internal::BufferInfoVector const& buffer_infos,
     size_t cursor = line->first_glyph;
     size_t const glyph_count = buffer_infos.glyphCount();
     for (int new_x = line->x_offset() << 6;
-        cursor <= line->last_glyph && cursor < glyph_count;
+        cursor < line->last_glyph && cursor < glyph_count;
         ++cursor)
     {
         new_x += buffer_infos.getGlyph(cursor).pos.x_advance;
@@ -471,14 +471,15 @@ void Area::_cursorMove(Move direction) try
         break;
 
     case Move::End:
-        // TODO: fix this working partially on Areas with multiple lines
-        _edit_cursor = line->last_glyph + 1;
+        _edit_cursor = line->last_glyph;
+        break;
+
     }
     _draw = true;
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::_cursorAddText(std::u32string str) try
 {
@@ -518,7 +519,7 @@ void Area::_cursorAddText(std::u32string str) try
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::_cursorDeleteText(Delete direction) try
 {
@@ -531,8 +532,8 @@ void Area::_cursorDeleteText(Delete direction) try
     size_t tmp;
     switch (direction) {
     case Delete::Right:
-          if (cursor >= _glyph_count) break;
-      count = 1;
+        if (cursor >= _glyph_count) break;
+        count = 1;
         break;
 
     case Delete::Left:
@@ -668,6 +669,7 @@ void Area::_updateLines() try
 
     // Place pen at (0, 0), we don't take scrolling into account
     size_t last_divider(0);
+    int last_divider_x{ 0 };
     FT_Vector pen({ _margin_v << 6, _margin_h << 6 });
     while (cursor < _glyph_count) {
         // Retrieve glyph infos
@@ -686,6 +688,7 @@ void Area::_updateLines() try
         // If glyph is a word divider, mark next character as possible line break
         if (glyph.is_word_divider) {
             last_divider = cursor;
+            last_divider_x = pen.x;
         }
 
         // Update pen position
@@ -698,14 +701,18 @@ void Area::_updateLines() try
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
                 --cursor;
+                line->unused_width = _w - _margin_v - ((pen.x - glyph.pos.x_advance) >> 6);
             }
             else {
                 cursor = last_divider;
+                line->unused_width = _w - _margin_v - (last_divider_x >> 6);
             }
+            if (glyph.is_new_line)
+                line->unused_width = _w - _margin_v - (pen.x >> 6);
             line->last_glyph = cursor;
             line->scrolling += line->fullsize;
-            line->unused_width = _w - _margin_v - (pen.x >> 6);
             last_divider = 0;
+            last_divider_x = 0;
             // Add line if needed
             _lines.emplace_back();
             line = _lines.end() - 1;
@@ -736,7 +743,7 @@ void Area::_updateLines() try
     }
     _draw = true;
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 // Updates _buffer_infos and _glyph_count, then calls _updateLines();
 void Area::_updateBufferInfos() try
@@ -745,7 +752,7 @@ void Area::_updateBufferInfos() try
     _glyph_count = _buffer_infos.glyphCount();
     _updateLines();
 }
-CATCH_AND_RETHROW_METHOD_EXC
+CATCH_AND_RETHROW_METHOD_EXC;
 
 // Draws current area if _draw is set to true
 void Area::_drawIfNeeded()
