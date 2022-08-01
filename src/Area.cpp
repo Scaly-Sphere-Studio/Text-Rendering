@@ -370,13 +370,13 @@ void Area::cursorPlace(int x, int y) try
 
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
         _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(i));
-        pen.x += glyph.pos.x_advance;
-        if ((pen.x >> 6) > x) {
+        if (((pen.x + glyph.pos.x_advance / 2) >> 6) > x) {
             _edit_cursor = i;
             return;
         }
+        pen.x += glyph.pos.x_advance;
     }
-    _edit_cursor = line->last_glyph + 1;
+    _edit_cursor = line->last_glyph;
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
