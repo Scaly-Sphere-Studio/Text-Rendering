@@ -111,6 +111,7 @@ int main() try
     fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
     fmt.style.aligmnent = TR::Alignment::Left;
+    fmt.style.effect = TR::Effect::Waves;
 
     fmt.color.text.func = TR::ColorFunc::rainbowFixed;
 
@@ -145,10 +146,17 @@ int main() try
     plane2->setHitbox(GL::Plane::Hitbox::Full);
     fmt.style.aligmnent = TR::Alignment::Right;
     fmt.style.shadow_offset = { -3, 3 };
+    fmt.style.effect_offset = 7;
     fmt.color.text.func = TR::ColorFunc::rainbow;
-    auto const& area2 = TR::Area::create(w - 100, h);
+
+    fmt.lng.direction = "rtl";
+    fmt.lng.script = "Arab";
+    fmt.lng.language = "ar";
+    fmt.font = "LateefRegOT.ttf";
+    TR::addFontDir("C:/dev/fonts");
+    auto const& area2 = TR::Area::create(w, h);
     area2->setFormat(fmt);
-    area2->parseString(lorem_ipsum2);
+    area2->parseString(arabic_lorem_ipsum);
     area2->setClearColor(0xFF888888);
     auto const& texture2 = GL::Texture::create();
     texture2->setTextAreaID(area2->getID());
@@ -166,6 +174,16 @@ int main() try
     while (!window->shouldClose()) {
         // Poll events, threads, etc
         GL::pollEverything();
+        constexpr int speed = 2;
+        auto const& keys = window->getKeyInputs();
+        if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])
+            camera->move(glm::vec3(0, speed, 0));
+        if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN])
+            camera->move(glm::vec3(0, -speed, 0));
+        if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT])
+            camera->move(glm::vec3(-speed, 0, 0));
+        if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
+            camera->move(glm::vec3(speed, 0, 0));
         // Draw renderers
         window->drawObjects();
         // Swap buffers

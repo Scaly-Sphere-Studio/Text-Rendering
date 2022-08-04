@@ -47,7 +47,19 @@ struct Format {
             Center,
             Right
         };
+        /** */
         Alignment aligmnent{ Alignment::Left };
+        /** */
+        enum class Effect {
+            None,
+            Waves,
+            //Vibrate,
+            //Rotate,
+        };
+        /** */
+        Effect effect{ Effect::None };
+        /** */
+        int effect_offset{ 4 };
     };
 
     /** Sets the color of corresponding text (& style features).
@@ -135,6 +147,7 @@ struct Format {
 };
 
 using Alignment = Format::Style::Alignment;
+using Effect = Format::Style::Effect;
 using ColorFunc = Format::Color::Func;
 
 SSS_TR_END;

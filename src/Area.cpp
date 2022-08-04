@@ -781,7 +781,8 @@ void Area::_drawIfNeeded()
     }
     // Determine if a function needs to be edited
     for (auto const& buffer : _buffer_infos) {
-        if (buffer.color.text.func == ColorFunc::rainbow
+        if (buffer.style.effect != Effect::None
+            || buffer.color.text.func == ColorFunc::rainbow
             || (buffer.style.has_outline && buffer.color.outline.func == ColorFunc::rainbow)
             || (buffer.style.has_shadow && buffer.color.shadow.func == ColorFunc::rainbow))
         {
