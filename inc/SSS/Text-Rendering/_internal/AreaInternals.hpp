@@ -33,6 +33,7 @@ struct Line {
 struct DrawParameters {
     FT_Vector pen{ 0, 0 }; // Pen on the canvas
     int charsize{ 0 }; // Current Line::charsize
+    size_t effect_cursor{ 0 }; // Current cursor index (groups arabic glyphs)
     // Draw type : { false, false } would draw simple text,
     // and { true, true } would draw the shadows of the outlines
     bool is_shadow{ true };     // Draw text or its shadow

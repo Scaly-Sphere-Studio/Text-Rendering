@@ -105,9 +105,13 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
             ++line;
             param.pen.x += line->x_offset() << 6;
             param.charsize = line->charsize;
+            ++param.effect_cursor;
         }
         // Increment pen's coordinates
         else {
+            if (glyph_info.pos.x_advance != 0) {
+                ++param.effect_cursor;
+            }
             param.pen.x += glyph_info.pos.x_advance;
             param.pen.y += glyph_info.pos.y_advance;
         }
@@ -137,10 +141,6 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
 
     FT_Vector pen(param.pen);
     // Shadow offset
-    if (param.is_shadow) {
-        pen.x += buffer_info.style.shadow_offset.x << 6;
-        pen.y -= buffer_info.style.shadow_offset.y << 6;
-    }
 
     // Prepare copy
     _CopyBitmapArgs args(bitmap);
@@ -154,6 +154,19 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
         buffer_info.color.shadow : param.is_outline ?
         buffer_info.color.outline : buffer_info.color.text;
     args.alpha = buffer_info.color.alpha;
+
+    if (buffer_info.style.effect == Effect::Waves) {
+        int const sign = buffer_info.style.effect_offset > 0 ? 1 : -1;
+        int const n = std::labs(buffer_info.style.effect_offset);
+        int const offset = std::labs((((_time.count() / (50 + (100/n))) - param.effect_cursor) % (n*4)) - (n*2)) - n;
+        if (offset > 0) {
+            args.y0 -= offset * sign;
+        }
+    }
+    if (param.is_shadow) {
+        args.x0 += buffer_info.style.shadow_offset.x;
+        args.y0 += buffer_info.style.shadow_offset.y;
+    }
 
     _copyBitmap(args);
 }
@@ -190,7 +203,7 @@ void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                     color = args.color.plain;
                     break;
                 case Func::rainbow:
-                    color = rainbow((_time.count() / 2 - x - y * 2) % _w, _w);
+                    color = rainbow((_time.count() / 10 - x - y * 2) % _w, _w);
                     break;
                 case Func::rainbowFixed:
                     color = rainbow((x + y * 2) % _w, _w);
