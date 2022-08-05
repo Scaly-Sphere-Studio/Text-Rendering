@@ -54,9 +54,9 @@ struct AreaData {
     int cursor_h{ 0 }; // Cursor's height
     // Draw infos
     size_t last_glyph{ 0 }; // Last glyph to draw (excluded)
-    Line::vector lines; // Line vector    
+    Line::vector lines;     // Line vector
     BufferInfoVector buffer_infos; // Glyph infos
-    RGBA32 bg_color{ 0 };    // Area's background clear color
+    RGBA32 bg_color{ 0 };   // Area's background clear color
 };
 
 class AreaPixels : public SSS::AsyncBase<AreaData> {
@@ -72,6 +72,7 @@ private:
     int _pixels_h{ 0 };
     RGBA32::Vector _pixels;
     std::chrono::milliseconds _time;
+    std::vector<FT_Vector> _rng; // Used for effects (grouped vibrations)
 
     struct _CopyBitmapArgs {
         inline _CopyBitmapArgs(Bitmap const& _bitmap)

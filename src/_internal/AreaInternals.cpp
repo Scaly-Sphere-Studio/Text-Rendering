@@ -42,6 +42,17 @@ void AreaPixels::_asyncFunction(AreaData data)
     std::fill(_pixels.begin(), _pixels.end(), data.bg_color);
     // Reset time
     _time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
+    // Generate RNG if needed
+    for (auto const& buffer : data.buffer_infos) {
+        if (buffer.style.effect == Effect::Vibrate) {
+            _rng.resize(data.buffer_infos.glyphCount());
+            for (FT_Vector& vec : _rng) {
+                vec.x = std::rand();
+                vec.y = std::rand();
+            }
+            break;
+        }
+    }
 
     DrawParameters param;
     param.pen.x += (data.margin_v + data.lines.front().x_offset()) << 6;
@@ -155,14 +166,25 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
         buffer_info.color.outline : buffer_info.color.text;
     args.alpha = buffer_info.color.alpha;
 
-    if (buffer_info.style.effect == Effect::Waves) {
-        int const sign = buffer_info.style.effect_offset > 0 ? 1 : -1;
+    switch (buffer_info.style.effect) {
+    case Effect::None:
+        break;
+    case Effect::Waves: {
         int const n = std::labs(buffer_info.style.effect_offset);
-        int const offset = std::labs((((_time.count() / (50 + (100/n))) - param.effect_cursor) % (n*4)) - (n*2)) - n;
+        if (n == 0) break;
+        int const sign = buffer_info.style.effect_offset > 0 ? 1 : -1;
+        int const offset = std::labs((((_time.count() / (50 + (100 / n))) - param.effect_cursor) % (n * 4)) - (n * 2)) - n;
         if (offset > 0) {
             args.y0 -= offset * sign;
         }
-    }
+    }   break;
+    case Effect::Vibrate: {
+        int const n = buffer_info.style.effect_offset;
+        if (n == 0) break;
+        args.x0 += (n-1) - (_rng.at(param.effect_cursor).x % (n * 2));
+        args.y0 += (n-1) - (_rng.at(param.effect_cursor).y % (n * 2));
+    }   break;
+    } 
     if (param.is_shadow) {
         args.x0 += buffer_info.style.shadow_offset.x;
         args.y0 += buffer_info.style.shadow_offset.y;

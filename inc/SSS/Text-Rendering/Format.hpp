@@ -53,7 +53,7 @@ struct Format {
         enum class Effect {
             None,
             Waves,
-            //Vibrate,
+            Vibrate,
             //Rotate,
         };
         /** */
