@@ -81,6 +81,8 @@ private:
     bool _changes_pending{ false };
     // Last time the update() function was called
     std::chrono::steady_clock::time_point _last_update{ std::chrono::steady_clock::now() };
+    // Last time an Effect::Vibrate was updated
+    std::chrono::steady_clock::time_point _last_vibrate_update{};
 
     // Double-Buffer array
     using _PixelBuffers = std::array<_internal::AreaPixels, 2>;

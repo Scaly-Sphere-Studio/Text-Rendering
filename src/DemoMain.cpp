@@ -111,7 +111,8 @@ int main() try
     fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
     fmt.style.aligmnent = TR::Alignment::Left;
-    fmt.style.effect = TR::Effect::Waves;
+    fmt.style.effect = TR::Effect::Vibrate;
+    fmt.style.effect_offset = 2;
 
     fmt.color.text.func = TR::ColorFunc::rainbowFixed;
 
@@ -146,7 +147,7 @@ int main() try
     plane2->setHitbox(GL::Plane::Hitbox::Full);
     fmt.style.aligmnent = TR::Alignment::Right;
     fmt.style.shadow_offset = { -3, 3 };
-    fmt.style.effect_offset = 7;
+    fmt.style.effect_offset = 1;
     fmt.color.text.func = TR::ColorFunc::rainbow;
 
     fmt.lng.direction = "rtl";

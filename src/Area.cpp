@@ -500,7 +500,7 @@ void Area::_cursorAddText(std::u32string str) try
     }
     else {
         for (_internal::Buffer::Ptr const& buffer : _buffers) {
-            if (buffer->glyphCount() >= cursor) {
+            if (buffer->glyphCount() > cursor) {
                 size_t const tmp = buffer->glyphCount();
                 buffer->insertText(str, cursor);
                 size = buffer->glyphCount() - tmp;
@@ -700,7 +700,8 @@ void Area::_updateLines() try
         if ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v)|| glyph.is_new_line) {
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
-                --cursor;
+                if (cursor != 0)
+                    --cursor;
                 line->unused_width = _w - _margin_v - ((pen.x - glyph.pos.x_advance) >> 6);
             }
             else {
@@ -780,14 +781,24 @@ void Area::_drawIfNeeded()
         }
     }
     // Determine if a function needs to be edited
-    for (auto const& buffer : _buffer_infos) {
-        if (buffer.style.effect != Effect::None
-            || buffer.color.text.func == ColorFunc::rainbow
-            || (buffer.style.has_outline && buffer.color.outline.func == ColorFunc::rainbow)
-            || (buffer.style.has_shadow && buffer.color.shadow.func == ColorFunc::rainbow))
-        {
-            _draw = true;
-            break;
+    if (!_draw) {
+        for (auto const& buffer : _buffer_infos) {
+            if (buffer.style.effect == Effect::Vibrate) {
+                using namespace std::chrono_literals;
+                if (now - _last_vibrate_update >= 50ms) {
+                    _last_vibrate_update = now;
+                    _draw = true;
+                    break;
+                }
+            }
+            if ((buffer.style.effect != Effect::None && buffer.style.effect != Effect::Vibrate)
+                || buffer.color.text.func == ColorFunc::rainbow
+                || (buffer.style.has_outline && buffer.color.outline.func == ColorFunc::rainbow)
+                || (buffer.style.has_shadow && buffer.color.shadow.func == ColorFunc::rainbow))
+            {
+                _draw = true;
+                break;
+            }
         }
     }
     // Skip if drawing is not needed
