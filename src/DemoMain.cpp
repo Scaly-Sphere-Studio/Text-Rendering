@@ -59,11 +59,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         switch (key) {
         case GLFW_KEY_KP_ADD: {
             auto const& area = Area::getMap().at(areaID);
-            area->setMarginV(area->getMarginV() + 1);
+            auto fmt = area->getFormat();
+            ++fmt.style.effect_offset;
+            area->setFormat(fmt);
         }   break;
         case GLFW_KEY_KP_SUBTRACT: {
             auto const& area = Area::getMap().at(areaID);
-            area->setMarginV(area->getMarginV() - 1);
+            auto fmt = area->getFormat();
+            --fmt.style.effect_offset;
+            area->setFormat(fmt);
         }   break;
         }
     }
@@ -74,7 +78,7 @@ int main() try
     using namespace SSS;
 
     //Log::TR::Fonts::get().glyph_load = true;
-    //Log::GL::Window::get().fps = true;
+    Log::GL::Window::get().fps = true;
 
     // Create Window
     GL::Window::CreateArgs args;
@@ -111,8 +115,8 @@ int main() try
     fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
     fmt.style.aligmnent = TR::Alignment::Left;
-    fmt.style.effect = TR::Effect::Vibrate;
-    fmt.style.effect_offset = 2;
+    fmt.style.effect = TR::Effect::Waves;
+    fmt.style.effect_offset = 20;
 
     fmt.color.text.func = TR::ColorFunc::rainbowFixed;
 
@@ -147,7 +151,7 @@ int main() try
     plane2->setHitbox(GL::Plane::Hitbox::Full);
     fmt.style.aligmnent = TR::Alignment::Right;
     fmt.style.shadow_offset = { -3, 3 };
-    fmt.style.effect_offset = 1;
+    fmt.style.effect_offset = 50;
     fmt.color.text.func = TR::ColorFunc::rainbow;
 
     fmt.lng.direction = "rtl";

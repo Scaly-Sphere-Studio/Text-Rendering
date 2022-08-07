@@ -41,7 +41,8 @@ void AreaPixels::_asyncFunction(AreaData data)
     // Clear
     std::fill(_pixels.begin(), _pixels.end(), data.bg_color);
     // Reset time
-    _time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
+    _time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch());
     // Generate RNG if needed
     for (auto const& buffer : data.buffer_infos) {
         if (buffer.style.effect == Effect::Vibrate) {
@@ -170,13 +171,13 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     case Effect::None:
         break;
     case Effect::Waves: {
-        int const n = std::labs(buffer_info.style.effect_offset);
-        if (n == 0) break;
+        static const float pi2 = std::acosf(-1.f) * 2.f;
+        int const n = 2 + std::labs(buffer_info.style.effect_offset);
         int const sign = buffer_info.style.effect_offset > 0 ? 1 : -1;
-        int const offset = std::labs((((_time.count() / (50 + (100 / n))) - param.effect_cursor) % (n * 4)) - (n * 2)) - n;
-        if (offset > 0) {
-            args.y0 -= offset * sign;
-        }
+        long long const time_offset = _time.count() / 25;
+        float const charsize_offset = static_cast<float>(buffer_info.style.charsize) / 3.f;
+        float const offset = static_cast<float>((time_offset - (pen.x / 640 * sign)) % n);
+        args.y0 += static_cast<int>(std::sinf(pi2 / n * offset) * charsize_offset);
     }   break;
     case Effect::Vibrate: {
         int const n = buffer_info.style.effect_offset;
@@ -184,7 +185,7 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
         args.x0 += (n-1) - (_rng.at(param.effect_cursor).x % (n * 2));
         args.y0 += (n-1) - (_rng.at(param.effect_cursor).y % (n * 2));
     }   break;
-    } 
+    }
     if (param.is_shadow) {
         args.x0 += buffer_info.style.shadow_offset.x;
         args.y0 += buffer_info.style.shadow_offset.y;
