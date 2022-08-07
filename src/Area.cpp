@@ -785,7 +785,7 @@ void Area::_drawIfNeeded()
         for (auto const& buffer : _buffer_infos) {
             if (buffer.style.effect == Effect::Vibrate) {
                 using namespace std::chrono_literals;
-                if (now - _last_vibrate_update >= 50ms) {
+                if (now - _last_vibrate_update >= 33ms) {
                     _last_vibrate_update = now;
                     _draw = true;
                     break;
