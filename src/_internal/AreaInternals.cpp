@@ -170,14 +170,29 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     switch (buffer_info.style.effect) {
     case Effect::None:
         break;
-    case Effect::Waves: {
+    case Effect::Waves:
+    case Effect::FadingWaves: {
+        // 2PI
         static const float pi2 = std::acosf(-1.f) * 2.f;
+        // Effect offset & sign
         int const n = 2 + std::labs(buffer_info.style.effect_offset);
         int const sign = buffer_info.style.effect_offset > 0 ? 1 : -1;
-        long long const time_offset = _time.count() / 25;
-        float const charsize_offset = static_cast<float>(buffer_info.style.charsize) / 3.f;
-        float const offset = static_cast<float>((time_offset - (pen.x / 640 * sign)) % n);
-        args.y0 += static_cast<int>(std::sinf(pi2 / n * offset) * charsize_offset);
+        // Pen value in real coordinates
+        int const x = pen.x >> 6;
+        // Time offset
+        long long const t = _time.count() / 25;
+        // Fading factor (1.f when simple waves)
+        float fade = 1.f;
+        if (buffer_info.style.effect == Effect::FadingWaves)
+            fade += static_cast<float>(sign > 0 ? _w - x : x) / static_cast<float>(_w / 2);
+        // Pen & fade based x value
+        int const x_faded = static_cast<int>(fade * static_cast<float>(x * sign) / 10.f);
+        // Final factor based on time, fading, x coordinates and sign
+        float const factor = static_cast<float>((t - x_faded) % n) / static_cast<float>(n);
+        // Size factor
+        float const size = static_cast<float>(buffer_info.style.charsize) / 3.f;
+        // Compute and add actual offset
+        args.y0 += static_cast<int>(std::sinf(pi2 * factor) * size);
     }   break;
     case Effect::Vibrate: {
         int const n = buffer_info.style.effect_offset;
@@ -186,6 +201,7 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
         args.y0 += (n-1) - (_rng.at(param.effect_cursor).y % (n * 2));
     }   break;
     }
+
     if (param.is_shadow) {
         args.x0 += buffer_info.style.shadow_offset.x;
         args.y0 += buffer_info.style.shadow_offset.y;

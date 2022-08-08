@@ -52,9 +52,9 @@ struct Format {
         /** */
         enum class Effect {
             None,
-            Waves,
             Vibrate,
-            //Rotate,
+            Waves,
+            FadingWaves,
         };
         /** */
         Effect effect{ Effect::None };
