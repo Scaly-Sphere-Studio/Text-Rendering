@@ -20,11 +20,11 @@ int Line::x_offset() const noexcept
 {
     switch (alignment) {
     case Alignment::Left:
-        return 0;
+        return direction == "ltr" ? 0 : unused_width;
     case Alignment::Center:
         return unused_width / 2;
     case Alignment::Right:
-        return unused_width;
+        return direction == "ltr" ? unused_width : 0;
     default:
         return 0;
     }
@@ -58,11 +58,10 @@ void AreaPixels::_asyncFunction(AreaData data)
     DrawParameters param;
     {
         Line const& line = data.lines.front();
-        BufferInfo const& buffer = data.buffer_infos.front();
-        if (buffer.lng.direction == "ltr")
+        if (line.direction == "ltr")
             param.pen.x = (data.margin_v + line.x_offset()) << 6;
         else
-            param.pen.x = (_w - data.margin_v) << 6;
+            param.pen.x = (_w - data.margin_v - line.x_offset()) << 6;
         param.pen.y = -(data.margin_h << 6);
     }
     // Draw Outline shadows
@@ -115,7 +114,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
                 param.pen.x = (is_ltr ? data.margin_v : (_w - data.margin_v)) << 6;
                 param.pen.y -= static_cast<int>(line->fullsize) << 6;
                 ++line;
-                //param.pen.x += (line->x_offset() << 6) * (is_ltr ? 1 : -1);
+                param.pen.x += (line->x_offset() << 6) * (is_ltr ? 1 : -1);
                 param.charsize = line->charsize;
                 ++param.effect_cursor;
             }
