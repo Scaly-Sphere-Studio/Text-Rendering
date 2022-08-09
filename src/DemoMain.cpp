@@ -150,9 +150,10 @@ int main() try
     auto const& plane2 = GL::Plane::create();
     plane2->setHitbox(GL::Plane::Hitbox::Full);
     fmt.style.aligmnent = TR::Alignment::Right;
+    fmt.style.effect = TR::Effect::None;
     fmt.style.shadow_offset = { -3, 3 };
     fmt.style.effect_offset = -50;
-    fmt.color.text.func = TR::ColorFunc::rainbow;
+    fmt.color.text.func = TR::ColorFunc::none;
 
     fmt.lng.direction = "rtl";
     fmt.lng.script = "Arab";
