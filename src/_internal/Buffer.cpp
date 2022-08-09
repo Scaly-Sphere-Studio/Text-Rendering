@@ -151,6 +151,9 @@ void Buffer::_changeFormat(Format const& opt) try
     _opt = opt;
     _buffer_info.style = _opt.style;
     _buffer_info.color = _opt.color;
+    _buffer_info.lng = _opt.lng;
+    for (char& c : _buffer_info.lng.direction)
+        c = std::tolower(c);
     _buffer_info.font = _opt.font;
 
     // Set buffer properties
@@ -201,8 +204,9 @@ void Buffer::_shape() try
     _buffer_info.glyphs.clear();
     _buffer_info.glyphs.resize(glyph_count);
     for (size_t i = 0; i < glyph_count; ++i) {
-        // Add references via constructor
-        _internal::GlyphInfo& glyph = _buffer_info.glyphs.at(i);
+        // Reverse if RTL
+        size_t const index = _buffer_info.lng.direction == "ltr" ? i : (glyph_count - (i + 1));
+        _internal::GlyphInfo& glyph = _buffer_info.glyphs.at(index);
         glyph.info = info[i];
         glyph.pos = pos[i];
         // Check if the glyph is a word divider

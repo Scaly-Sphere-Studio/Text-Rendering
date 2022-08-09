@@ -31,11 +31,8 @@ struct GlyphInfo {
     bool is_new_line{ false };      // Whether the glyph is a \n (new line)
 };
 
-struct BufferInfo {
+struct BufferInfo : public Format {
     std::vector<GlyphInfo> glyphs;  // Glyph infos
-    Format::Style style;   // Style options
-    Format::Color color;   // Color options
-    std::string font;   // Font
     std::u32string str; // Original string
     std::locale locale; // Locale
 };

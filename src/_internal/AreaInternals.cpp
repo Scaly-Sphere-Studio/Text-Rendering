@@ -56,8 +56,15 @@ void AreaPixels::_asyncFunction(AreaData data)
     }
 
     DrawParameters param;
-    param.pen.x += (data.margin_v + data.lines.front().x_offset()) << 6;
-    param.pen.y -= data.margin_h << 6;
+    {
+        Line const& line = data.lines.front();
+        BufferInfo const& buffer = data.buffer_infos.front();
+        if (buffer.lng.direction == "ltr")
+            param.pen.x = (data.margin_v + line.x_offset()) << 6;
+        else
+            param.pen.x = (_w - data.margin_v) << 6;
+        param.pen.y = -(data.margin_h << 6);
+    }
     // Draw Outline shadows
     param.is_shadow = true;
     param.is_outline = true;
@@ -101,6 +108,28 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
         if (_beingCanceled()) return;
         GlyphInfo const& glyph_info(data.buffer_infos.getGlyph(cursor));
         BufferInfo const& buffer_info(data.buffer_infos.getBuffer(cursor));
+        bool const is_ltr = buffer_info.lng.direction == "ltr";
+        auto const move_cursor = [&]() {
+            // Handle line breaks. Return true if pen goes out of bound
+            if (cursor == line->last_glyph && line != data.lines.end() - 1) {
+                param.pen.x = (is_ltr ? data.margin_v : (_w - data.margin_v)) << 6;
+                param.pen.y -= static_cast<int>(line->fullsize) << 6;
+                ++line;
+                //param.pen.x += (line->x_offset() << 6) * (is_ltr ? 1 : -1);
+                param.charsize = line->charsize;
+                ++param.effect_cursor;
+            }
+            // Increment pen's coordinates
+            else {
+                if (glyph_info.pos.x_advance != 0) {
+                    ++param.effect_cursor;
+                }
+                param.pen.x += glyph_info.pos.x_advance * (is_ltr ? 1 : -1);
+                param.pen.y += glyph_info.pos.y_advance;
+            }
+        };
+        if (!is_ltr)
+            move_cursor();
         if (!glyph_info.is_new_line) {
             try {
                 _drawGlyph(param, buffer_info, glyph_info);
@@ -110,23 +139,8 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
                 throw_exc(CONTEXT_MSG(str, e.what()));
             }
         }
-        // Handle line breaks. Return true if pen goes out of bound
-        if (cursor == line->last_glyph && line != data.lines.end() - 1) {
-            param.pen.x = data.margin_v << 6;
-            param.pen.y -= static_cast<int>(line->fullsize) << 6;
-            ++line;
-            param.pen.x += line->x_offset() << 6;
-            param.charsize = line->charsize;
-            ++param.effect_cursor;
-        }
-        // Increment pen's coordinates
-        else {
-            if (glyph_info.pos.x_advance != 0) {
-                ++param.effect_cursor;
-            }
-            param.pen.x += glyph_info.pos.x_advance;
-            param.pen.y += glyph_info.pos.y_advance;
-        }
+        if (is_ltr)
+            move_cursor();
     }
 }
 
