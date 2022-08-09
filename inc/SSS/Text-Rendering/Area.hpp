@@ -107,8 +107,8 @@ private:
     // Managed in "Cursor" functions, used in "cursorAddText" functions
     // Set to first be at the end of text by default.
     size_t _edit_cursor{ 0 };
-    // Cursor physical position
-    int _edit_x{ 0 }, _edit_y{ 0 };
+    // Cursor physical position for moving lines
+    int _edit_x{ -1 };
     // Timer determining if the edit cursor should be displayed
     std::chrono::nanoseconds _edit_timer{ 0 };
     // Whether to display the edit cursor
@@ -316,6 +316,7 @@ public:
     void cursorPlace(int x, int y);
 
 private:
+    size_t _move_cursor_line(_internal::Line::cit line, int x);
     void _cursorMove(Move direction);
     void _cursorAddText(std::u32string str);
     void _cursorDeleteText(Delete direction);
