@@ -352,6 +352,7 @@ bool Area::isFocused() const noexcept
 void Area::cursorPlace(int x, int y) try
 {
     setFocus(true);
+    _edit_x = -1;
     if (_glyph_count == 0) {
         return;
     }
@@ -388,19 +389,25 @@ void Area::cursorPlace(int x, int y) try
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
-static size_t _move_cursor_line(_internal::BufferInfoVector const& buffer_infos,
-    _internal::Line::cit line, int x)
+size_t Area::_move_cursor_line(_internal::Line::cit line, int x)
 {
+    if (_edit_x < 0)
+        _edit_x = x;
+    else
+        x = _edit_x;
     size_t cursor = line->first_glyph;
-    size_t const glyph_count = buffer_infos.glyphCount();
-    for (int new_x = line->x_offset() << 6;
+    size_t const glyph_count = _buffer_infos.glyphCount();
+    bool const is_ltr = line->direction == "ltr";
+    for (int new_x = (is_ltr ? (_margin_h + line->x_offset()) :
+            (_w - _margin_h - line->x_offset()) ) << 6;
         cursor < line->last_glyph && cursor < glyph_count;
         ++cursor)
     {
-        new_x += buffer_infos.getGlyph(cursor).pos.x_advance;
-        if ((new_x >> 6) > x) {
+        int const offset = _buffer_infos.getGlyph(cursor).pos.x_advance;
+        if (is_ltr ? (((new_x + offset / 2) >> 6) > x) : (((new_x - offset / 2) >> 6) < x)) {
             break;
         }
+        new_x += offset * (is_ltr ? 1 : -1);
     }
     return cursor;
 }
@@ -439,6 +446,7 @@ void Area::_cursorMove(Move direction) try
     _internal::Line::cit line = _internal::Line::which(_lines, _edit_cursor);
     int x, y;
     _getCursorPhysicalPos(x, y);
+    bool reset_edit_x = true;
 
     switch (direction) {
 
@@ -453,15 +461,17 @@ void Area::_cursorMove(Move direction) try
         break;
 
     case Move::Down:
+        reset_edit_x = false;
         if (line == _lines.cend() - 1) break;
         ++line;
-        _edit_cursor = _move_cursor_line(_buffer_infos, line, x);
+        _edit_cursor = _move_cursor_line(line, x);
         break;
 
     case Move::Up:
+        reset_edit_x = false;
         if (line == _lines.cbegin()) break;
         --line;
-        _edit_cursor = _move_cursor_line(_buffer_infos, line, x);
+        _edit_cursor = _move_cursor_line(line, x);
         break;
 
     case Move::CtrlRight:
@@ -486,6 +496,8 @@ void Area::_cursorMove(Move direction) try
     _draw = true;
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
+    if (reset_edit_x)
+        _edit_x = -1;
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
