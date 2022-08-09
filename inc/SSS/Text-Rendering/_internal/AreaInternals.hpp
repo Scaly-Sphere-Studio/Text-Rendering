@@ -20,6 +20,7 @@ struct Line {
     int scrolling{ 0 };      // Total scrolling for this line to be above the top
     int unused_width{ 0 };   // Line's unused vertical width, in pixels
     Alignment alignment{ Alignment::Left }; // Text alignment
+    std::string direction;   // Text direction
     // Aliases
     using vector = std::vector<Line>;
     using it = vector::iterator;

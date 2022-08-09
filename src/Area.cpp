@@ -357,8 +357,10 @@ void Area::cursorPlace(int x, int y) try
     }
     y += _scrolling;
 
-    FT_Vector pen{ _margin_v << 6, _margin_h };
     _internal::Line::cit line = _lines.cbegin();
+    FT_Vector pen;
+    pen.x = (line->direction == "ltr" ? _margin_v : (_w - _margin_v)) << 6;
+    pen.y = _margin_h;
     for (; line != _lines.cend(); ++line) {
         pen.y += line->fullsize;
         if (pen.y > y) break;
@@ -366,15 +368,21 @@ void Area::cursorPlace(int x, int y) try
     if (line == _lines.cend()) {
         --line;
     }
-    pen.x += line->x_offset() << 6;
+
+    bool const is_ltr = line->direction == "ltr";
+    pen.x += (line->x_offset() << 6) * (is_ltr ? 1 : -1);
 
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
         _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(i));
-        if (((pen.x + glyph.pos.x_advance / 2) >> 6) > x) {
+        if (!is_ltr)
+            pen.x -= glyph.pos.x_advance;
+        int const clicked_x = (pen.x + glyph.pos.x_advance / 2) >> 6;
+        if (is_ltr ? (clicked_x > x) : (clicked_x < x)) {
             _edit_cursor = i;
             return;
         }
-        pen.x += glyph.pos.x_advance;
+        if (is_ltr)
+            pen.x += glyph.pos.x_advance;
     }
     _edit_cursor = line->last_glyph;
 }
@@ -633,9 +641,13 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
         y += it->fullsize;
     }
 
-    x = (_margin_v  + line->x_offset()) << 6;
+    bool const is_ltr = line->direction == "ltr";
+    if (is_ltr)
+        x = (_margin_v  + line->x_offset()) << 6;
+    else
+        x = (_w - _margin_v - line->x_offset()) << 6;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
-        x += _buffer_infos.getGlyph(n).pos.x_advance;
+        x += _buffer_infos.getGlyph(n).pos.x_advance * (is_ltr ? 1 : -1);
     }
     x >>= 6;
 }
@@ -664,6 +676,7 @@ void Area::_updateLines() try
     _internal::Line::it line = _lines.begin();
     if (!_buffer_infos.empty()) {
         line->alignment = _buffer_infos.front().style.aligmnent;
+        line->direction = _buffer_infos.front().lng.direction;
     }
     size_t cursor = 0;
 
@@ -720,6 +733,7 @@ void Area::_updateLines() try
             line->first_glyph = cursor + 1;
             line->scrolling = (line - 1)->scrolling;
             line->alignment = buffer.style.aligmnent;
+            line->direction = buffer.lng.direction;
             // Reset pen
             pen = { _margin_v << 6, _margin_h << 6 };
         }

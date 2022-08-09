@@ -114,8 +114,8 @@ int main() try
     fmt.style.has_outline = true;
     fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
-    fmt.style.aligmnent = TR::Alignment::Left;
-    fmt.style.effect = TR::Effect::FadingWaves;
+    fmt.style.aligmnent = TR::Alignment::Center;
+    fmt.style.effect = TR::Effect::Waves;
     fmt.style.effect_offset = 20;
 
     fmt.color.text.func = TR::ColorFunc::rainbowFixed;
@@ -150,10 +150,10 @@ int main() try
     auto const& plane2 = GL::Plane::create();
     plane2->setHitbox(GL::Plane::Hitbox::Full);
     fmt.style.aligmnent = TR::Alignment::Right;
-    fmt.style.effect = TR::Effect::None;
+    fmt.style.effect = TR::Effect::Waves;
     fmt.style.shadow_offset = { -3, 3 };
     fmt.style.effect_offset = -50;
-    fmt.color.text.func = TR::ColorFunc::none;
+    fmt.color.text.func = TR::ColorFunc::rainbow;
 
     fmt.lng.direction = "rtl";
     fmt.lng.script = "Arab";
