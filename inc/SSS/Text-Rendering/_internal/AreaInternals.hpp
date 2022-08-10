@@ -20,14 +20,13 @@ struct Line {
     int scrolling{ 0 };      // Total scrolling for this line to be above the top
     int unused_width{ 0 };   // Line's unused vertical width, in pixels
     Alignment alignment{ Alignment::Left }; // Text alignment
-    std::string direction;   // Text direction
     // Aliases
     using vector = std::vector<Line>;
     using it = vector::iterator;
     using cit = vector::const_iterator;
     
     static cit which(vector const& lines, size_t cursor) noexcept;
-    int x_offset() const noexcept;
+    int x_offset(bool is_ltr) const noexcept;
     // Function to replace pen when text direction changes on a line
     void replace_pen(FT_Vector& pen, BufferInfoVector const& buffer_infos, size_t cursor) const noexcept;
 };

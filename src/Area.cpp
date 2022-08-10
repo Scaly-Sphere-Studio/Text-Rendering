@@ -128,7 +128,8 @@ void Area::setFormat(Format const& format, uint32_t id) try
     else {
         _formats.at(id) = format;
     }
-    parseString(_buffer_infos.getString());
+    if (!_buffers.empty())
+        parseString(_buffer_infos.getString());
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -360,7 +361,7 @@ void Area::cursorPlace(int x, int y) try
 
     _internal::Line::cit line = _lines.cbegin();
     FT_Vector pen;
-    pen.x = (line->direction == "ltr" ? _margin_v : (_w - _margin_v)) << 6;
+    pen.x = (_buffer_infos.isLTR() ? _margin_v : (_w - _margin_v)) << 6;
     pen.y = _margin_h;
     for (; line != _lines.cend(); ++line) {
         pen.y += line->fullsize;
@@ -370,9 +371,9 @@ void Area::cursorPlace(int x, int y) try
         --line;
     }
 
-    bool click_is_ltr = line->direction == "ltr";
+    bool click_is_ltr = _buffer_infos.isLTR();
     bool i_is_ltr = click_is_ltr;
-    pen.x += (line->x_offset() << 6) * (i_is_ltr ? 1 : -1);
+    pen.x += (line->x_offset(_buffer_infos.isLTR()) << 6) * (i_is_ltr ? 1 : -1);
 
     // Do some magic
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
@@ -423,10 +424,10 @@ size_t Area::_move_cursor_line(_internal::Line::cit line, int x)
         x = _edit_x;
     size_t cursor = line->first_glyph;
     size_t const glyph_count = _buffer_infos.glyphCount();
-    bool line_is_ltr = line->direction == "ltr";
+    bool line_is_ltr = _buffer_infos.isLTR();
     bool is_ltr = line_is_ltr;
-    for (int new_x = (is_ltr ? (_margin_h + line->x_offset()) :
-            (_w - _margin_h - line->x_offset()) ) << 6;
+    for (int new_x = (is_ltr ? (_margin_h + line->x_offset(_buffer_infos.isLTR())) :
+        (_w - _margin_h - line->x_offset(_buffer_infos.isLTR()))) << 6;
         cursor < line->last_glyph && cursor < glyph_count;
         ++cursor)
     {
@@ -696,11 +697,11 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
         pen.y += it->fullsize;
     }
 
-    bool is_ltr = line->direction == "ltr";
+    bool is_ltr = _buffer_infos.isLTR();
     if (is_ltr)
-        pen.x = (_margin_v  + line->x_offset()) << 6;
+        pen.x = (_margin_v + line->x_offset(_buffer_infos.isLTR())) << 6;
     else
-        pen.x = (_w - _margin_v - line->x_offset()) << 6;
+        pen.x = (_w - _margin_v - line->x_offset(_buffer_infos.isLTR())) << 6;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
         auto const& buffer = _buffer_infos.getBuffer(n);
         if ((buffer.lng.direction == "ltr") != is_ltr) {
@@ -737,7 +738,6 @@ void Area::_updateLines() try
     _internal::Line::it line = _lines.begin();
     if (!_buffer_infos.empty()) {
         line->alignment = _buffer_infos.front().style.aligmnent;
-        line->direction = _buffer_infos.front().lng.direction;
     }
     size_t cursor = 0;
 
@@ -794,7 +794,6 @@ void Area::_updateLines() try
             line->first_glyph = cursor + 1;
             line->scrolling = (line - 1)->scrolling;
             line->alignment = buffer.style.aligmnent;
-            line->direction = buffer.lng.direction;
             // Reset pen
             pen = { _margin_v << 6, _margin_h << 6 };
         }

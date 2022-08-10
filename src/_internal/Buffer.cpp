@@ -50,6 +50,8 @@ void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
         emplace_back(buffer->_buffer_info);
         _glyph_count += buffer->glyphCount();
     }
+    if (!empty())
+        _direction = front().lng.direction;
 }
 
 void BufferInfoVector::clear() noexcept

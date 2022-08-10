@@ -39,7 +39,9 @@ struct BufferInfo : public Format {
 
 class BufferInfoVector : public std::vector<BufferInfo> {
 public:
-    inline size_t glyphCount() const { return _glyph_count; };
+    inline size_t glyphCount() const noexcept { return _glyph_count; };
+    inline std::string getDirection() const noexcept { return _direction; };
+    inline bool isLTR() const noexcept { return _direction == "ltr"; };
     GlyphInfo const& getGlyph(size_t cursor) const;
     BufferInfo const& getBuffer(size_t cursor) const;
     std::u32string getString() const;
@@ -47,6 +49,7 @@ public:
     void clear() noexcept;
 private:
     size_t _glyph_count{ 0 };
+    std::string _direction;
 };
 
     // --- Main class ---

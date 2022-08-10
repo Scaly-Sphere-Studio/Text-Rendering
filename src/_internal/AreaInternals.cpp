@@ -16,15 +16,15 @@ Line::cit Line::which(vector const& lines, size_t cursor) noexcept
     return line;
 }
 
-int Line::x_offset() const noexcept
+int Line::x_offset(bool is_ltr) const noexcept
 {
     switch (alignment) {
     case Alignment::Left:
-        return direction == "ltr" ? 0 : unused_width;
+        return is_ltr ? 0 : unused_width;
     case Alignment::Center:
         return unused_width / 2;
     case Alignment::Right:
-        return direction == "ltr" ? unused_width : 0;
+        return is_ltr ? unused_width : 0;
     default:
         return 0;
     }
@@ -32,20 +32,20 @@ int Line::x_offset() const noexcept
 
 void Line::replace_pen(FT_Vector& pen, BufferInfoVector const& buffer_infos, size_t cursor) const noexcept
 {
-    bool const line_is_ltr = direction == "ltr";
+    bool const area_is_ltr = buffer_infos.isLTR();
     bool const is_ltr = buffer_infos.getBuffer(cursor).lng.direction == "ltr";
-    if (line_is_ltr != is_ltr) {
+    if (area_is_ltr != is_ltr) {
         for (size_t i = cursor; i != last_glyph; ++i) {
-            if ((buffer_infos.getBuffer(i).lng.direction == direction))
+            if ((buffer_infos.getBuffer(i).lng.direction == buffer_infos.getDirection()))
                 break;
-            pen.x += buffer_infos.getGlyph(i).pos.x_advance * (line_is_ltr ? 1 : -1);
+            pen.x += buffer_infos.getGlyph(i).pos.x_advance * (area_is_ltr ? 1 : -1);
         }
     }
     else {
         for (size_t i = cursor - 1; i != first_glyph - 1; --i) {
-            if ((buffer_infos.getBuffer(i).lng.direction == direction))
+            if ((buffer_infos.getBuffer(i).lng.direction == buffer_infos.getDirection()))
                 break;
-            pen.x += buffer_infos.getGlyph(i).pos.x_advance * (line_is_ltr ? 1 : -1);
+            pen.x += buffer_infos.getGlyph(i).pos.x_advance * (area_is_ltr ? 1 : -1);
         }
     }
 }
@@ -78,10 +78,10 @@ void AreaPixels::_asyncFunction(AreaData data)
     DrawParameters param;
     {
         Line const& line = data.lines.front();
-        if (line.direction == "ltr")
-            param.pen.x = (data.margin_v + line.x_offset()) << 6;
+        if (data.buffer_infos.isLTR())
+            param.pen.x = (data.margin_v + line.x_offset(data.buffer_infos.isLTR())) << 6;
         else
-            param.pen.x = (_w - data.margin_v - line.x_offset()) << 6;
+            param.pen.x = (_w - data.margin_v - line.x_offset(data.buffer_infos.isLTR())) << 6;
         param.pen.y = -(data.margin_h << 6);
     }
     // Draw Outline shadows
@@ -123,7 +123,8 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
     // Draw the glyphs
     Line::cit line = data.lines.cbegin();
     param.charsize = line->charsize;
-    bool is_ltr = line->direction == "ltr";
+    bool const area_is_ltr = data.buffer_infos.isLTR();
+    bool is_ltr = data.buffer_infos.isLTR();
     for (size_t cursor = 0; cursor < data.last_glyph; ++cursor) {
         if (_beingCanceled()) return;
         GlyphInfo const& glyph_info(data.buffer_infos.getGlyph(cursor));
@@ -136,12 +137,15 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
         auto const move_cursor = [&]() {
             // Handle line breaks. Return true if pen goes out of bound
             if (cursor == line->last_glyph && line != data.lines.end() - 1) {
-                param.pen.x = (is_ltr ? data.margin_v : (_w - data.margin_v)) << 6;
+                param.pen.x = (area_is_ltr ? data.margin_v : (_w - data.margin_v)) << 6;
                 param.pen.y -= static_cast<int>(line->fullsize) << 6;
                 ++line;
-                param.pen.x += (line->x_offset() << 6) * (is_ltr ? 1 : -1);
+                param.pen.x += (line->x_offset(area_is_ltr) << 6) * (area_is_ltr ? 1 : -1);
                 param.charsize = line->charsize;
                 ++param.effect_cursor;
+                if (buffer_info.lng.direction != data.buffer_infos.getDirection()) {
+                    line->replace_pen(param.pen, data.buffer_infos, cursor+1);
+                }
             }
             // Increment pen's coordinates
             else {
