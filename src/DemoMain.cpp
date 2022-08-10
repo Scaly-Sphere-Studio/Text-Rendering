@@ -72,6 +72,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             --fmt.style.effect_offset;
             area->setFormat(fmt);
         }   break;
+        case GLFW_KEY_SPACE: {
+            auto const& area = Area::getMap().at(1);
+            area->setPrintMode(Area::PrintMode::Typewriter);
+            area->setTypeWriterSpeed(40);
+        }   break;
         }
     }
 }
@@ -117,7 +122,7 @@ int main() try
     fmt.style.has_outline = true;
     fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
-    //fmt.style.aligmnent = TR::Alignment::Center;
+    fmt.style.aligmnent = TR::Alignment::Center;
     //fmt.style.effect = TR::Effect::Waves;
     fmt.style.effect_offset = 20;
 
