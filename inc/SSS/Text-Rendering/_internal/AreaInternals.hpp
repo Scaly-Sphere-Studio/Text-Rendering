@@ -28,6 +28,8 @@ struct Line {
     
     static cit which(vector const& lines, size_t cursor) noexcept;
     int x_offset() const noexcept;
+    // Function to replace pen when text direction changes on a line
+    void replace_pen(FT_Vector& pen, BufferInfoVector const& buffer_infos, size_t cursor) const noexcept;
 };
 
 // Draw parameters

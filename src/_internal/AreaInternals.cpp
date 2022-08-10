@@ -30,6 +30,26 @@ int Line::x_offset() const noexcept
     }
 }
 
+void Line::replace_pen(FT_Vector& pen, BufferInfoVector const& buffer_infos, size_t cursor) const noexcept
+{
+    bool const line_is_ltr = direction == "ltr";
+    bool const is_ltr = buffer_infos.getBuffer(cursor).lng.direction == "ltr";
+    if (line_is_ltr != is_ltr) {
+        for (size_t i = cursor; i != last_glyph; ++i) {
+            if ((buffer_infos.getBuffer(i).lng.direction == direction))
+                break;
+            pen.x += buffer_infos.getGlyph(i).pos.x_advance * (line_is_ltr ? 1 : -1);
+        }
+    }
+    else {
+        for (size_t i = cursor - 1; i != first_glyph - 1; --i) {
+            if ((buffer_infos.getBuffer(i).lng.direction == direction))
+                break;
+            pen.x += buffer_infos.getGlyph(i).pos.x_advance * (line_is_ltr ? 1 : -1);
+        }
+    }
+}
+
 void AreaPixels::_asyncFunction(AreaData data)
 {
     // Copy given data
@@ -103,11 +123,16 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
     // Draw the glyphs
     Line::cit line = data.lines.cbegin();
     param.charsize = line->charsize;
+    bool is_ltr = line->direction == "ltr";
     for (size_t cursor = 0; cursor < data.last_glyph; ++cursor) {
         if (_beingCanceled()) return;
         GlyphInfo const& glyph_info(data.buffer_infos.getGlyph(cursor));
         BufferInfo const& buffer_info(data.buffer_infos.getBuffer(cursor));
-        bool const is_ltr = buffer_info.lng.direction == "ltr";
+        // Re-position the pen if direction changed
+        if ((buffer_info.lng.direction == "ltr") != is_ltr) {
+            line->replace_pen(param.pen, data.buffer_infos, cursor);
+            is_ltr = !is_ltr;
+        }
         auto const move_cursor = [&]() {
             // Handle line breaks. Return true if pen goes out of bound
             if (cursor == line->last_glyph && line != data.lines.end() - 1) {

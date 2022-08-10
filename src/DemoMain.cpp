@@ -9,7 +9,7 @@ static std::string const lorem_ipsum =
 "Pellentesque vitae velit ante.\n"
 "Suspendisse nulla lacus,\n"
 "tempor sit amet iaculis non,\n"
-"scelerisque sed est.\n"
+"scelerisque\u001F1\u001F[ يرغب في الحب ]\u001F0\u001Fsed est.\n"
 "Aenean pharetra ipsum sit amet sem lobortis,\n"
 "a cursus felis semper.\n"
 "Integer nec tortor ex.\n"
@@ -40,7 +40,10 @@ static std::string const arabic_lorem_ipsum =
 "فلا أحد يرفض أو يكره أو يتجنب الشعور بالسعادة،\n"
 "ولكن بفضل هؤلاء الأشخاص الذين لا يدركون بأن السعادة لا بد أن نستشعرها\n"
 "بصورة أكثر عقلانية ومنطقية فيعرضهم هذا لمواجهة الظروف الأليمة،\n"
-"وأكرر بأنه لا يوجد من يرغب في الحب ونيل المنال ويتلذذ بالآلام،\n"
+"ونيل المنال ويتلذذ بالآلام،"
+//"\u001F1\u001F يرغب في الحب \u001F0\u001F"
+"\u001F1\u001F[ Lorem ipsum ]\u001F0\u001F"
+"وأكرر بأنه لا يوجد من\n"
 "الألم هو الألم ولكن نتيجة لظروف ما قد تكمن السعاده فيما نتحمله من كد .\n"
 "و سأعرض مثال حي لهذا،\n"
 "من منا لم يتحمل جهد بدني شاق إلا من أجل الحصول على ميزة أو\n"
@@ -78,7 +81,7 @@ int main() try
     using namespace SSS;
 
     //Log::TR::Fonts::get().glyph_load = true;
-    Log::GL::Window::get().fps = true;
+    //Log::GL::Window::get().fps = true;
 
     // Create Window
     GL::Window::CreateArgs args;
@@ -114,20 +117,26 @@ int main() try
     fmt.style.has_outline = true;
     fmt.style.has_shadow = true;
     fmt.style.outline_size = 1;
-    fmt.style.aligmnent = TR::Alignment::Center;
-    fmt.style.effect = TR::Effect::Waves;
+    //fmt.style.aligmnent = TR::Alignment::Center;
+    //fmt.style.effect = TR::Effect::Waves;
     fmt.style.effect_offset = 20;
 
     fmt.color.text.func = TR::ColorFunc::rainbowFixed;
 
-    //fmt.lng.direction = "rtl";
-    //fmt.lng.script = "Arab";
-    //fmt.lng.language = "ar";
-    //fmt.font = "LateefRegOT.ttf";
-    //TR::addFontDir("C:/dev/fonts");
+    TR::Format fmt2 = fmt;
+    fmt2.lng.direction = "rtl";
+    fmt2.lng.script = "Arab";
+    fmt2.lng.language = "ar";
+    fmt2.font = "LateefRegOT.ttf";
+    TR::addFontDir("C:/dev/fonts");
+    fmt2.style.aligmnent = TR::Alignment::Right;
+    fmt.style.shadow_offset = { -3, 3 };
+    fmt.style.effect_offset = -50;
 
     auto const& area = TR::Area::create(lorem_ipsum, fmt);
     area->setClearColor(0xFF888888);
+    area->setFormat(fmt2, 1);
+    area->parseString(lorem_ipsum);
     //area->setPrintMode(TR::Area::PrintMode::Typewriter);
     //area->setTypeWriterSpeed(60);
     areaID = area->getID();
@@ -149,19 +158,10 @@ int main() try
 
     auto const& plane2 = GL::Plane::create();
     plane2->setHitbox(GL::Plane::Hitbox::Full);
-    fmt.style.aligmnent = TR::Alignment::Right;
-    fmt.style.effect = TR::Effect::Waves;
-    fmt.style.shadow_offset = { -3, 3 };
-    fmt.style.effect_offset = -50;
-    fmt.color.text.func = TR::ColorFunc::rainbow;
 
-    fmt.lng.direction = "rtl";
-    fmt.lng.script = "Arab";
-    fmt.lng.language = "ar";
-    fmt.font = "LateefRegOT.ttf";
-    TR::addFontDir("C:/dev/fonts");
     auto const& area2 = TR::Area::create(w, h);
-    area2->setFormat(fmt);
+    area2->setFormat(fmt2, 0);
+    area2->setFormat(fmt, 1);
     area2->parseString(arabic_lorem_ipsum);
     area2->setClearColor(0xFF888888);
     auto const& texture2 = GL::Texture::create();

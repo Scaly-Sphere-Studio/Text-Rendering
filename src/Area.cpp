@@ -370,19 +370,45 @@ void Area::cursorPlace(int x, int y) try
         --line;
     }
 
-    bool const is_ltr = line->direction == "ltr";
-    pen.x += (line->x_offset() << 6) * (is_ltr ? 1 : -1);
+    bool click_is_ltr = line->direction == "ltr";
+    bool i_is_ltr = click_is_ltr;
+    pen.x += (line->x_offset() << 6) * (i_is_ltr ? 1 : -1);
 
+    // Do some magic
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
+        // Get glyph info
         _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(i));
-        if (!is_ltr)
+
+        // Check if text direction changed between previous glyphs
+        if ((_buffer_infos.getBuffer(i).lng.direction == "ltr") != i_is_ltr) {
+            // Check that click coordinates aren't on this specific glyph
+            int clicked_x = (pen.x + glyph.pos.x_advance) >> 6;
+            if (click_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
+                _edit_cursor = i;
+                return;
+            }
+            // Replace pen to make up for direction changes
+            line->replace_pen(pen, _buffer_infos, i);
+            // Update direction of cursor
+            i_is_ltr = !i_is_ltr;
+            // Update direction of click area if needed
+            clicked_x = (pen.x - glyph.pos.x_advance) >> 6;
+            if (click_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
+                click_is_ltr = !click_is_ltr;
+            }
+        }
+
+        // Advance before computing X if RTL
+        if (!i_is_ltr)
             pen.x -= glyph.pos.x_advance;
+        // Compute X and test if it matches the click coordinates
         int const clicked_x = (pen.x + glyph.pos.x_advance / 2) >> 6;
-        if (is_ltr ? (clicked_x > x) : (clicked_x < x)) {
+        if (click_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
             _edit_cursor = i;
             return;
         }
-        if (is_ltr)
+        // Advance after computing X if LTR
+        if (i_is_ltr)
             pen.x += glyph.pos.x_advance;
     }
     _edit_cursor = line->last_glyph;
@@ -397,14 +423,30 @@ size_t Area::_move_cursor_line(_internal::Line::cit line, int x)
         x = _edit_x;
     size_t cursor = line->first_glyph;
     size_t const glyph_count = _buffer_infos.glyphCount();
-    bool const is_ltr = line->direction == "ltr";
+    bool line_is_ltr = line->direction == "ltr";
+    bool is_ltr = line_is_ltr;
     for (int new_x = (is_ltr ? (_margin_h + line->x_offset()) :
             (_w - _margin_h - line->x_offset()) ) << 6;
         cursor < line->last_glyph && cursor < glyph_count;
         ++cursor)
     {
         int const offset = _buffer_infos.getGlyph(cursor).pos.x_advance;
-        if (is_ltr ? (((new_x + offset / 2) >> 6) > x) : (((new_x - offset / 2) >> 6) < x)) {
+        if ((_buffer_infos.getBuffer(cursor).lng.direction == "ltr") != is_ltr) {
+            // Check that click coordinates aren't on this specific glyph
+            int clicked_x = (x + offset) >> 6;
+            if (line_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
+                break;
+            }
+            FT_Vector pen{ new_x, 0 };
+            line->replace_pen(pen, _buffer_infos, cursor);
+            new_x = pen.x;
+            is_ltr = !is_ltr;
+            clicked_x = (pen.x - offset) >> 6;
+            if (line_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
+                line_is_ltr = !line_is_ltr;
+            }
+        }
+        if (line_is_ltr ? (((new_x + offset / 2) >> 6) > x) : (((new_x - offset / 2) >> 6) < x)) {
             break;
         }
         new_x += offset * (is_ltr ? 1 : -1);
@@ -648,20 +690,27 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
 {
     _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
 
-    y = _margin_h + _lines.cbegin()->charsize * 4 / 3;
+    FT_Vector pen;
+    pen.y = _margin_h + _lines.cbegin()->charsize * 4 / 3;
     for (_internal::Line::cit it = _lines.cbegin() + 1; it <= line; ++it) {
-        y += it->fullsize;
+        pen.y += it->fullsize;
     }
 
-    bool const is_ltr = line->direction == "ltr";
+    bool is_ltr = line->direction == "ltr";
     if (is_ltr)
-        x = (_margin_v  + line->x_offset()) << 6;
+        pen.x = (_margin_v  + line->x_offset()) << 6;
     else
-        x = (_w - _margin_v - line->x_offset()) << 6;
+        pen.x = (_w - _margin_v - line->x_offset()) << 6;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
-        x += _buffer_infos.getGlyph(n).pos.x_advance * (is_ltr ? 1 : -1);
+        auto const& buffer = _buffer_infos.getBuffer(n);
+        if ((buffer.lng.direction == "ltr") != is_ltr) {
+            is_ltr = !is_ltr;
+            line->replace_pen(pen, _buffer_infos, n);
+        }
+        pen.x += _buffer_infos.getGlyph(n).pos.x_advance * (is_ltr ? 1 : -1);
     }
-    x >>= 6;
+    x = pen.x >> 6;
+    y = pen.y;
 }
 
 // Ensures _scrolling has a valid value
