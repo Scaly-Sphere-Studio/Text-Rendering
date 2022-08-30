@@ -239,6 +239,13 @@ public:
     /** \overload*/
     void parseString(std::string const& str);
     
+    std::u32string getStringU32() const;
+    std::string getString() const;
+
+    // TODO: get string keeping format
+    //std::u32string getStringU32Formatted() const;
+    //std::string getStringFormatted() const;
+
     /** Clears the internal string & pixels.
      *  Also resets scrolling, cursors.\n
      *  Keeps previous format modifications & dimensions.

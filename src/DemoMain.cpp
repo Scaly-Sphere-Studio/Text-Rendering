@@ -77,6 +77,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             area->setPrintMode(Area::PrintMode::Typewriter);
             area->setTypeWriterSpeed(40);
         }   break;
+        case GLFW_KEY_KP_1:
+            LOG_MSG(Area::getMap().at(0)->getString());
+            break;
+        case GLFW_KEY_KP_2:
+            LOG_MSG(Area::getMap().at(1)->getString());
+            break;
         }
     }
 }

@@ -216,6 +216,16 @@ void Area::parseString(std::string const& str)
     parseString(strToStr32(str));
 }
 
+std::u32string Area::getStringU32() const
+{
+    return _buffer_infos.getString();
+}
+
+std::string Area::getString() const
+{
+    return str32ToStr(getStringU32());
+}
+
 void Area::update()
 {
     if (_processing_pixels->isPending()) {
