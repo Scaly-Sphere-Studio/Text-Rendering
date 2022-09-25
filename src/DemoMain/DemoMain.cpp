@@ -1,5 +1,4 @@
-#include "SSS/Text-Rendering.hpp"
-#include <SSS/GL.hpp>
+#include "opengl.cpp"
 
 static uint32_t areaID = 0;
 
@@ -51,160 +50,75 @@ static std::string const arabic_lorem_ipsum =
 "تشوبها عواقب أليمة أو آخر أراد أن يتجنب الألم الذي ربما تنجم عنه بعض ؟\n"
 "علي الجانب الآخر نشجب ونستنكر هؤلاء الرجال المفتونون بنش";
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (action == GLFW_PRESS && (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_KP_0)) {
-        glfwSetWindowShouldClose(window, true);
-    }
-
-    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        using namespace SSS::TR;
-        switch (key) {
-        case GLFW_KEY_KP_ADD: {
-            auto const& area = Area::getMap().at(areaID);
-            auto fmt = area->getFormat();
-            ++fmt.effect_offset;
-            area->setFormat(fmt);
-        }   break;
-        case GLFW_KEY_KP_SUBTRACT: {
-            auto const& area = Area::getMap().at(areaID);
-            auto fmt = area->getFormat();
-            --fmt.effect_offset;
-            area->setFormat(fmt);
-        }   break;
-        case GLFW_KEY_SPACE: {
-            auto const& area = Area::getMap().at(1);
-            area->setPrintMode(Area::PrintMode::Typewriter);
-            area->setTypeWriterSpeed(40);
-        }   break;
-        case GLFW_KEY_KP_1:
-            LOG_MSG(Area::getMap().at(0)->getString());
-            break;
-        case GLFW_KEY_KP_2:
-            LOG_MSG(Area::getMap().at(1)->getString());
-            break;
-        }
-    }
-}
-
 int main() try
 {
     using namespace SSS;
 
     //Log::TR::Fonts::get().glyph_load = true;
-    //Log::GL::Window::get().fps = true;
 
-    // Create Window
-    GL::Window::CreateArgs args;
-    args.title = "SSS/Text-Rendering - Demo Window";
-    args.w = static_cast<int>(600);
-    args.h = static_cast<int>(600);
-    args.maximized = true;
-    args.monitor_id = 0;
-    GL::Window::Shared window = GL::Window::create(args);
-
-    // Set context
-    GL::Context const context(window);
-
-    // Finish setting up window
-    glClearColor(0.3f, 0.3f, 0.3f, 0.f);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    window->setVSYNC(true);
-    window->setCallback(glfwSetKeyCallback, key_callback);
-
-    // SSS/GL objects
-
-    // Create objects
-    auto const& texture = GL::Texture::create();
-    auto const& camera = GL::Camera::create();
-    auto const& plane = GL::Plane::create();
-    auto const& plane_renderer = GL::Renderer::create<GL::PlaneRenderer>();
-
-    // Text
     TR::Format fmt;
     fmt.charsize = 30;
     fmt.has_outline = true;
     fmt.has_shadow = true;
     fmt.outline_size = 1;
     fmt.aligmnent = TR::Alignment::Center;
-    //fmt.effect = TR::Effect::Waves;
-    fmt.effect_offset = 20;
-
+    fmt.effect = TR::Effect::Waves;
+    fmt.effect_offset = -20;
     fmt.text_color.func = TR::ColorFunc::Rainbow;
 
     TR::Format fmt2 = fmt;
-    fmt2.lng_direction = "rtl";
-    fmt2.lng_script = "Arab";
     fmt2.lng_tag = "ar";
+    fmt2.lng_script = "Arab";
+    fmt2.lng_direction = "rtl";
     fmt2.font = "LateefRegOT.ttf";
     TR::addFontDir("C:/dev/fonts");
     fmt2.aligmnent = TR::Alignment::Right;
     fmt.shadow_offset = { -3, 3 };
-    fmt.effect_offset = -50;
+    fmt.effect_offset = 50;
 
-    auto const& area = TR::Area::create(lorem_ipsum, fmt);
+    auto const& area = TR::Area::create(700, 700);
     area->setClearColor(0xFF888888);
+    area->setFormat(fmt, 0);
     area->setFormat(fmt2, 1);
     area->parseString(lorem_ipsum);
     //area->setPrintMode(TR::Area::PrintMode::Typewriter);
     //area->setTypeWriterSpeed(60);
     areaID = area->getID();
+    area->setFocus(true);
 
-    texture->setTextAreaID(area->getID());
-    texture->setType(GL::Texture::Type::Text);
-
-    // Camera
-    camera->setPosition({ 0, 0, 3 });
-    camera->setProjectionType(GL::Camera::Projection::OrthoFixed);
-
-    // Plane
-    plane->setHitbox(GL::Plane::Hitbox::Full);
-    plane->setTextureID(texture->getID());
-    int w, h;
-    area->getDimensions(w, h);
-    plane->scale(glm::vec3(static_cast<float>(h)));
-    plane->translate(glm::vec3(-w / 2 - 20, 0, 0));
-
-    auto const& plane2 = GL::Plane::create();
-    plane2->setHitbox(GL::Plane::Hitbox::Full);
-
-    auto const& area2 = TR::Area::create(w, h);
-    area2->setFormat(fmt2, 0);
-    area2->setFormat(fmt, 1);
-    area2->parseString(arabic_lorem_ipsum);
-    area2->setClearColor(0xFF888888);
-    auto const& texture2 = GL::Texture::create();
-    texture2->setTextAreaID(area2->getID());
-    texture2->setType(GL::Texture::Type::Text);
-    plane2->setTextureID(texture2->getID());
-    plane2->scale(glm::vec3(static_cast<float>(h)));
-    plane2->translate(glm::vec3(w / 2 + 20, 0, 0));
-
-    auto& chunks = plane_renderer->castAs<GL::PlaneRenderer>().chunks;
-    chunks.emplace_back(camera, true);
-    chunks.back().planes.emplace_back(plane);
-    chunks.back().planes.emplace_back(plane2);
+    // Create Window
+    WindowPtr window;
+    GLuint ids[5];
+    glm::mat4 VP;
+    load_opengl(window, ids, VP);
 
     // Main loop
-    while (!window->shouldClose()) {
-        // Poll events, threads, etc
-        GL::pollEverything();
-        constexpr int speed = 2;
-        auto const& keys = window->getKeyInputs();
-        if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])
-            camera->move(glm::vec3(0, speed, 0));
-        if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN])
-            camera->move(glm::vec3(0, -speed, 0));
-        if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT])
-            camera->move(glm::vec3(-speed, 0, 0));
-        if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
-            camera->move(glm::vec3(speed, 0, 0));
-        // Draw renderers
-        window->drawObjects();
-        // Swap buffers
-        window->printFrame();
+    while (!glfwWindowShouldClose(window.get())) {
+
+        // Poll events
+        glfwPollEvents();
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+        // Bind needed things
+        glUseProgram(ids[prog]);
+        glBindVertexArray(ids[vao]);
+        glBindTexture(GL_TEXTURE_2D, ids[tex]);
+        glUniformMatrix4fv(glGetUniformLocation(ids[prog], "u_VP"), 1, false, &VP[0][0]);
+
+        // Update texture if needed
+        area->update();
+        if (area->pixelsWereChanged()) {
+            int w, h;
+            area->pixelsGetDimensions(w, h);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, area->pixelsGet());
+            area->pixelsAreRetrieved();
+        }
+
+        // Draw & print
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glfwSwapBuffers(window.get());
     }
+
+    glfwTerminate();
 }
 CATCH_AND_LOG_FUNC_EXC;
