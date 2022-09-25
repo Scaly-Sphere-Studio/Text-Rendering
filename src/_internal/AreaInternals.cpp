@@ -33,17 +33,17 @@ int Line::x_offset(bool is_ltr) const noexcept
 void Line::replace_pen(FT_Vector& pen, BufferInfoVector const& buffer_infos, size_t cursor) const noexcept
 {
     bool const area_is_ltr = buffer_infos.isLTR();
-    bool const is_ltr = buffer_infos.getBuffer(cursor).lng.direction == "ltr";
+    bool const is_ltr = buffer_infos.getBuffer(cursor).fmt.lng_direction == "ltr";
     if (area_is_ltr != is_ltr) {
         for (size_t i = cursor; i != last_glyph; ++i) {
-            if ((buffer_infos.getBuffer(i).lng.direction == buffer_infos.getDirection()))
+            if ((buffer_infos.getBuffer(i).fmt.lng_direction == buffer_infos.getDirection()))
                 break;
             pen.x += buffer_infos.getGlyph(i).pos.x_advance * (area_is_ltr ? 1 : -1);
         }
     }
     else {
         for (size_t i = cursor - 1; i != first_glyph - 1; --i) {
-            if ((buffer_infos.getBuffer(i).lng.direction == buffer_infos.getDirection()))
+            if ((buffer_infos.getBuffer(i).fmt.lng_direction == buffer_infos.getDirection()))
                 break;
             pen.x += buffer_infos.getGlyph(i).pos.x_advance * (area_is_ltr ? 1 : -1);
         }
@@ -65,7 +65,7 @@ void AreaPixels::_asyncFunction(AreaData data)
         std::chrono::system_clock::now().time_since_epoch());
     // Generate RNG if needed
     for (auto const& buffer : data.buffer_infos) {
-        if (buffer.style.effect == Effect::Vibrate) {
+        if (buffer.fmt.effect == Effect::Vibrate) {
             _rng.resize(data.buffer_infos.glyphCount());
             for (FT_Vector& vec : _rng) {
                 vec.x = std::rand();
@@ -130,7 +130,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
         GlyphInfo const& glyph_info(data.buffer_infos.getGlyph(cursor));
         BufferInfo const& buffer_info(data.buffer_infos.getBuffer(cursor));
         // Re-position the pen if direction changed
-        if ((buffer_info.lng.direction == "ltr") != is_ltr) {
+        if ((buffer_info.fmt.lng_direction == "ltr") != is_ltr) {
             line->replace_pen(param.pen, data.buffer_infos, cursor);
             is_ltr = !is_ltr;
         }
@@ -143,7 +143,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
                 param.pen.x += (line->x_offset(area_is_ltr) << 6) * (area_is_ltr ? 1 : -1);
                 param.charsize = line->charsize;
                 ++param.effect_cursor;
-                if (buffer_info.lng.direction != data.buffer_infos.getDirection()) {
+                if (buffer_info.fmt.lng_direction != data.buffer_infos.getDirection()) {
                     line->replace_pen(param.pen, data.buffer_infos, cursor+1);
                 }
             }
@@ -175,19 +175,19 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
 void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffer_info, GlyphInfo const& glyph_info)
 {
     // Skip if the glyph alpha is zero, or if a outline is asked but not available
-    if (buffer_info.color.alpha == 0
-        || (param.is_outline && (!buffer_info.style.has_outline || buffer_info.style.outline_size <= 0))
-        || (param.is_shadow && !buffer_info.style.has_shadow)) {
+    if (buffer_info.fmt.alpha == 0
+        || (param.is_outline && (!buffer_info.fmt.has_outline || buffer_info.fmt.outline_size <= 0))
+        || (param.is_shadow && !buffer_info.fmt.has_shadow)) {
         return;
     }
 
     // Retrieve Font (must be loaded)
-    Font::Ptr const& font = Lib::getFont(buffer_info.font);
+    Font::Ptr const& font = Lib::getFont(buffer_info.fmt.font);
 
     // Get corresponding loaded glyph bitmap
     Bitmap const& bitmap(!param.is_outline
-        ? font->getGlyphBitmap(glyph_info.info.codepoint, buffer_info.style.charsize)
-        : font->getOutlineBitmap(glyph_info.info.codepoint, buffer_info.style.charsize, buffer_info.style.outline_size));
+        ? font->getGlyphBitmap(glyph_info.info.codepoint, buffer_info.fmt.charsize)
+        : font->getOutlineBitmap(glyph_info.info.codepoint, buffer_info.fmt.charsize, buffer_info.fmt.outline_size));
     // Skip if bitmap is empty
     if (bitmap.width == 0 || bitmap.height == 0) {
         return;
@@ -203,13 +203,19 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     args.x0 = (pen.x >> 6) + bitmap.pen_left;
     args.y0 = param.charsize - (pen.y >> 6) - bitmap.pen_top;
 
-    // Retrieve the color to use : either a plain one, or a function to call
-    args.color = param.is_shadow ?
-        buffer_info.color.shadow : param.is_outline ?
-        buffer_info.color.outline : buffer_info.color.text;
-    args.alpha = buffer_info.color.alpha;
+    // Retrieve the color to use
+    if (param.is_shadow) {
+        args.color = buffer_info.fmt.shadow_color;
+    }
+    else if (param.is_outline) {
+        args.color = buffer_info.fmt.outline_color;
+    }
+    else [[likely]] {
+        args.color = buffer_info.fmt.text_color;
+    }
+    args.alpha = buffer_info.fmt.alpha;
 
-    switch (buffer_info.style.effect) {
+    switch (buffer_info.fmt.effect) {
     case Effect::None:
         break;
     case Effect::Waves:
@@ -217,27 +223,27 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
         // 2PI
         static const float pi2 = std::acosf(-1.f) * 2.f;
         // Effect offset & sign
-        int const n = 2 + std::labs(buffer_info.style.effect_offset);
-        int const sign = buffer_info.style.effect_offset > 0 ? 1 : -1;
+        int const n = 2 + std::labs(buffer_info.fmt.effect_offset);
+        int const sign = buffer_info.fmt.effect_offset > 0 ? 1 : -1;
         // Pen value in real coordinates
         int const x = pen.x >> 6;
         // Time offset
         long long const t = _time.count() / 25;
         // Fading factor (1.f when simple waves)
         float fade = 1.f;
-        if (buffer_info.style.effect == Effect::FadingWaves)
+        if (buffer_info.fmt.effect == Effect::FadingWaves)
             fade += static_cast<float>(sign > 0 ? _w - x : x) / static_cast<float>(_w / 2);
         // Pen & fade based x value
         int const x_faded = static_cast<int>(fade * static_cast<float>(x * sign) / 10.f);
         // Final factor based on time, fading, x coordinates and sign
         float const factor = static_cast<float>((t - x_faded) % n) / static_cast<float>(n);
         // Size factor
-        float const size = static_cast<float>(buffer_info.style.charsize) / 3.f;
+        float const size = static_cast<float>(buffer_info.fmt.charsize) / 3.f;
         // Compute and add actual offset
         args.y0 += static_cast<int>(std::sinf(pi2 * factor) * size);
     }   break;
     case Effect::Vibrate: {
-        int const n = buffer_info.style.effect_offset;
+        int const n = buffer_info.fmt.effect_offset;
         if (n == 0) break;
         args.x0 += (n-1) - (_rng.at(param.effect_cursor).x % (n * 2));
         args.y0 += (n-1) - (_rng.at(param.effect_cursor).y % (n * 2));
@@ -245,8 +251,8 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     }
 
     if (param.is_shadow) {
-        args.x0 += buffer_info.style.shadow_offset.x;
-        args.y0 += buffer_info.style.shadow_offset.y;
+        args.x0 += buffer_info.fmt.shadow_offset.x;
+        args.y0 += buffer_info.fmt.shadow_offset.y;
     }
 
     _copyBitmap(args);
@@ -279,14 +285,13 @@ void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                 // Determine color
                 RGB24 color;
                 switch (args.color.func) {
-                    using Func = Format::Color::Func;
-                case Func::none:
+                case ColorFunc::None:
                     color = args.color;
                     break;
-                case Func::rainbow:
+                case ColorFunc::Rainbow:
                     color = rainbow((_time.count() / 10 - x - y * 2) % _w, _w);
                     break;
-                case Func::rainbowFixed:
+                case ColorFunc::RainbowFixed:
                     color = rainbow((x + y * 2) % _w, _w);
                     break;
                 }

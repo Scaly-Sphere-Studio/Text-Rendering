@@ -31,10 +31,11 @@ struct GlyphInfo {
     bool is_new_line{ false };      // Whether the glyph is a \n (new line)
 };
 
-struct BufferInfo : public Format {
+struct BufferInfo {
     std::vector<GlyphInfo> glyphs;  // Glyph infos
     std::u32string str; // Original string
     std::locale locale; // Locale
+    Format fmt; // Format
 };
 
 class BufferInfoVector : public std::vector<BufferInfo> {

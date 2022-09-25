@@ -235,7 +235,7 @@ public:
      * 
      *  @sa setFormat().
      */
-    void parseString(std::u32string const& str);
+    void parseStringU32(std::u32string const& str);
     /** \overload*/
     void parseString(std::string const& str);
     

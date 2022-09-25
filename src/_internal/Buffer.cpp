@@ -51,7 +51,7 @@ void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
         _glyph_count += buffer->glyphCount();
     }
     if (!empty())
-        _direction = front().lng.direction;
+        _direction = front().fmt.lng_direction;
 }
 
 void BufferInfoVector::clear() noexcept
@@ -151,24 +151,21 @@ void Buffer::_changeFormat(Format const& opt) try
     Font::Ptr const& font = Lib::getFont(opt.font);
 
     _opt = opt;
-    _buffer_info.style = _opt.style;
-    _buffer_info.color = _opt.color;
-    _buffer_info.lng = _opt.lng;
-    for (char& c : _buffer_info.lng.direction)
+    _buffer_info.fmt = opt;
+    for (char& c : _buffer_info.fmt.lng_direction)
         c = std::tolower(c);
-    _buffer_info.font = _opt.font;
 
     // Set buffer properties
-    _properties.direction = hb_direction_from_string(opt.lng.direction.c_str(), -1);
-    _properties.script = hb_script_from_string(opt.lng.script.c_str(), -1);
-    _properties.language = hb_language_from_string(opt.lng.language.c_str(), -1);
-    _locale = std::locale(opt.lng.language);
+    _properties.direction = hb_direction_from_string(opt.lng_direction.c_str(), -1);
+    _properties.script = hb_script_from_string(opt.lng_script.c_str(), -1);
+    _properties.language = hb_language_from_string(opt.lng_tag.c_str(), -1);
+    _locale = std::locale(opt.lng_tag);
     _buffer_info.locale = _locale;
 
     // Convert word dividers to glyph indexes
     _wd_indexes.clear();
-    _wd_indexes.reserve(opt.lng.word_dividers.size());
-    for (char32_t const& c : opt.lng.word_dividers) {
+    _wd_indexes.reserve(opt.word_dividers.size());
+    for (char32_t const& c : opt.word_dividers) {
         FT_UInt const index(FT_Get_Char_Index(font->getFTFace().get(), c));
         _wd_indexes.push_back(index);
     }
@@ -187,7 +184,7 @@ void Buffer::_shape() try
     // Retrieve Font (must be loaded)
     Font::Ptr const& font = Lib::getFont(_opt.font);
 
-    font->setCharsize(_opt.style.charsize);
+    font->setCharsize(_opt.charsize);
     // Add string to buffer
     uint32_t const* indexes = reinterpret_cast<uint32_t const*>(&_str[0]);
     int size = static_cast<int>(_str.size());
@@ -195,7 +192,7 @@ void Buffer::_shape() try
     // Set properties
     hb_buffer_set_segment_properties(_buffer.get(), &_properties);
     // Shape buffer and retrieve informations
-    hb_shape(font->getHBFont(_opt.style.charsize).get(), _buffer.get(), nullptr, 0);
+    hb_shape(font->getHBFont(_opt.charsize).get(), _buffer.get(), nullptr, 0);
 
     // Retrieve glyph informations
     unsigned int glyph_count = 0;
@@ -207,7 +204,7 @@ void Buffer::_shape() try
     _buffer_info.glyphs.resize(glyph_count);
     for (size_t i = 0; i < glyph_count; ++i) {
         // Reverse if RTL
-        size_t const index = _buffer_info.lng.direction == "ltr" ? i : (glyph_count - (i + 1));
+        size_t const index = _buffer_info.fmt.lng_direction == "ltr" ? i : (glyph_count - (i + 1));
         _internal::GlyphInfo& glyph = _buffer_info.glyphs.at(index);
         glyph.info = info[i];
         glyph.pos = pos[i];
@@ -238,13 +235,13 @@ void Buffer::_loadGlyphs()
     Font::Ptr const& font = Lib::getFont(_opt.font);
 
     // Load glyphs
-    int const outline_size = _opt.style.has_outline ? _opt.style.outline_size : 0;
+    int const outline_size = _opt.has_outline ? _opt.outline_size : 0;
     std::unordered_set<hb_codepoint_t> glyph_ids;
     for (_internal::GlyphInfo const& glyph : _buffer_info.glyphs) {
         glyph_ids.insert(glyph.info.codepoint);
     }
     for (hb_codepoint_t const& glyph_id: glyph_ids) {
-        font->loadGlyph(glyph_id, _opt.style.charsize, outline_size);
+        font->loadGlyph(glyph_id, _opt.charsize, outline_size);
     }
 }
 

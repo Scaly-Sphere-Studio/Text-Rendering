@@ -85,8 +85,8 @@ private:
         FT_Int x0{ 0 };  // _pixels -> x origin
         FT_Int y0{ 0 };  // _pixels -> y origin
         // Colors
-        Format::Color::Config color;    // Bitmap's color
-        uint8_t alpha{ 0 };             // Bitmap's opacity
+        Color color;        // Bitmap's color
+        uint8_t alpha{ 0 }; // Bitmap's opacity
     };
 
     void _drawGlyphs(AreaData const& data, DrawParameters param);

@@ -60,8 +60,8 @@ static void _eol(int& x, int& y, FT_Vector const& src, Format const& fmt)
 {
     if (x < src.x)
         x = src.x;
-    y += static_cast<int>(static_cast<float>(fmt.style.charsize)
-        * fmt.style.line_spacing);
+    y += static_cast<int>(static_cast<float>(fmt.charsize)
+        * fmt.line_spacing);
 }
 
 Area::Ptr const& Area::create(std::u32string const& str, Format fmt)
@@ -88,7 +88,7 @@ Area::Ptr const& Area::create(std::u32string const& str, Format fmt)
     
     Ptr const& ptr = ::SSS::TR::Area::create(x + _default_margin_v * 2, y + _default_margin_h * 2);
     ptr->setFormat(fmt);
-    ptr->parseString(str);
+    ptr->parseStringU32(str);
     return ptr;
 }
 
@@ -129,7 +129,7 @@ void Area::setFormat(Format const& format, uint32_t id) try
         _formats.at(id) = format;
     }
     if (!_buffers.empty())
-        parseString(_buffer_infos.getString());
+        parseStringU32(_buffer_infos.getString());
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -170,7 +170,7 @@ void Area::setClearColor(RGBA32 color)
     _draw = true;
 }
 
-void Area::parseString(std::u32string const& str) try
+void Area::parseStringU32(std::u32string const& str) try
 {
     clear();
     Format opt = _formats[0];
@@ -213,7 +213,7 @@ CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::parseString(std::string const& str)
 {
-    parseString(strToStr32(str));
+    parseStringU32(strToStr32(str));
 }
 
 std::u32string Area::getStringU32() const
@@ -391,7 +391,7 @@ void Area::cursorPlace(int x, int y) try
         _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(i));
 
         // Check if text direction changed between previous glyphs
-        if ((_buffer_infos.getBuffer(i).lng.direction == "ltr") != i_is_ltr) {
+        if ((_buffer_infos.getBuffer(i).fmt.lng_direction == "ltr") != i_is_ltr) {
             // Check that click coordinates aren't on this specific glyph
             int clicked_x = (pen.x + glyph.pos.x_advance) >> 6;
             if (click_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
@@ -442,7 +442,7 @@ size_t Area::_move_cursor_line(_internal::Line::cit line, int x)
         ++cursor)
     {
         int const offset = _buffer_infos.getGlyph(cursor).pos.x_advance;
-        if ((_buffer_infos.getBuffer(cursor).lng.direction == "ltr") != is_ltr) {
+        if ((_buffer_infos.getBuffer(cursor).fmt.lng_direction == "ltr") != is_ltr) {
             // Check that click coordinates aren't on this specific glyph
             int clicked_x = (x + offset) >> 6;
             if (line_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
@@ -714,7 +714,7 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
         pen.x = (_w - _margin_v - line->x_offset(_buffer_infos.isLTR())) << 6;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
         auto const& buffer = _buffer_infos.getBuffer(n);
-        if ((buffer.lng.direction == "ltr") != is_ltr) {
+        if ((buffer.fmt.lng_direction == "ltr") != is_ltr) {
             is_ltr = !is_ltr;
             line->replace_pen(pen, _buffer_infos, n);
         }
@@ -747,7 +747,7 @@ void Area::_updateLines() try
     _lines.emplace_back();
     _internal::Line::it line = _lines.begin();
     if (!_buffer_infos.empty()) {
-        line->alignment = _buffer_infos.front().style.aligmnent;
+        line->alignment = _buffer_infos.front().fmt.aligmnent;
     }
     size_t cursor = 0;
 
@@ -761,11 +761,11 @@ void Area::_updateLines() try
         _internal::BufferInfo const& buffer = _buffer_infos.getBuffer(cursor);
 
         // Update max_size
-        int const charsize = buffer.style.charsize;
+        int const charsize = buffer.fmt.charsize;
         if (line->charsize < charsize) {
             line->charsize = charsize;
         }
-        int const fullsize = static_cast<int>(static_cast<float>(charsize) * buffer.style.line_spacing);
+        int const fullsize = static_cast<int>(static_cast<float>(charsize) * buffer.fmt.line_spacing);
         if (line->fullsize < fullsize) {
             line->fullsize = fullsize;
         }
@@ -803,7 +803,7 @@ void Area::_updateLines() try
             line = _lines.end() - 1;
             line->first_glyph = cursor + 1;
             line->scrolling = (line - 1)->scrolling;
-            line->alignment = buffer.style.aligmnent;
+            line->alignment = buffer.fmt.aligmnent;
             // Reset pen
             pen = { _margin_v << 6, _margin_h << 6 };
         }
@@ -867,7 +867,7 @@ void Area::_drawIfNeeded()
     // Determine if a function needs to be edited
     if (!_draw) {
         for (auto const& buffer : _buffer_infos) {
-            if (buffer.style.effect == Effect::Vibrate) {
+            if (buffer.fmt.effect == Effect::Vibrate) {
                 using namespace std::chrono_literals;
                 if (now - _last_vibrate_update >= 33ms) {
                     _last_vibrate_update = now;
@@ -875,10 +875,10 @@ void Area::_drawIfNeeded()
                     break;
                 }
             }
-            if ((buffer.style.effect != Effect::None && buffer.style.effect != Effect::Vibrate)
-                || buffer.color.text.func == ColorFunc::rainbow
-                || (buffer.style.has_outline && buffer.color.outline.func == ColorFunc::rainbow)
-                || (buffer.style.has_shadow && buffer.color.shadow.func == ColorFunc::rainbow))
+            if ((buffer.fmt.effect != Effect::None && buffer.fmt.effect != Effect::Vibrate)
+                || buffer.fmt.text_color.func == ColorFunc::Rainbow
+                || (buffer.fmt.has_outline && buffer.fmt.outline_color.func == ColorFunc::Rainbow)
+                || (buffer.fmt.has_shadow && buffer.fmt.shadow_color.func == ColorFunc::Rainbow))
             {
                 _draw = true;
                 break;

@@ -63,13 +63,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case GLFW_KEY_KP_ADD: {
             auto const& area = Area::getMap().at(areaID);
             auto fmt = area->getFormat();
-            ++fmt.style.effect_offset;
+            ++fmt.effect_offset;
             area->setFormat(fmt);
         }   break;
         case GLFW_KEY_KP_SUBTRACT: {
             auto const& area = Area::getMap().at(areaID);
             auto fmt = area->getFormat();
-            --fmt.style.effect_offset;
+            --fmt.effect_offset;
             area->setFormat(fmt);
         }   break;
         case GLFW_KEY_SPACE: {
@@ -124,25 +124,25 @@ int main() try
 
     // Text
     TR::Format fmt;
-    fmt.style.charsize = 30;
-    fmt.style.has_outline = true;
-    fmt.style.has_shadow = true;
-    fmt.style.outline_size = 1;
-    fmt.style.aligmnent = TR::Alignment::Center;
-    //fmt.style.effect = TR::Effect::Waves;
-    fmt.style.effect_offset = 20;
+    fmt.charsize = 30;
+    fmt.has_outline = true;
+    fmt.has_shadow = true;
+    fmt.outline_size = 1;
+    fmt.aligmnent = TR::Alignment::Center;
+    //fmt.effect = TR::Effect::Waves;
+    fmt.effect_offset = 20;
 
-    fmt.color.text.func = TR::ColorFunc::rainbow;
+    fmt.text_color.func = TR::ColorFunc::Rainbow;
 
     TR::Format fmt2 = fmt;
-    fmt2.lng.direction = "rtl";
-    fmt2.lng.script = "Arab";
-    fmt2.lng.language = "ar";
+    fmt2.lng_direction = "rtl";
+    fmt2.lng_script = "Arab";
+    fmt2.lng_tag = "ar";
     fmt2.font = "LateefRegOT.ttf";
     TR::addFontDir("C:/dev/fonts");
-    fmt2.style.aligmnent = TR::Alignment::Right;
-    fmt.style.shadow_offset = { -3, 3 };
-    fmt.style.effect_offset = -50;
+    fmt2.aligmnent = TR::Alignment::Right;
+    fmt.shadow_offset = { -3, 3 };
+    fmt.effect_offset = -50;
 
     auto const& area = TR::Area::create(lorem_ipsum, fmt);
     area->setClearColor(0xFF888888);
