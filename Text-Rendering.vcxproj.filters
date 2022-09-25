@@ -21,6 +21,9 @@
     <Filter Include="src\internal">
       <UniqueIdentifier>{bd92cd88-077c-48e2-b41a-799e0a73f71d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\DemoMain">
+      <UniqueIdentifier>{c119e72d-2b0a-4775-9142-717097a2e187}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="DownloadVcpkgScripts.ps1" />
@@ -84,8 +87,8 @@
     <ClCompile Include="src\Globals.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\DemoMain.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="src\DemoMain\DemoMain.cpp">
+      <Filter>src\DemoMain</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

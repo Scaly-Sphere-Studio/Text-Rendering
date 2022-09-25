@@ -309,8 +309,18 @@ public:
      */
     void scroll(int pixels) noexcept;
 
+    // TODO
+    //enum class EditType {
+    //    None,
+    //    SingleLine,
+    //    Paragraph
+    //};
+    //void setEditType(EditType type);
+    //EditType getEditType() const noexcept;
+
     void setFocus(bool state);
     bool isFocused() const noexcept;
+
     static void resetFocus();
     static Ptr const& getFocused() noexcept;
 

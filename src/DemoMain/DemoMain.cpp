@@ -181,7 +181,7 @@ int main() try
     plane2->setTextureID(texture2->getID());
     plane2->scale(glm::vec3(static_cast<float>(h)));
     plane2->translate(glm::vec3(w / 2 + 20, 0, 0));
-    
+
     auto& chunks = plane_renderer->castAs<GL::PlaneRenderer>().chunks;
     chunks.emplace_back(camera, true);
     chunks.back().planes.emplace_back(plane);
