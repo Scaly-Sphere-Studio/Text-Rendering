@@ -100,7 +100,7 @@ int main() try
     args.w = static_cast<int>(600);
     args.h = static_cast<int>(600);
     args.maximized = true;
-    args.monitor_id = 1;
+    args.monitor_id = 0;
     GL::Window::Shared window = GL::Window::create(args);
 
     // Set context
@@ -132,7 +132,7 @@ int main() try
     //fmt.style.effect = TR::Effect::Waves;
     fmt.style.effect_offset = 20;
 
-    fmt.color.text.func = TR::ColorFunc::rainbowFixed;
+    fmt.color.text.func = TR::ColorFunc::rainbow;
 
     TR::Format fmt2 = fmt;
     fmt2.lng.direction = "rtl";

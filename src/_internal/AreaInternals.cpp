@@ -281,7 +281,7 @@ void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                 switch (args.color.func) {
                     using Func = Format::Color::Func;
                 case Func::none:
-                    color = args.color.plain;
+                    color = args.color;
                     break;
                 case Func::rainbow:
                     color = rainbow((_time.count() / 10 - x - y * 2) % _w, _w);
@@ -293,8 +293,8 @@ void AreaPixels::_copyBitmap(_CopyBitmapArgs& args)
                 // Blend with existing pixel, using the glyph's pixel value as an alpha
                 pixel *= RGBA32(color, px_value);
                 // Lower alpha post blending if needed
-                if (pixel.bytes.a > args.alpha) {
-                    pixel.bytes.a = args.alpha;
+                if (pixel.a > args.alpha) {
+                    pixel.a = args.alpha;
                 }
                 break;
             }

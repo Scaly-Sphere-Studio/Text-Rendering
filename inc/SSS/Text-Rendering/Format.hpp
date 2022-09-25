@@ -76,11 +76,8 @@ struct Format {
          *  whether it's plain or computed from a function.
          *  @default Plain white
          */
-        struct Config {
-            /** The plain color to be used if \c #func is set to \c Func::none.
-             *  @default \c 0xFFFFFF <em>(plain white)</em>
-             */
-            RGB24 plain{ 0xFFFFFF };
+        struct Config : public RGB24 {
+            using RGB24::RGB24;
             /** The way to determine the color of the text.
              *  @default Func::none
              */
