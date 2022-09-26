@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CONTROL" />
+    <None Include="Demo.lua" />
     <None Include="Doxyfile" />
     <None Include="DownloadVcpkgScripts.ps1" />
     <None Include="vcpkg_scripts\Install.ps1" />
@@ -44,6 +45,7 @@
     <ClInclude Include="inc\SSS\Text-Rendering\Format.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\_internal\AreaInternals.hpp" />
     <ClInclude Include="inc\SSS\Text-Rendering\Globals.hpp" />
+    <ClInclude Include="inc\SSS\Text-Rendering\Lua.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\DemoMain\opengl.cpp">

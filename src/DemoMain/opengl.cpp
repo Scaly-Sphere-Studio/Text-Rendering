@@ -3,8 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
-//#define SSS_LUA
-#include "SSS/Text-Rendering.hpp"
+#include <SSS/Commons.hpp>
 
 using WindowPtr = SSS::C_Ptr<GLFWwindow, void(*)(GLFWwindow*), glfwDestroyWindow>;
 
@@ -82,55 +81,6 @@ enum GLUID {
     tex,
 };
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        using namespace SSS::TR;
-        bool const ctrl = mods & GLFW_MOD_CONTROL;
-        switch (key) {
-        case GLFW_KEY_ESCAPE:
-        case GLFW_KEY_KP_0:
-        case GLFW_KEY_F5:
-            glfwSetWindowShouldClose(window, true);
-            break;
-        case GLFW_KEY_ENTER:
-            Area::cursorAddText("\n");
-            break;
-        case GLFW_KEY_LEFT:
-            Area::cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
-            break;
-        case GLFW_KEY_RIGHT:
-            Area::cursorMove(ctrl ? Move::CtrlRight : Move::Right);
-            break;
-        case GLFW_KEY_DOWN:
-            Area::cursorMove(Move::Down);
-            break;
-        case GLFW_KEY_UP:
-            Area::cursorMove(Move::Up);
-            break;
-        case GLFW_KEY_HOME:
-            Area::cursorMove(Move::Start);
-            break;
-        case GLFW_KEY_END:
-            Area::cursorMove(Move::End);
-            break;
-        case GLFW_KEY_BACKSPACE:
-            Area::cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
-            break;
-        case GLFW_KEY_DELETE:
-            Area::cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
-            break;
-        }
-    }
-}
-
-// Character input callback
-static void char_callback(GLFWwindow* ptr, unsigned int codepoint)
-{
-    std::u32string str(1, static_cast<char32_t>(codepoint));
-    SSS::TR::Area::cursorAddText(str);
-}
-
 inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
 {
     using namespace SSS;
@@ -144,8 +94,6 @@ inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
         glfwGetError(&msg);
         throw_exc(msg);
     }
-    glfwSetKeyCallback(window.get(), key_callback);
-    glfwSetCharCallback(window.get(), char_callback);
     
     // Set context
     glfwMakeContextCurrent(window.get());
@@ -237,7 +185,7 @@ inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Cam
-    auto const view = glm::lookAt(glm::vec3(0, 0, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+    auto const view = glm::lookAt(glm::vec3(0, 0, 3), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
     auto const proj = glm::ortho(-400.f, 400.f, -400.f, 400.f, 0.1f, 100.f);
     VP = proj * view;
 }

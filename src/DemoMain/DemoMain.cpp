@@ -1,3 +1,5 @@
+#define SSS_LUA
+#include "SSS/Text-Rendering.hpp"
 #include "opengl.cpp"
 
 static uint32_t areaID = 0;
@@ -50,47 +52,83 @@ static std::string const arabic_lorem_ipsum =
 "تشوبها عواقب أليمة أو آخر أراد أن يتجنب الألم الذي ربما تنجم عنه بعض ؟\n"
 "علي الجانب الآخر نشجب ونستنكر هؤلاء الرجال المفتونون بنش";
 
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        using namespace SSS::TR;
+        bool const ctrl = mods & GLFW_MOD_CONTROL;
+        switch (key) {
+        case GLFW_KEY_ESCAPE:
+        case GLFW_KEY_KP_0:
+        case GLFW_KEY_F5:
+            glfwSetWindowShouldClose(window, true);
+            break;
+        case GLFW_KEY_ENTER:
+            Area::cursorAddText("\n");
+            break;
+        case GLFW_KEY_LEFT:
+            Area::cursorMove(ctrl ? Move::CtrlLeft : Move::Left);
+            break;
+        case GLFW_KEY_RIGHT:
+            Area::cursorMove(ctrl ? Move::CtrlRight : Move::Right);
+            break;
+        case GLFW_KEY_DOWN:
+            Area::cursorMove(Move::Down);
+            break;
+        case GLFW_KEY_UP:
+            Area::cursorMove(Move::Up);
+            break;
+        case GLFW_KEY_HOME:
+            Area::cursorMove(Move::Start);
+            break;
+        case GLFW_KEY_END:
+            Area::cursorMove(Move::End);
+            break;
+        case GLFW_KEY_BACKSPACE:
+            Area::cursorDeleteText(ctrl ? Delete::CtrlLeft : Delete::Left);
+            break;
+        case GLFW_KEY_DELETE:
+            Area::cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
+            break;
+        }
+    }
+}
+
+// Character input callback
+static void char_callback(GLFWwindow* ptr, unsigned int codepoint)
+{
+    std::u32string str(1, static_cast<char32_t>(codepoint));
+    SSS::TR::Area::cursorAddText(str);
+}
+
 int main() try
 {
     using namespace SSS;
 
     //Log::TR::Fonts::get().glyph_load = true;
 
-    TR::Format fmt;
-    fmt.charsize = 30;
-    fmt.has_outline = true;
-    fmt.has_shadow = true;
-    fmt.outline_size = 1;
-    fmt.aligmnent = TR::Alignment::Center;
-    fmt.effect = TR::Effect::Waves;
-    fmt.effect_offset = -20;
-    fmt.text_color.func = TR::ColorFunc::Rainbow;
-
-    TR::Format fmt2 = fmt;
-    fmt2.lng_tag = "ar";
-    fmt2.lng_script = "Arab";
-    fmt2.lng_direction = "rtl";
-    fmt2.font = "LateefRegOT.ttf";
     TR::addFontDir("C:/dev/fonts");
-    fmt2.aligmnent = TR::Alignment::Right;
-    fmt.shadow_offset = { -3, 3 };
-    fmt.effect_offset = 50;
 
     auto const& area = TR::Area::create(700, 700);
-    area->setClearColor(0xFF888888);
-    area->setFormat(fmt, 0);
-    area->setFormat(fmt2, 1);
-    area->parseString(lorem_ipsum);
     //area->setPrintMode(TR::Area::PrintMode::Typewriter);
     //area->setTypeWriterSpeed(60);
     areaID = area->getID();
     area->setFocus(true);
 
-    // Create Window
+    // OpenGL
     WindowPtr window;
     GLuint ids[5];
     glm::mat4 VP;
     load_opengl(window, ids, VP);
+    glfwSetKeyCallback(window.get(), key_callback);
+    glfwSetCharCallback(window.get(), char_callback);
+
+    // Lua
+    sol::state lua;
+    lua.open_libraries(sol::lib::base, sol::lib::string);
+    lua_setup(lua);
+    TR::lua_setup_TR(lua);
+    lua.unsafe_script_file("Demo.lua");
 
     // Main loop
     while (!glfwWindowShouldClose(window.get())) {
