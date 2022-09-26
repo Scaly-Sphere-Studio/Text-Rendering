@@ -1,20 +1,19 @@
 print("Demo.lua start")
 
-local lorem_ipsum = [[
-Lorem ipsum dolor sit amet,\n
-consectetur adipiscing elit.\n
-Pellentesque vitae velit ante.\n
-Suspendisse nulla lacus,\n
-tempor sit amet iaculis non,\n
-scelerisque\u001F1\u001F[ يرغب في الحب ]\u001F0\u001Fsed est.\n
-Aenean pharetra ipsum sit amet sem lobortis,\n
-a cursus felis semper.\n
-Integer nec tortor ex.\n
-Etiam quis consectetur turpis.\n
-Proin ultrices bibendum imperdiet.\n
-Suspendisse vitae fermentum ante,\n
-eget cursus dolor.
-]]
+local lorem_ipsum =
+[[Lorem ipsum dolor sit amet,
+consectetur adipiscing elit.
+Pellentesque vitae velit ante.
+Suspendisse nulla lacus,
+tempor sit amet iaculis non,
+scelerisque{{fmt: 1}} يرغب في الحب {{fmt: 0}}sed est.
+Aenean pharetra ipsum sit amet sem lobortis,
+a cursus felis semper.
+Integer nec tortor ex.
+Etiam quis consectetur turpis.
+Proin ultrices bibendum imperdiet.
+Suspendisse vitae fermentum ante,
+eget cursus dolor.]]
 
 local area = TR.Area.get(0)
 local fmt = area:getFmt(0)

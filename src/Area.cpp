@@ -176,33 +176,33 @@ void Area::parseStringU32(std::u32string const& str) try
     Format opt = _formats[0];
     size_t i = 0;
     while (i != str.size()) {
-        size_t const unit_separator = str.find(U'\u001F', i);
-        if (unit_separator == std::string::npos) {
+        size_t const opening_braces = str.find(U"{{", i);
+        if (opening_braces == std::string::npos) {
             // add buffer and load sub string
             _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
             _buffers.back()->changeString(str.substr(i));
             break;
         }
         else {
-            // find next US instance
-            size_t const next_unit_separator = str.find(U'\u001F', unit_separator + 1);
-            if (next_unit_separator == std::string::npos) {
+            // find closing braces
+            size_t const closing_braces = str.find(U"}}", opening_braces + 2);
+            if (closing_braces == std::string::npos) {
                 _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
                 _buffers.back()->changeString(str.substr(i));
                 break;
             }
             // add buffer if needed
-            size_t diff = unit_separator - i;
+            size_t diff = opening_braces - i;
             if (diff > 0) {
                 _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
                 _buffers.back()->changeString(str.substr(i, diff));
             }
             // parse id and change options
-            diff = next_unit_separator - unit_separator - 1;
+            diff = closing_braces - opening_braces - 2 - 5;
             opt = _formats[std::stoul(str32ToStr(
-                str.substr(unit_separator + 1, diff)))];
+                str.substr(opening_braces + 2 + 5, diff)))];
             // skip to next sub strings
-            i = next_unit_separator + 1;
+            i = closing_braces + 2;
         }
     }
     size_t tmp = _glyph_count;
