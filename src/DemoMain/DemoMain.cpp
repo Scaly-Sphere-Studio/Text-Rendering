@@ -2,8 +2,6 @@
 #include "SSS/Text-Rendering.hpp"
 #include "opengl.cpp"
 
-static uint32_t areaID = 0;
-
 static std::string const lorem_ipsum =
 "Lorem ipsum dolor sit amet,\n"
 "consectetur adipiscing elit.\n"
@@ -107,13 +105,15 @@ int main() try
 
     //Log::TR::Fonts::get().glyph_load = true;
 
+    auto const& area = TR::Area::create(700, 700);
     TR::addFontDir("C:/dev/fonts");
 
-    auto const& area = TR::Area::create(700, 700);
-    //area->setPrintMode(TR::Area::PrintMode::Typewriter);
-    //area->setTypeWriterSpeed(60);
-    areaID = area->getID();
-    area->setFocus(true);
+    // Lua
+    sol::state lua;
+    lua.open_libraries(sol::lib::base, sol::lib::string);
+    lua_setup(lua);
+    TR::lua_setup_TR(lua);
+    lua.unsafe_script_file("Demo.lua");
 
     // OpenGL
     WindowPtr window;
@@ -123,12 +123,7 @@ int main() try
     glfwSetKeyCallback(window.get(), key_callback);
     glfwSetCharCallback(window.get(), char_callback);
 
-    // Lua
-    sol::state lua;
-    lua.open_libraries(sol::lib::base, sol::lib::string);
-    lua_setup(lua);
-    TR::lua_setup_TR(lua);
-    lua.unsafe_script_file("Demo.lua");
+    FrameTimer fps;
 
     // Main loop
     while (!glfwWindowShouldClose(window.get())) {
@@ -155,6 +150,9 @@ int main() try
         // Draw & print
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glfwSwapBuffers(window.get());
+        if (fps.addFrame() && fps.get() != 60) {
+            LOG_CTX_MSG("fps", fps.getFormatted());
+        }
     }
 
     glfwTerminate();

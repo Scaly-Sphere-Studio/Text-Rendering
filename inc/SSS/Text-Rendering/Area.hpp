@@ -20,6 +20,12 @@ SSS_TR_BEGIN;
 enum class Move;    // Pre-declaration
 enum class Delete;  // Pre-declaration
 
+enum class PrintMode {
+    Instant,
+    Typewriter,
+    // More later?
+};
+
 /** The class handling most of the text rendering logic.
  *
  *  Use static functions to create() instances, and retrieve
@@ -40,13 +46,6 @@ enum class Delete;  // Pre-declaration
  *  @sa Format, init(), loadFont()
  */
 class Area {
-public:
-    enum class PrintMode {
-        Instant,
-        Typewriter,
-        // More later?
-    };
-
 private:
     // Map ID of the area
     uint32_t const _id;
@@ -200,7 +199,7 @@ public:
     inline int getMarginV() const noexcept { return _margin_v; };
 
     void setClearColor(RGBA32 color);
-    inline RGBA32 getClearColor(RGBA32 color) const noexcept { return _bg_color; };
+    inline RGBA32 getClearColor() const noexcept { return _bg_color; };
 
     /** Parses a UTF32 string thay may use multiple formats in itself.
      *

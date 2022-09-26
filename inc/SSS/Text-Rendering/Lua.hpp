@@ -107,6 +107,11 @@ inline void lua_setup_TR(sol::state& lua) try
             return Area::getMap().at(id).get();
         }
     );
+    // PrintMode
+    tr.new_enum<PrintMode>("PrintMode", {
+        { "Instant", PrintMode::Instant},
+        { "Typewriter", PrintMode::Typewriter}
+    });
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 

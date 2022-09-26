@@ -18,32 +18,29 @@ eget cursus dolor.]]
 local area = TR.Area.get(0)
 local fmt = area:getFmt(0)
 
-print("fmt")
-
+fmt.font = "opensans/OpenSans[wdth,wght].ttf"
 fmt.charsize = 30
 fmt.has_outline = true
 fmt.has_shadow = true
 fmt.outline_size = 1
---fmt.aligmnent = TR.Alignment.Center
+fmt.alignment = TR.Alignment.Center
 fmt.effect = TR.Effect.Waves
-fmt.effect_offset = 20
-fmt.text_color.func = TR.ColorFunc.Rainbow
-
-print("fmt2")
-
-local fmt2 = TR.Fmt.new()
-fmt2.lng_tag = "ar"
-fmt2.lng_script = "Arab"
-fmt2.lng_direction = "rtl"
-fmt2.font = "LateefRegOT.ttf"
---fmt2.aligmnent = TR.Alignment.Right
-fmt2.shadow_offset.x = -3
-fmt2.effect_offset = -50
-
-print("final settings")
-
+fmt.effect_offset = 50
 area:setFmt(fmt, 0)
-area:setFmt(fmt2, 1)
+
+fmt.lng_tag = "ar"
+fmt.lng_script = "Arab"
+fmt.lng_direction = "rtl"
+fmt.font = "LateefRegOT.ttf"
+fmt.alignment = TR.Alignment.Right
+fmt.shadow_offset.x = -3
+fmt.text_color.func = TR.ColorFunc.Rainbow
+area:setFmt(fmt, 1)
+
 area.string = lorem_ipsum
+area.clear_color = RGBA.new(0xFF888888)
+area:setMargins(30, 10)
+area.print_mode = TR.PrintMode.Typewriter
+area.TW_speed = 42
 
 print("Demo.lua end")
