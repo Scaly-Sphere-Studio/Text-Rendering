@@ -18,6 +18,7 @@ struct Line {
     int fullsize{ 0 };       // Line's full size, in pixels
     int charsize{ 0 };       // The highest charsize on the line
     int scrolling{ 0 };      // Total scrolling for this line to be above the top
+    int used_width{ 0 };     // Line's used vertical width, in pixels
     int unused_width{ 0 };   // Line's unused vertical width, in pixels
     Alignment alignment{ Alignment::Left }; // Text alignment
     // Aliases

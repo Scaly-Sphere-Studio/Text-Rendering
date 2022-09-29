@@ -75,7 +75,7 @@ int main() try
 
     //Log::TR::Fonts::get().glyph_load = true;
 
-    auto const& area = TR::Area::create(700, 700);
+    auto const& area = TR::Area::create();
 
     // Lua
     sol::state lua;

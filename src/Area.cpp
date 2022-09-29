@@ -11,18 +11,15 @@ uint32_t Area::_focused_id{ 0 };
 
     // --- Constructor, destructor & clear function ---
 
-// Constructor, sets width & height.
-// Throws an exception if width and/or height are <= 0.
-Area::Area(uint32_t id, int width, int height) try
-    : _id(id), _w(width), _h(height)
+// Constructor, creates a default Buffer
+Area::Area(uint32_t id) try
+    : _id(id)
 {
-    if (_w <= 0 || _h <= 0) {
-        throw_exc("Width & Height should both be above 0.");
-    }
-
+    _buffers.push_back(std::make_unique<_internal::Buffer>(Format()));
+    _updateBufferInfos();
     if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
         char buff[256];
-        sprintf_s(buff, "Created an Area of dimensions (%dx%d).", _w, _h);
+        sprintf_s(buff, "Created Area #%u.", _id);
         LOG_TR_MSG(buff);
     }
 }
@@ -33,63 +30,55 @@ Area::~Area() noexcept
 {
     if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
         char buff[256];
-        sprintf_s(buff, "Deleted an Area of dimensions (%dx%d).", _w, _h);
+        sprintf_s(buff, "Deleted Area #%u.", _id);
         LOG_TR_MSG(buff);
     }
 }
 
-Area::Ptr const& Area::create(uint32_t id, int width, int height) try
+void Area::setWrapping(bool wrapping) noexcept
+{
+    if (_wrapping != wrapping) {
+        _wrapping = wrapping;
+        _updateBufferInfos();
+    }
+}
+
+bool Area::getWrapping() const noexcept
+{
+    return _wrapping;
+}
+
+Area::Ptr const& Area::create(uint32_t id) try
 {
     Area::Ptr& area = _instances[id];
-    area.reset(new Area(id, width, height));
+    area.reset(new Area(id));
     return area;
 }
-CATCH_AND_RETHROW_FUNC_EXC
+CATCH_AND_RETHROW_FUNC_EXC;
 
-Area::Ptr const& Area::create(int width, int height)
+Area::Ptr const& Area::create()
 {
     uint32_t id = 0;
     // Increment ID until no similar value is found
     while (_instances.count(id) != 0) {
         ++id;
     }
-    return create(id, width, height);
+    return create(id);
 }
 
-static void _eol(int& x, int& y, FT_Vector const& src, Format const& fmt)
+Area::Ptr const& Area::create(int width, int height)
 {
-    if (x < src.x)
-        x = src.x;
-    y += static_cast<int>(static_cast<float>(fmt.charsize)
-        * fmt.line_spacing);
+    Ptr const& area = create();
+    area->setDimensions(width, height);
+    return area;
 }
 
 Area::Ptr const& Area::create(std::u32string const& str, Format fmt)
 {
-
-    int x = 0, y = 0;
-    // Get values
-    {
-        _internal::Buffer::Ptr buffer = std::make_unique<_internal::Buffer>(fmt);
-        buffer->changeString(str);
-        FT_Vector pen({ 0, 0 });
-        for (_internal::GlyphInfo const& glyph : buffer->getInfo().glyphs) {
-            if (glyph.is_new_line) {
-                _eol(x, y, pen, fmt);
-                pen = { 0, 0 };
-            }
-            else {
-                pen.x += glyph.pos.x_advance;
-            }
-        }
-        _eol(x, y, pen, fmt);
-        x = (x >> 6) + 1;
-    }
-    
-    Ptr const& ptr = ::SSS::TR::Area::create(x + _default_margin_v * 2, y + _default_margin_h * 2);
-    ptr->setFormat(fmt);
-    ptr->parseStringU32(str);
-    return ptr;
+    Ptr const& area = create();
+    area->setFormat(fmt);
+    area->parseStringU32(str);
+    return area;
 }
 
 Area::Ptr const& Area::create(std::string const& str, Format fmt)
@@ -291,6 +280,7 @@ void Area::setDimensions(int width, int height) try
 {
     _w = width;
     _h = height;
+    _wrapping = false;
     _updateLines();
 }
 CATCH_AND_RETHROW_METHOD_EXC;
@@ -739,8 +729,12 @@ void Area::_scrollingChanged() noexcept
 // Updates _lines
 void Area::_updateLines() try
 {
-    if (_w <= 0 || _h <= 0) {
-        throw_exc("width and/or height <= 0");
+    if (_wrapping) {
+        _w = _margin_v * 2;
+        _h = _margin_h * 2;
+    }
+    else if (_glyph_count > 0 && (_w <= 0 || _h <= 0)) {
+        throw_exc("wrapping disabled but width and/or height <= 0");
     }
     // Reset _lines
     _lines.clear();
@@ -751,16 +745,16 @@ void Area::_updateLines() try
     }
     size_t cursor = 0;
 
-    // Place pen at (0, 0), we don't take scrolling into account
     size_t last_divider(0);
     int last_divider_x{ 0 };
     FT_Vector pen({ _margin_v << 6, _margin_h << 6 });
+    
     while (cursor < _glyph_count) {
         // Retrieve glyph infos
         _internal::GlyphInfo const& glyph = _buffer_infos.getGlyph(cursor);
         _internal::BufferInfo const& buffer = _buffer_infos.getBuffer(cursor);
 
-        // Update max_size
+        // Update sizes
         int const charsize = buffer.fmt.charsize;
         if (line->charsize < charsize) {
             line->charsize = charsize;
@@ -769,33 +763,39 @@ void Area::_updateLines() try
         if (line->fullsize < fullsize) {
             line->fullsize = fullsize;
         }
-        // If glyph is a word divider, mark next character as possible line break
+        // If glyph is a word divider, mark it as possible line break
         if (glyph.is_word_divider) {
             last_divider = cursor;
             last_divider_x = pen.x;
         }
-
         // Update pen position
         if (!glyph.is_new_line) {
             pen.x += glyph.pos.x_advance;
             pen.y += glyph.pos.y_advance;
         }
-        // If the pen is now out of bound, we should line break
-        if ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v)|| glyph.is_new_line) {
+
+        // If wrapping mode is disabled and the pen is out of bound, we should line break
+        if (glyph.is_new_line ||
+            (!_wrapping && ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v))))
+        {
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
                 if (cursor != 0)
                     --cursor;
-                line->unused_width = _w - _margin_v - ((pen.x - glyph.pos.x_advance) >> 6);
+                line->used_width = (pen.x - glyph.pos.x_advance) >> 6;
             }
             else {
                 cursor = last_divider;
-                line->unused_width = _w - _margin_v - (last_divider_x >> 6);
+                line->used_width = last_divider_x >> 6;
             }
             if (glyph.is_new_line)
                 line->unused_width = _w - _margin_v - (pen.x >> 6);
+
             line->last_glyph = cursor;
             line->scrolling += line->fullsize;
+            if (_wrapping && _w < (line->used_width + _margin_v)) {
+                _w = line->used_width + _margin_v;
+            }
             last_divider = 0;
             last_divider_x = 0;
             // Add line if needed
@@ -812,9 +812,25 @@ void Area::_updateLines() try
     }
 
     line->last_glyph = cursor;
+    // Add line size if empty (for input visibility)
+    if (line->first_glyph == line->last_glyph) {
+        auto const& buffer = _buffer_infos.getBuffer(cursor);
+        line->charsize = buffer.fmt.charsize;
+        line->fullsize = static_cast<int>(static_cast<float>(line->charsize)
+            * buffer.fmt.line_spacing);
+    }
     line->scrolling += line->fullsize;
-    line->unused_width = (_w - _margin_v - (pen.x >> 6));
-    
+    line->used_width = pen.x >> 6;
+    if (_wrapping && _w < (line->used_width + _margin_v)) {
+        _w = line->used_width + _margin_v;
+    }
+    // Compute unused width of each line
+    for (auto& line : _lines) {
+        line.unused_width = _w - _margin_v - line.used_width;
+        if (_wrapping) {
+            _h += static_cast<int>(line.fullsize);
+        }
+    }
     // Update size & scrolling
     size_t const size_before = _pixels_h;
     _pixels_h = line->scrolling;

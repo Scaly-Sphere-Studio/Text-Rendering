@@ -20,8 +20,8 @@ CATCH_AND_RETHROW_METHOD_EXC;
 
 _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const try
 {
-    if (_glyph_count == 0)
-        throw_exc("Empty buffer");
+    //if (empty())
+    //    throw_exc("Empty buffer list");
     for (BufferInfo const& buffer_info : *this) {
         if (buffer_info.glyphs.size() > cursor) {
             return buffer_info;

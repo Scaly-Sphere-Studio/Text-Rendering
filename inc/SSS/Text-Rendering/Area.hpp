@@ -49,6 +49,7 @@ class Area {
 private:
     // Map ID of the area
     uint32_t const _id;
+    bool _wrapping{ true };
     // Width of area
     int _w;
     // Height of area
@@ -136,9 +137,8 @@ private:
     static bool _focused_state;
     static uint32_t _focused_id;
 
-    // Constructor, sets width & height.
-    // Throws an exception if width and/or height are <= 0.
-    Area(uint32_t id, int width, int height);
+    // Constructor, creates a default Buffer
+    Area(uint32_t id);
 
 public:
     /** Destructor, clears internal cache.
@@ -147,6 +147,8 @@ public:
      */
     ~Area() noexcept;
     
+    void setWrapping(bool wrapping) noexcept;
+    bool getWrapping() const noexcept;
 
     /** Creates an Area instance which will be stored in the internal #Map.
      *  @param[in] id The ID at which the new instance will be stored.
@@ -156,7 +158,8 @@ public:
      *  @throw std::runtime_error If \c width or \c height are <= 0.
      *  @sa remove(), getMap().
      */
-    static Ptr const& create(uint32_t id, int width, int height);
+    static Ptr const& create(uint32_t id);
+    static Ptr const& create();
 
     static Ptr const& create(int width, int height);
 
