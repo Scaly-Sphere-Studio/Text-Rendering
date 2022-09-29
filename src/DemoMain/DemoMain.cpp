@@ -2,36 +2,6 @@
 #include "SSS/Text-Rendering.hpp"
 #include "opengl.cpp"
 
-static std::string const lorem_ipsum =
-"Lorem ipsum dolor sit amet,\n"
-"consectetur adipiscing elit.\n"
-"Pellentesque vitae velit ante.\n"
-"Suspendisse nulla lacus,\n"
-"tempor sit amet iaculis non,\n"
-"scelerisque\u001F1\u001F[ يرغب في الحب ]\u001F0\u001Fsed est.\n"
-"Aenean pharetra ipsum sit amet sem lobortis,\n"
-"a cursus felis semper.\n"
-"Integer nec tortor ex.\n"
-"Etiam quis consectetur turpis.\n"
-"Proin ultrices bibendum imperdiet.\n"
-"Suspendisse vitae fermentum ante,\n"
-"eget cursus dolor.";
-
-static std::string const lorem_ipsum2 =
-"Lorem ipsum dolor sit amet, "
-"consectetur adipiscing elit. "
-"Nam ornare arcu turpis, "
-"at suscipit purus rhoncus eu. "
-"Donec vitae diam eget ante imperdiet mollis. "
-"Maecenas id est sit amet sapien eleifend gravida. "
-"Curabitur sit amet felis condimentum. "
-"varius augue eu, "
-"maximus nunc. "
-"Curabitur quis laoreet tellus. "
-"Donec urna arcu, "
-"egestas vitae commodo euismod, "
-"sodales vitae nunc.";
-
 static std::string const arabic_lorem_ipsum =
 "لكن لا بد أن أوضح لك أن كل هذه الأفكار المغلوطة حول\n"
 "استنكار  النشوة وتمجيد الألم نشأت بالفعل،\n"
@@ -106,7 +76,6 @@ int main() try
     //Log::TR::Fonts::get().glyph_load = true;
 
     auto const& area = TR::Area::create(700, 700);
-    TR::addFontDir("C:/dev/fonts");
 
     // Lua
     sol::state lua;

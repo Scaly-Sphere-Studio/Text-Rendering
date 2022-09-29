@@ -112,6 +112,8 @@ inline void lua_setup_TR(sol::state& lua) try
         { "Instant", PrintMode::Instant},
         { "Typewriter", PrintMode::Typewriter}
     });
+
+    tr["addFontDir"] = &addFontDir;
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 

@@ -24,10 +24,10 @@ fmt.has_outline = true
 fmt.has_shadow = true
 fmt.outline_size = 1
 fmt.alignment = TR.Alignment.Center
-fmt.effect = TR.Effect.Waves
 fmt.effect_offset = 50
 area:setFmt(fmt, 0)
 
+fmt.effect = TR.Effect.Waves
 fmt.lng_tag = "ar"
 fmt.lng_script = "Arab"
 fmt.lng_direction = "rtl"
@@ -36,11 +36,13 @@ fmt.alignment = TR.Alignment.Right
 fmt.shadow_offset.x = -3
 fmt.text_color.func = TR.ColorFunc.Rainbow
 area:setFmt(fmt, 1)
+TR.addFontDir("C:/dev/fonts")
 
 area.string = lorem_ipsum
 area.clear_color = RGBA.new(0xFF888888)
 area:setMargins(30, 10)
-area.print_mode = TR.PrintMode.Typewriter
+--area.print_mode = TR.PrintMode.Typewriter
 area.TW_speed = 42
+area.focus = true;
 
 print("Demo.lua end")
