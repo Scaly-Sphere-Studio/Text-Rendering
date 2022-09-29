@@ -84,10 +84,11 @@ enum GLUID {
 inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
 {
     using namespace SSS;
+    constexpr int w = 1280, h = 720;
 
     // Create Window
     glfwInit();
-    window.reset(glfwCreateWindow(800, 800, "SSS/Text-Rendering - Demo Window", nullptr, nullptr));
+    window.reset(glfwCreateWindow(w, h, "SSS/Text-Rendering - Demo Window", nullptr, nullptr));
     // Throw if an error occured
     if (!window) {
         const char* msg;
@@ -104,7 +105,7 @@ inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
     }
 
     // Finish setting up window
-    glViewport(0, 0, 800, 800);
+    glViewport(0, 0, w, h);
     glClearColor(0.3f, 0.3f, 0.3f, 0.f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -151,10 +152,10 @@ inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
     glBindBuffer(GL_ARRAY_BUFFER, ids[vbo]);
     constexpr float vertices[] = {
         // positions            // texture coords (1 - y)
-        -350.f,  350.f, 0.0f,   0.f, 1.f - 1.f,   // top left
-        -350.f, -350.f, 0.0f,   0.f, 1.f - 0.f,   // bottom left
-         350.f, -350.f, 0.0f,   1.f, 1.f - 0.f,   // bottom right
-         350.f,  350.f, 0.0f,   1.f, 1.f - 1.f    // top right
+        -0.5f,  0.5f, 0.0f,   0.f, 1.f - 1.f,   // top left
+        -0.5f, -0.5f, 0.0f,   0.f, 1.f - 0.f,   // bottom left
+         0.5f, -0.5f, 0.0f,   1.f, 1.f - 0.f,   // bottom right
+         0.5f,  0.5f, 0.0f,   1.f, 1.f - 1.f    // top right
     };
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
@@ -186,7 +187,9 @@ inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
 
     // Cam
     auto const view = glm::lookAt(glm::vec3(0, 0, 3), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
-    auto const proj = glm::ortho(-400.f, 400.f, -400.f, 400.f, 0.1f, 100.f);
+    constexpr float w2 = static_cast<float>(w) / 2.f,
+                    h2 = static_cast<float>(h) / 2.f;
+    auto const proj = glm::ortho(-w2, w2, -h2, h2, 0.1f, 100.f);
     VP = proj * view;
 }
 CATCH_AND_LOG_FUNC_EXC;

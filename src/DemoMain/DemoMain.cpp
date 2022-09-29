@@ -87,7 +87,7 @@ int main() try
     // OpenGL
     WindowPtr window;
     GLuint ids[5];
-    glm::mat4 VP;
+    glm::mat4 VP, scaling, MVP;
     load_opengl(window, ids, VP);
     glfwSetKeyCallback(window.get(), key_callback);
     glfwSetCharCallback(window.get(), char_callback);
@@ -105,16 +105,19 @@ int main() try
         glUseProgram(ids[prog]);
         glBindVertexArray(ids[vao]);
         glBindTexture(GL_TEXTURE_2D, ids[tex]);
-        glUniformMatrix4fv(glGetUniformLocation(ids[prog], "u_VP"), 1, false, &VP[0][0]);
 
         // Update texture if needed
         area->update();
         if (area->pixelsWereChanged()) {
             int w, h;
             area->pixelsGetDimensions(w, h);
+            scaling = glm::scale(glm::mat4(1), glm::vec3(w, h, 1));
+            MVP = VP * scaling;
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, area->pixelsGet());
             area->pixelsAreRetrieved();
         }
+
+        glUniformMatrix4fv(glGetUniformLocation(ids[prog], "u_VP"), 1, false, &MVP[0][0]);
 
         // Draw & print
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
