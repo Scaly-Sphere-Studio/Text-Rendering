@@ -161,31 +161,36 @@ void Area::setClearColor(RGBA32 color)
 
 void Area::parseStringU32(std::u32string const& str) try
 {
+    auto const new_buffer = [&](bool& is_first, Format const& opt, std::u32string const& str) {
+        if (is_first)
+            _buffers.back()->changeFormat(opt);
+        else
+            _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
+        _buffers.back()->changeString(str);
+        is_first = false;
+    };
     clear();
+    bool is_first = true;
     Format opt = _formats[0];
     size_t i = 0;
     while (i != str.size()) {
         size_t const opening_braces = str.find(U"{{", i);
         if (opening_braces == std::string::npos) {
             // add buffer and load sub string
-            _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
-            _buffers.back()->changeString(str.substr(i));
+            new_buffer(is_first, opt, str.substr(i));
             break;
         }
         else {
             // find closing braces
             size_t const closing_braces = str.find(U"}}", opening_braces + 2);
             if (closing_braces == std::string::npos) {
-                _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
-                _buffers.back()->changeString(str.substr(i));
+                new_buffer(is_first, opt, str.substr(i));
                 break;
             }
             // add buffer if needed
             size_t diff = opening_braces - i;
-            if (diff > 0) {
-                _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
-                _buffers.back()->changeString(str.substr(i, diff));
-            }
+            if (diff > 0)
+                new_buffer(is_first, opt, str.substr(i, diff));
             // parse id and change options
             diff = closing_braces - opening_braces - 2 - 5;
             opt = _formats[std::stoul(str32ToStr(
@@ -253,9 +258,9 @@ void Area::clear() noexcept
         _pixels_h = _h;
     }
     // Reset buffers
-    _buffers.clear();
-    _buffer_infos.clear();
-    _glyph_count = 0;
+    _buffers.resize(1);
+    _buffers.front()->changeString(U"");
+    _updateBufferInfos();
     _edit_cursor = 0;
     // Reset lines
     _updateLines();
