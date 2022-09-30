@@ -134,23 +134,23 @@ void Area::getDefaultMargins(int& marginV, int& marginH) noexcept
     marginH = _default_margin_h;
 }
 
-void Area::setMargins(int marginH, int marginV)
+void Area::setMargins(int marginV, int marginH)
 {
-    if (_margin_h != marginH || _margin_v != marginV) {
-        _margin_h = marginH;
+    if (_margin_v != marginV || _margin_h != marginH) {
         _margin_v = marginV;
+        _margin_h = marginH;
         _updateLines();
     }
 }
 
 void Area::setMarginH(int marginH)
 {
-    setMargins(marginH, _margin_v);
+    setMargins(_margin_v, marginH);
 }
 
 void Area::setMarginV(int marginV)
 {
-    setMargins(_margin_h, marginV);
+    setMargins(marginV, _margin_h);
 }
 
 void Area::setClearColor(RGBA32 color)
@@ -826,8 +826,11 @@ void Area::_updateLines() try
     }
     line->scrolling += line->fullsize;
     line->used_width = pen.x >> 6;
-    if (_wrapping && _w < (line->used_width + _margin_v)) {
-        _w = line->used_width + _margin_v;
+    if (_wrapping) {
+        if (_w < (line->used_width + _margin_v)) {
+            _w = line->used_width + _margin_v;
+        }
+        ++_w;
     }
     // Compute unused width of each line
     for (auto& line : _lines) {

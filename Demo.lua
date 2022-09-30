@@ -38,11 +38,14 @@ fmt.text_color.func = TR.ColorFunc.Rainbow
 area:setFmt(fmt, 1)
 TR.addFontDir("C:/dev/fonts")
 
+area.margin_h = 30
 area.string = lorem_ipsum
 area.clear_color = RGBA.new(0xFF888888)
-area:setMargins(30, 10)
+area.wrapping = false
+
 --area.print_mode = TR.PrintMode.Typewriter
 area.TW_speed = 42
 area.focus = true;
+
 
 print("Demo.lua end")

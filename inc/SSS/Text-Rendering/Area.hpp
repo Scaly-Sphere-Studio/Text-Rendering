@@ -195,11 +195,11 @@ public:
     static void setDefaultMargins(int marginV, int marginH) noexcept;
     static void getDefaultMargins(int& marginV, int& marginH) noexcept;
 
-    void setMargins(int marginH, int marginV);
-    void setMarginH(int marginH);
+    void setMargins(int marginV, int marginH);
     void setMarginV(int marginV);
-    inline int getMarginH() const noexcept { return _margin_h; };
+    void setMarginH(int marginH);
     inline int getMarginV() const noexcept { return _margin_v; };
+    inline int getMarginH() const noexcept { return _margin_h; };
 
     void setClearColor(RGBA32 color);
     inline RGBA32 getClearColor() const noexcept { return _bg_color; };
@@ -296,6 +296,8 @@ public:
     void pixelsGetDimensions(int& width, int& height) const noexcept;
 
     void getDimensions(int& width, int& height) const noexcept;
+    inline int getWidth() const noexcept { return _w; };
+    inline int getHeight() const noexcept { return _h; };
     /** Sets new dimensions values for internal pixels.
      *  A call to update() is necessary for changes to take effect.
      *  @param[in] width Defines the pixels width. Must be above \c 0.
@@ -304,6 +306,8 @@ public:
      *  
      */
     void setDimensions(int width, int height);
+    inline void setWidth(int width) { setDimensions(width, _h); };
+    inline void setHeight(int height) { setDimensions(_w, height); };
     /** Scrolls up with negative values, and down with positive values.
      *  Takes effect immediatley and sets pixelsWereChanged() to \c true.\n
      *  Trying to scroll too high or too low will have no effect.

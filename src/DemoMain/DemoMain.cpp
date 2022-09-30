@@ -75,14 +75,13 @@ int main() try
 
     //Log::TR::Fonts::get().glyph_load = true;
 
-    auto const& area = TR::Area::create();
-
     // Lua
     sol::state lua;
     lua.open_libraries(sol::lib::base, sol::lib::string);
     lua_setup(lua);
     TR::lua_setup_TR(lua);
     lua.unsafe_script_file("Demo.lua");
+    auto const& area = TR::Area::getMap().at(0);
 
     // OpenGL
     WindowPtr window;
@@ -127,6 +126,8 @@ int main() try
         }
     }
 
+    LOG_MSG(area->getWidth());
+    LOG_MSG(area->getHeight());
     glfwTerminate();
 }
 CATCH_AND_LOG_FUNC_EXC;
