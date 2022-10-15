@@ -3,7 +3,7 @@
 
 SSS_TR_BEGIN;
 
-Area::Map Area::_instances{};
+std::map<uint32_t, Area::Ptr> Area::_instances{};
 int Area::_default_margin_h{ 10 };
 int Area::_default_margin_v{ 10 };
 bool Area::_focused_state{ false };
@@ -48,15 +48,15 @@ bool Area::getWrapping() const noexcept
     return _wrapping;
 }
 
-Area::Ptr const& Area::create(uint32_t id) try
+Area& Area::create(uint32_t id) try
 {
-    Area::Ptr& area = _instances[id];
+    Ptr& area = _instances[id];
     area.reset(new Area(id));
-    return area;
+    return *area;
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 
-Area::Ptr const& Area::create()
+Area& Area::create()
 {
     uint32_t id = 0;
     // Increment ID until no similar value is found
@@ -66,22 +66,22 @@ Area::Ptr const& Area::create()
     return create(id);
 }
 
-Area::Ptr const& Area::create(int width, int height)
+Area& Area::create(int width, int height)
 {
-    Ptr const& area = create();
-    area->setDimensions(width, height);
+    Area& area = create();
+    area.setDimensions(width, height);
     return area;
 }
 
-Area::Ptr const& Area::create(std::u32string const& str, Format fmt)
+Area& Area::create(std::u32string const& str, Format fmt)
 {
-    Ptr const& area = create();
-    area->setFormat(fmt);
-    area->parseStringU32(str);
+    Area& area = create();
+    area.setFormat(fmt);
+    area.parseStringU32(str);
     return area;
 }
 
-Area::Ptr const& Area::create(std::string const& str, Format fmt)
+Area& Area::create(std::string const& str, Format fmt)
 {
     return create(strToStr32(str), fmt);
 }
@@ -94,9 +94,17 @@ void Area::remove(uint32_t id) try
 }
 CATCH_AND_RETHROW_FUNC_EXC
 
-void Area::clearMap() noexcept
+void Area::clearAll() noexcept
 {
     _instances.clear();
+}
+
+Area* Area::get(uint32_t id) noexcept
+{
+    if (_instances.count(id) == 0) {
+        return nullptr;
+    }
+    return _instances.at(id).get();
 }
 
 Format Area::getFormat(uint32_t id)
@@ -220,6 +228,22 @@ std::string Area::getString() const
     return str32ToStr(getStringU32());
 }
 
+void Area::updateAll()
+{
+    for (auto const& pair : _instances) {
+        if (pair.second)
+            pair.second->update();
+    }
+}
+
+void Area::notifyAll()
+{
+    for (auto const& pair : _instances) {
+        if (pair.second && pair.second->pixelsWereChanged())
+            pair.second->pixelsAreRetrieved();
+    }
+}
+
 void Area::update()
 {
     if (_processing_pixels->isPending()) {
@@ -309,20 +333,16 @@ void Area::resetFocus()
 {
     _focused_state = false;
     if (_instances.count(_focused_id) != 0) {
-        Ptr const& area = _instances.at(_focused_id);
-        if (area) {
-            area->setFocus(false);
-        }
+        _instances.at(_focused_id)->setFocus(false);
     }
 }
 
-Area::Ptr const& Area::getFocused() noexcept
+Area* Area::getFocused() noexcept
 {
     if (_focused_state && _instances.count(_focused_id) != 0) {
-        return _instances.at(_focused_id);
+        return _instances.at(_focused_id).get();
     }
-    static Ptr const n;
-    return n;
+    return nullptr;
 }
 
 void Area::setFocus(bool state)
@@ -331,10 +351,7 @@ void Area::setFocus(bool state)
     if (state) {
         // Unfocus previous window if different
         if (_focused_id != _id && _instances.count(_focused_id) != 0) {
-            Ptr const& area = _instances.at(_focused_id);
-            if (area) {
-                area->setFocus(false);
-            }
+            _instances.at(_focused_id)->setFocus(false);
         }
         _focused_id = _id;
         _focused_state = true;
@@ -561,20 +578,21 @@ void Area::_cursorAddText(std::u32string str) try
     size_t cursor = _edit_cursor;
     size_t size = 0;
     if (cursor >= _glyph_count) {
-        _internal::Buffer::Ptr const& buffer = _buffers.back();
-        size_t const tmp = buffer->glyphCount();
-        buffer->insertText(str, buffer->glyphCount());
-        size = buffer->glyphCount() - tmp;
+        _internal::Buffer& buffer = *_buffers.back();
+        size_t const tmp = buffer.glyphCount();
+        buffer.insertText(str, buffer.glyphCount());
+        size = buffer.glyphCount() - tmp;
     }
     else {
-        for (_internal::Buffer::Ptr const& buffer : _buffers) {
-            if (buffer->glyphCount() > cursor) {
-                size_t const tmp = buffer->glyphCount();
-                buffer->insertText(str, cursor);
-                size = buffer->glyphCount() - tmp;
+        for (_internal::Buffer::Ptr const& ptr : _buffers) {
+            _internal::Buffer& buffer = *ptr;
+            if (buffer.glyphCount() > cursor) {
+                size_t const tmp = buffer.glyphCount();
+                buffer.insertText(str, cursor);
+                size = buffer.glyphCount() - tmp;
                 break;
             }
-            cursor -= buffer->glyphCount();
+            cursor -= buffer.glyphCount();
         }
     }
     // Update lines as they need to be updated before moving cursor
@@ -629,14 +647,15 @@ void Area::_cursorDeleteText(Delete direction) try
         return;
 
     size_t size = 0;
-    for (_internal::Buffer::Ptr const& buffer : _buffers) {
-        if (buffer->glyphCount() > cursor) {
-            size_t const tmp = buffer->glyphCount();
-            buffer->deleteText(cursor, count);
-            size = tmp - buffer->glyphCount();
+    for (_internal::Buffer::Ptr const& ptr : _buffers) {
+        _internal::Buffer& buffer = *ptr;
+        if (buffer.glyphCount() > cursor) {
+            size_t const tmp = buffer.glyphCount();
+            buffer.deleteText(cursor, count);
+            size = tmp - buffer.glyphCount();
             break;
         }
-        cursor -= buffer->glyphCount();
+        cursor -= buffer.glyphCount();
     }
     _updateBufferInfos();
     if (direction == Delete::Left || direction == Delete::CtrlLeft) {
@@ -650,7 +669,7 @@ CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::cursorMove(Move direction)
 {
-    Ptr const& area = getFocused();
+    Area* area = getFocused();
     if (area) {
         area->_cursorMove(direction);
     }
@@ -658,7 +677,7 @@ void Area::cursorMove(Move direction)
 
 void Area::cursorAddText(std::u32string str)
 {
-    Ptr const& area = getFocused();
+    Area* area = getFocused();
     if (area) {
         area->_cursorAddText(str);
     }
@@ -671,7 +690,7 @@ void Area::cursorAddText(std::string str)
 
 void Area::cursorDeleteText(Delete direction)
 {
-    Ptr const& area = getFocused();
+    Area* area = getFocused();
     if (area) {
         area->_cursorDeleteText(direction);
     }

@@ -56,18 +56,18 @@ private:
     FontMap _fonts;         // Fonts
 
     using Ptr = std::unique_ptr<Lib>;
-    static Ptr const& getInstance();
+    static Lib& getInstance();
     
     Lib();
 public:
     ~Lib();
 
-    static FT_Library_Ptr const& getPtr() noexcept;
+    static FT_Library getPtr() noexcept;
 
     static void addFontDir(std::string const&);
     static FontDirs const& getFontDirs() noexcept;
 
-    static Font::Ptr const& getFont(std::string const& font_filename);
+    static Font& getFont(std::string const& font_filename);
     static void unloadFont(std::string const&);
     static void clearFonts() noexcept;
 

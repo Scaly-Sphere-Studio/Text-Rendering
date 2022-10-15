@@ -25,7 +25,7 @@ Font::Font(std::string const& font_file) try
     }
     
     FT_Face face;
-    FT_Error error = FT_New_Face(Lib::getPtr().get(), font_path.c_str(), 0, &face);
+    FT_Error error = FT_New_Face(Lib::getPtr(), font_path.c_str(), 0, &face);
     THROW_IF_FT_ERROR("FT_New_Face()");
     _face.reset(face);
     _font_name = _face->family_name;
@@ -64,8 +64,8 @@ void Font::setCharsize(int charsize) try
     if (_font_sizes.count(charsize) == 0) {
         _font_sizes.emplace(
             std::piecewise_construct,
-            std::forward_as_tuple(charsize),        // Key
-            std::forward_as_tuple(_face, charsize)  // Value
+            std::forward_as_tuple(charsize),                // Key
+            std::forward_as_tuple(_face.get(), charsize)    // Constructor values
         );
     }
     else {
@@ -96,7 +96,7 @@ void Font::unloadGlyphs() noexcept
     // --- Get functions ---
 
 // Returns the corresponding internal HarfBuzz font.
-_internal::HB_Font_Ptr const& Font::getHBFont(int charsize) const try
+hb_font_t* Font::getHBFont(int charsize) const try
 {
     _throw_if_bad_charsize(charsize);
     return _font_sizes.at(charsize).getHBFont();

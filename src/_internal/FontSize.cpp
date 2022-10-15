@@ -5,7 +5,7 @@ SSS_TR_BEGIN;
 INTERNAL_BEGIN;
 
 // Constructor, throws if invalid charsize
-FontSize::FontSize(FT_Face_Ptr const& ft_face, int charsize) try
+FontSize::FontSize(FT_Face ft_face, int charsize) try
     : _charsize(charsize), _ft_face(ft_face)
 {
     if (charsize <= 0) {
@@ -14,10 +14,10 @@ FontSize::FontSize(FT_Face_Ptr const& ft_face, int charsize) try
     // Set charsize
     setCharsize();
     // Create HarfBuzz font from FreeType font face.
-    _hb_font.reset(hb_ft_font_create_referenced(ft_face.get()));
+    _hb_font.reset(hb_ft_font_create_referenced(ft_face));
     // Create Stroker
     FT_Stroker stroker;
-    FT_Error error = FT_Stroker_New(Lib::getPtr().get(), &stroker);
+    FT_Error error = FT_Stroker_New(Lib::getPtr(), &stroker);
     THROW_IF_FT_ERROR("FT_Stroker_New()");
     _stroker.reset(stroker);
 
@@ -82,7 +82,7 @@ void FontSize::setCharsize()
     FT_UInt hdpi, vdpi;
     getDPI(hdpi, vdpi);
     // Set charsize
-    FT_Error error = FT_Set_Char_Size(_ft_face.get(), _charsize << 6, 0, hdpi, vdpi);
+    FT_Error error = FT_Set_Char_Size(_ft_face, _charsize << 6, 0, hdpi, vdpi);
     THROW_IF_FT_ERROR("FT_Set_Char_Size()");
 }
 
@@ -100,7 +100,7 @@ bool FontSize::loadGlyph(FT_UInt glyph_index, int outline_size) try
     setCharsize();
 
     // Load glyph
-    FT_Error error = FT_Load_Glyph(_ft_face.get(), glyph_index, FT_LOAD_DEFAULT);
+    FT_Error error = FT_Load_Glyph(_ft_face, glyph_index, FT_LOAD_DEFAULT);
     LOG_FT_ERROR_AND_RETURN("FT_Load_Glyph()", true);
 
     // Retrieve glyph

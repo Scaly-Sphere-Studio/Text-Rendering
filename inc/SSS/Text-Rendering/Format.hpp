@@ -42,7 +42,7 @@ struct Format {
     
     // --- FONT ---
 
-    /** Font file name (needs to be initialised before processing).
+    /** Font file name (can be initialised before processing, but not mandatory).
      *  @default \c "arial.ttf"
      *  @sa loadFont(), addFontDir().
      */

@@ -47,7 +47,7 @@ Lib::Lib()
 Lib::~Lib()
 {
     // Clean
-    Area::clearMap();
+    Area::clearAll();
     clearFonts();
     _ptr.reset();
 
@@ -57,31 +57,31 @@ Lib::~Lib()
     }
 }
 
-Lib::Ptr const& Lib::getInstance()
+Lib& Lib::getInstance()
 {
     static Ptr singleton(new Lib);
-    return singleton;
+    return *singleton;
 }
 
 
 
-FT_Library_Ptr const& Lib::getPtr() noexcept
+FT_Library Lib::getPtr() noexcept
 {
-    Ptr const& instance = getInstance();
-    return instance->_ptr;
+    Lib& instance = getInstance();
+    return instance._ptr.get();
 }
 
 
 void Lib::addFontDir(std::string const& font_dir) try
 {
-    Ptr const& instance = getInstance();
+    Lib& instance = getInstance();
 
     std::string const rel_path = SSS::PWD + font_dir;
     if (pathIsDir(rel_path)) {
-        instance->_font_dirs.push_front(rel_path);
+        instance._font_dirs.push_front(rel_path);
     }
     else if (pathIsDir(font_dir)) {
-        instance->_font_dirs.push_front(font_dir);
+        instance._font_dirs.push_front(font_dir);
     }
     else {
         LOG_FUNC_CTX_WRN("Could not find a directory for given path", font_dir);
@@ -91,49 +91,49 @@ CATCH_AND_RETHROW_FUNC_EXC;
 
 Lib::FontDirs const& Lib::getFontDirs() noexcept
 {
-    Ptr const& instance = getInstance();
-    return instance->_font_dirs;
+    Lib& instance = getInstance();
+    return instance._font_dirs;
 }
 
-Font::Ptr const& Lib::getFont(std::string const& font_filename) try
+Font& Lib::getFont(std::string const& font_filename) try
 {
-    Ptr const& instance = getInstance();
-    Font::Ptr& font = instance->_fonts[font_filename];
+    Lib& instance = getInstance();
+    Font::Ptr& font = instance._fonts[font_filename];
     if (!font) {
         font.reset(new Font(font_filename));
     }
-    return font;
+    return *font;
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 
 void Lib::unloadFont(std::string const& font_filename)
 {
-    Ptr const& instance = getInstance();
-    if (instance->_fonts.count(font_filename) != 0) {
-        instance->_fonts.erase(instance->_fonts.find(font_filename));
+    Lib& instance = getInstance();
+    if (instance._fonts.count(font_filename) != 0) {
+        instance._fonts.erase(instance._fonts.find(font_filename));
     }
 }
 
 void Lib::clearFonts() noexcept
 {
-    Ptr const& instance = getInstance();
-    instance->_fonts.clear();
+    Lib& instance = getInstance();
+    instance._fonts.clear();
 }
 
 
 void Lib::setDPI(FT_UInt hdpi, FT_UInt vdpi)
 {
     // TODO: reload all cache if DPIs changed
-    Ptr const& instance = getInstance();
-    instance->_hdpi = hdpi;
-    instance->_vdpi = vdpi;
+    Lib& instance = getInstance();
+    instance._hdpi = hdpi;
+    instance._vdpi = vdpi;
 }
 
 void Lib::getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept
 {
-    Ptr const& instance = getInstance();
-    hdpi = instance->_hdpi;
-    vdpi = instance->_vdpi;
+    Lib& instance = getInstance();
+    hdpi = instance._hdpi;
+    vdpi = instance._vdpi;
 }
 
 INTERNAL_END;

@@ -37,9 +37,9 @@ public:
 // --- Get functions ---
 
     // Returns the internal FreeType font face.
-    inline FT_Face_Ptr const& getFTFace() const noexcept { return _face; };
+    inline FT_Face getFTFace() const noexcept { return _face.get(); };
     // Returns the corresponding internal HarfBuzz font.
-    HB_Font_Ptr const& getHBFont(int charsize) const;
+    hb_font_t* getHBFont(int charsize) const;
     // Returns corresponding glyph as a bitmap
     Bitmap const&
         getGlyphBitmap(FT_UInt glyph_index, int charsize) const;

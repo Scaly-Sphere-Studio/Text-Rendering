@@ -15,7 +15,7 @@ Proin ultrices bibendum imperdiet.
 Suspendisse vitae fermentum ante,
 eget cursus dolor.]]
 
-local area = TR.Area.get(0)
+area = TR.Area.create()
 local fmt = area:getFmt(0)
 
 fmt.font = "opensans/OpenSans[wdth,wght].ttf"

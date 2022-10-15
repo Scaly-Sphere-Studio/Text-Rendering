@@ -182,12 +182,12 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     }
 
     // Retrieve Font (must be loaded)
-    Font::Ptr const& font = Lib::getFont(buffer_info.fmt.font);
+    Font& font = Lib::getFont(buffer_info.fmt.font);
 
     // Get corresponding loaded glyph bitmap
     Bitmap const& bitmap(!param.is_outline
-        ? font->getGlyphBitmap(glyph_info.info.codepoint, buffer_info.fmt.charsize)
-        : font->getOutlineBitmap(glyph_info.info.codepoint, buffer_info.fmt.charsize, buffer_info.fmt.outline_size));
+        ? font.getGlyphBitmap(glyph_info.info.codepoint, buffer_info.fmt.charsize)
+        : font.getOutlineBitmap(glyph_info.info.codepoint, buffer_info.fmt.charsize, buffer_info.fmt.outline_size));
     // Skip if bitmap is empty
     if (bitmap.width == 0 || bitmap.height == 0) {
         return;

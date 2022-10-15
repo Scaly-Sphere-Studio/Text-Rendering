@@ -42,7 +42,7 @@ public:
 // --- Constructor & Destructor ---
 
     // Constructor, throws if invalid charsize
-    FontSize(FT_Face_Ptr const& ft_face, int charsize);
+    FontSize(FT_Face ft_face, int charsize);
     // Destructor. Logs
     ~FontSize();
 
@@ -61,7 +61,7 @@ public:
     // Returns the corresponding glyph outline's bitmap. Throws if not found.
     Bitmap const& getOutlineBitmap(FT_UInt glyph_index, int outline_size) const;
     // Returns the corresponding HarfBuzz font
-    inline HB_Font_Ptr const& getHBFont() const noexcept { return _hb_font; }
+    inline hb_font_t* getHBFont() const noexcept { return _hb_font.get(); }
 
 private:
 // --- Private Variables ---
@@ -70,7 +70,7 @@ private:
     int _last_outline_size{ 0 };    // Last outline size used with this charsize
     HB_Font_Ptr _hb_font;           // HarfBuzz font, created here
     FT_Stroker_Ptr _stroker;        // FreeType stroker, created here
-    FT_Face_Ptr const& _ft_face;    // FreeType font face, given
+    FT_Face _ft_face;               // FreeType font face, given
 
     // Map of glyph bitmaps
     std::map<FT_UInt, Bitmap> _originals;

@@ -28,8 +28,8 @@ enum class PrintMode {
 
 /** The class handling most of the text rendering logic.
  *
- *  Use static functions to create() instances, and retrieve
- *  them with getMap().
+ *  Use static functions to create() instances or retrieve
+ *  them later with get().
  * 
  *  Customize multiple text formats via setFormat(), which will be used
  *  in the parseString() functions.
@@ -118,21 +118,14 @@ private:
     // Indexes of line breaks & charsizes
     std::vector<_internal::Line> _lines;
 
-public:
-    /** Unique instance pointer, which are stored in a Map.
+    /** Unique instance pointer, which are stored in a map.
      *  This is the only way to refer to Area instances.
      *  @sa create(), remove().
      */
     using Ptr = std::unique_ptr<Area>;
-    /** Instance map, stored by IDs.
-     *  This is the only way to refer to Area instances.
-     *  @sa create(), remove(), getMap(), clearMap().
-     */
-    using Map = std::map<uint32_t, Ptr>;
-
-private:
+    
     // Static map of allocated instances
-    static Map _instances;
+    static std::map<uint32_t, Ptr> _instances;
 
     static bool _focused_state;
     static uint32_t _focused_id;
@@ -143,7 +136,7 @@ private:
 public:
     /** Destructor, clears internal cache.
      *  Can only be indirectly called.
-     *  @sa remove() and clearMap().
+     *  @sa remove() and clearAll().
      */
     ~Area() noexcept;
     
@@ -156,30 +149,33 @@ public:
      *  @param[in] height The area's height, in pixels. Must be above 0.
      *  @return A const-ref to the created Area::Ptr.
      *  @throw std::runtime_error If \c width or \c height are <= 0.
-     *  @sa remove(), getMap().
+     *  @sa get(), remove().
      */
-    static Ptr const& create(uint32_t id);
-    static Ptr const& create();
+    static Area& create(uint32_t id);
+    static Area& create();
 
-    static Ptr const& create(int width, int height);
+    static Area& create(int width, int height);
 
-    static Ptr const& create(std::u32string const& str, Format fmt = Format());
-    static Ptr const& create(std::string const& str, Format fmt = Format());
+    static Area& create(std::u32string const& str, Format fmt = Format());
+    static Area& create(std::string const& str, Format fmt = Format());
     
+    /** Returns a pointer to corresponding Area instance, or
+     *  nullptr if no instance corresponds to given argument.
+     *  @sa create(), remove()
+     */
+    static Area* get(uint32_t id) noexcept;
+
     /** Removes an Area instance from the internal #Map.
      *  @param[in] id The ID of instance to be deleted.
-     *  @sa create(), clearMap().
+     *  @sa create(), clearAll().
      */
     static void remove(uint32_t id);
-    /** Returns a constant reference to the internal instance #Map.
-     *  @sa create(), clearMap().
-     */
-    static Map const& getMap() noexcept { return _instances; };
+
     /** Clears the internal instance #Map.
      *  Equivalent to calling remove() on every single instance.
-     *  @sa remove(), getMap().
+     *  @sa remove()
      */
-    static void clearMap() noexcept;
+    static void clearAll() noexcept;
 
     inline uint32_t getID() const noexcept { return _id; };
 
@@ -254,6 +250,10 @@ public:
      *  @sa update(), parseString(), pixelsGet();
      */
     void clear() noexcept;
+
+    static void updateAll();
+    static void notifyAll();
+
     /** Draws modifications when needed, and sets the return value of
      *  pixelsWereChanged() to \c true when changes are finished.
      *  @usage To be called as often as possible in your main loop.
@@ -275,6 +275,7 @@ public:
      *  @sa update(), pixelsGet().
      */
     inline void pixelsAreRetrieved() noexcept { _changes_pending = false; }
+
     /** Returns a const pointer to the internal pixels array.
      *  
      *  The returned pointer stays valid until -- at least -- the next call
@@ -328,7 +329,7 @@ public:
     bool isFocused() const noexcept;
 
     static void resetFocus();
-    static Ptr const& getFocused() noexcept;
+    static Area* getFocused() noexcept;
 
     /** Places the editing cursor at given coordinates.
      *  The cursor is by default at the end of the text.

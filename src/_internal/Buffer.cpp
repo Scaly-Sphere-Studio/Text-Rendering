@@ -46,9 +46,10 @@ void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
     _glyph_count = 0;
     clear();
     reserve(buffers.size());
-    for (Buffer::Ptr const& buffer : buffers) {
-        emplace_back(buffer->_buffer_info);
-        _glyph_count += buffer->glyphCount();
+    for (Buffer::Ptr const& ptr : buffers) {
+        _internal::Buffer& buffer = *ptr;
+        emplace_back(buffer._buffer_info);
+        _glyph_count += buffer.glyphCount();
     }
     if (!empty())
         _direction = front().fmt.lng_direction;
@@ -148,7 +149,7 @@ void Buffer::changeFormat(Format const& opt)
 void Buffer::_changeFormat(Format const& opt) try
 {
     // Retrieve Font (must be loaded)
-    Font::Ptr const& font = Lib::getFont(opt.font);
+    Font& font = Lib::getFont(opt.font);
 
     _opt = opt;
     _buffer_info.fmt = opt;
@@ -166,7 +167,7 @@ void Buffer::_changeFormat(Format const& opt) try
     _wd_indexes.clear();
     _wd_indexes.reserve(opt.word_dividers.size());
     for (char32_t const& c : opt.word_dividers) {
-        FT_UInt const index(FT_Get_Char_Index(font->getFTFace().get(), c));
+        FT_UInt const index(FT_Get_Char_Index(font.getFTFace(), c));
         _wd_indexes.push_back(index);
     }
 }
@@ -182,9 +183,9 @@ void Buffer::_updateBuffer()
 void Buffer::_shape() try
 {
     // Retrieve Font (must be loaded)
-    Font::Ptr const& font = Lib::getFont(_opt.font);
+    Font& font = Lib::getFont(_opt.font);
 
-    font->setCharsize(_opt.charsize);
+    font.setCharsize(_opt.charsize);
     // Add string to buffer
     uint32_t const* indexes = reinterpret_cast<uint32_t const*>(&_str[0]);
     int size = static_cast<int>(_str.size());
@@ -192,7 +193,7 @@ void Buffer::_shape() try
     // Set properties
     hb_buffer_set_segment_properties(_buffer.get(), &_properties);
     // Shape buffer and retrieve informations
-    hb_shape(font->getHBFont(_opt.charsize).get(), _buffer.get(), nullptr, 0);
+    hb_shape(font.getHBFont(_opt.charsize), _buffer.get(), nullptr, 0);
 
     // Retrieve glyph informations
     unsigned int glyph_count = 0;
@@ -232,7 +233,7 @@ CATCH_AND_RETHROW_METHOD_EXC;
 void Buffer::_loadGlyphs()
 {
     // Retrieve Font (must be loaded)
-    Font::Ptr const& font = Lib::getFont(_opt.font);
+    Font& font = Lib::getFont(_opt.font);
 
     // Load glyphs
     int const outline_size = _opt.has_outline ? _opt.outline_size : 0;
@@ -241,7 +242,7 @@ void Buffer::_loadGlyphs()
         glyph_ids.insert(glyph.info.codepoint);
     }
     for (hb_codepoint_t const& glyph_id: glyph_ids) {
-        font->loadGlyph(glyph_id, _opt.charsize, outline_size);
+        font.loadGlyph(glyph_id, _opt.charsize, outline_size);
     }
 }
 
