@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_AREA_HPP
+#define SSS_TR_AREA_HPP
 
 #include "_internal/AreaInternals.hpp"
 
@@ -388,3 +389,5 @@ private:
 };
 
 SSS_TR_END;
+
+#endif // SSS_TR_AREA_HPP

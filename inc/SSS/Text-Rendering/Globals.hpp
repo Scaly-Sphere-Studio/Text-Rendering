@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_GLOBALS_HPP
+#define SSS_TR_GLOBALS_HPP
 
 #include "_internal/Font.hpp"
 
@@ -107,3 +108,5 @@ void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept;
 /** \endcond*/
 
 SSS_TR_END;
+
+#endif // SSS_TR_GLOBALS_HPP

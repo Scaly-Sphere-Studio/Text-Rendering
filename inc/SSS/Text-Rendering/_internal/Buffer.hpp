@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_BUFFER_HPP
+#define SSS_TR_BUFFER_HPP
 
 #include "Font.hpp"
 #include "../Format.hpp"
@@ -120,3 +121,5 @@ private:
 
 INTERNAL_END;
 SSS_TR_END;
+
+#endif // SSS_TR_BUFFER_HPP

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_FONT_HPP
+#define SSS_TR_FONT_HPP
 
 #include "FontSize.hpp"
 
@@ -66,3 +67,5 @@ private:
 
 INTERNAL_END;
 SSS_TR_END;
+
+#endif // SSS_TR_FONT_HPP

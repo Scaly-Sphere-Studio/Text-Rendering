@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_HPP
+#define SSS_TR_HPP
 
 #include "Text-Rendering/Globals.hpp"
 #include "Text-Rendering/Area.hpp"
@@ -19,3 +20,5 @@
  *  Global functions are used to initialize the library and load fonts.\n
  *  The Area class is where most of the logic stands.
  */
+
+#endif // SSS_TR_HPP

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_INCLUDES_HPP
+#define SSS_TR_INCLUDES_HPP
 
 /** @dir SSS/Text-Rendering/_internal
  *  Holds \b internal headers for the %SSS/Text-Rendering library.
@@ -71,4 +72,4 @@ namespace SSS::Log::TR {
     LOG_NAMESPACE_BASICS(Log);
 }
 
-
+#endif // SSS_TR_INCLUDES_HPP

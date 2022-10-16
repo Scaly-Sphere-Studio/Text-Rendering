@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_FONTSIZE_HPP
+#define SSS_TR_FONTSIZE_HPP
 
 #include "pointers.hpp"
 
@@ -80,3 +81,5 @@ private:
 
 INTERNAL_END;
 SSS_TR_END;
+
+#endif // SSS_TR_FONTSIZE_HPP

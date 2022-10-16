@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_LUA_HPP
+#define SSS_TR_LUA_HPP
 
 #ifdef SSS_LUA
 #include <sol/sol.hpp>
@@ -127,4 +128,6 @@ CATCH_AND_RETHROW_FUNC_EXC;
 
 SSS_TR_END;
 
-#endif
+#endif // SSS_LUA
+
+#endif // SSS_TR_LUA_HPP

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_FORMAT_HPP
+#define SSS_TR_FORMAT_HPP
 
 #include "_internal/_includes.hpp"
 
@@ -135,3 +136,5 @@ struct Format {
 };
 
 SSS_TR_END;
+
+#endif // SSS_TR_FORMAT_HPP

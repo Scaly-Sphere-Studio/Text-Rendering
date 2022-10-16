@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSS_TR_POINTERS_HPP
+#define SSS_TR_POINTERS_HPP
 
 #include "_includes.hpp"
 
@@ -26,3 +27,5 @@ using HB_Buffer_Ptr = C_Ptr
 
 INTERNAL_END;
 SSS_TR_END;
+
+#endif // SSS_TR_POINTERS_HPP
