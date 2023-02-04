@@ -33,7 +33,7 @@ enum class ColorFunc {
 
 struct Color : public RGB24 {
     using RGB24::RGB24;
-    ColorFunc func;
+    ColorFunc func{ ColorFunc::None };
 };
 
 /** Structure defining text formats to be used in Area instances.
