@@ -345,8 +345,21 @@ Area* Area::getFocused() noexcept
     return nullptr;
 }
 
+void Area::setFocusable(bool focusable)
+{
+    if (_is_focusable == focusable)
+        return;
+    if (_is_focusable && _focused_id == _id) {
+        resetFocus();
+    }
+    _is_focusable = focusable;
+}
+
 void Area::setFocus(bool state)
 {
+    if (!_is_focusable)
+        return;
+
     // Make this window focused
     if (state) {
         // Unfocus previous window if different

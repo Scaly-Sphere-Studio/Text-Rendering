@@ -18,7 +18,7 @@ eget cursus dolor.]]
 area = TR.Area.create()
 local fmt = area:getFmt(0)
 
-fmt.font = "opensans/OpenSans[wdth,wght].ttf"
+--fmt.font = "opensans/OpenSans[wdth,wght].ttf"
 fmt.charsize = 30
 fmt.has_outline = true
 fmt.has_shadow = true
@@ -31,7 +31,7 @@ fmt.effect = TR.Effect.Waves
 fmt.lng_tag = "ar"
 fmt.lng_script = "Arab"
 fmt.lng_direction = "rtl"
-fmt.font = "LateefRegOT.ttf"
+--fmt.font = "LateefRegOT.ttf"
 fmt.alignment = TR.Alignment.Right
 fmt.shadow_offset.x = -3
 fmt.text_color.func = TR.ColorFunc.Rainbow
@@ -45,6 +45,7 @@ area.wrapping = false
 
 --area.print_mode = TR.PrintMode.Typewriter
 area.TW_speed = 42
+area.focusable = true;
 area.focus = true;
 
 

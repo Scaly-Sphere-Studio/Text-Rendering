@@ -101,6 +101,7 @@ inline void lua_setup_TR(sol::state& lua) try
     // Scroll
     area["scroll"] = &Area::scroll;
     // Focus
+    area["focusable"] = sol::property(&Area::isFocusable, &Area::setFocusable);
     area["focus"] = sol::property(&Area::isFocused, &Area::setFocus);
     // Print mode
     area["print_mode"] = sol::property(&Area::getPrintMode, &Area::setPrintMode);

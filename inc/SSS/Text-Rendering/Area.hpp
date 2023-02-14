@@ -104,6 +104,8 @@ private:
     // Total number of glyphs in all ACTIVE buffers
     size_t _glyph_count{ 0 };
 
+    // Whether this Area is focusable
+    bool _is_focusable{ false };
     // Cursor's glyph related position
     // Managed in "Cursor" functions, used in "cursorAddText" functions
     // Set to first be at the end of text by default.
@@ -317,15 +319,8 @@ public:
      */
     void scroll(int pixels) noexcept;
 
-    // TODO
-    //enum class EditType {
-    //    None,
-    //    SingleLine,
-    //    Paragraph
-    //};
-    //void setEditType(EditType type);
-    //EditType getEditType() const noexcept;
-
+    void setFocusable(bool focusable);
+    inline bool isFocusable() const noexcept { return _is_focusable; }
     void setFocus(bool state);
     bool isFocused() const noexcept;
 
