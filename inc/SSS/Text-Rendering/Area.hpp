@@ -46,7 +46,7 @@ enum class PrintMode {
  * 
  *  @sa Format, init(), loadFont()
  */
-class Area {
+class Area : public Base {
 private:
     // Map ID of the area
     uint32_t const _id;
