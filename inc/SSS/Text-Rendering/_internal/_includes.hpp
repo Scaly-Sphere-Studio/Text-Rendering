@@ -1,6 +1,13 @@
 #ifndef SSS_TR_INCLUDES_HPP
 #define SSS_TR_INCLUDES_HPP
 
+#ifdef SSS_TR_EXPORTS
+#define SSS_TR_API __declspec(dllexport)
+#else
+#define SSS_TR_API __declspec(dllimport)
+#endif
+
+
 /** @dir SSS/Text-Rendering/_internal
  *  Holds \b internal headers for the %SSS/Text-Rendering library.
  */

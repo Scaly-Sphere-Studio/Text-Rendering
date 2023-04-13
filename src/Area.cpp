@@ -1,4 +1,5 @@
 #include "SSS/Text-Rendering/Area.hpp"
+#include "SSS/Text-Rendering/_internal/AreaInternals.hpp"
 #include "SSS/Text-Rendering/Globals.hpp"
 
 SSS_TR_BEGIN;
@@ -13,8 +14,14 @@ uint32_t Area::_focused_id{ 0 };
 
 // Constructor, creates a default Buffer
 Area::Area(uint32_t id) try
-    : _id(id)
+    :   _id(id),
+        _buffer_infos(std::make_unique<_internal::BufferInfoVector>())
 {
+    for (auto& pixels : _pixels) {
+        pixels.reset(new _internal::AreaPixels);
+        if (!pixels)
+            throw_exc("Couldn't allocate internal data");
+    }
     _buffers.push_back(std::make_unique<_internal::Buffer>(Format()));
     _updateBufferInfos();
     if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
@@ -126,7 +133,7 @@ void Area::setFormat(Format const& format, uint32_t id) try
         _formats.at(id) = format;
     }
     if (!_buffers.empty())
-        parseStringU32(_buffer_infos.getString());
+        parseStringU32(_buffer_infos->getString());
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -220,7 +227,7 @@ void Area::parseString(std::string const& str)
 
 std::u32string Area::getStringU32() const
 {
-    return _buffer_infos.getString();
+    return _buffer_infos->getString();
 }
 
 std::string Area::getString() const
@@ -246,9 +253,9 @@ void Area::notifyAll()
 
 void Area::update()
 {
-    if (_processing_pixels->isPending()) {
+    if ((*_processing_pixels)->isPending()) {
         _current_pixels = _processing_pixels;
-        _processing_pixels->setAsHandled();
+        (*_processing_pixels)->setAsHandled();
         _changes_pending = true;
     }
     _drawIfNeeded();
@@ -257,13 +264,13 @@ void Area::update()
 
 void const* Area::pixelsGet() const try
 {
-    RGBA32::Vector const& pixels = _current_pixels->getPixels();
+    RGBA32::Vector const& pixels = (*_current_pixels)->getPixels();
     if (pixels.empty()) {
         return nullptr;
     }
     // Retrieve cropped dimensions of current pixels
     int w, h;
-    _current_pixels->getDimensions(w, h);
+    (*_current_pixels)->getDimensions(w, h);
     size_t size = static_cast<size_t>(w) * static_cast<size_t>(h);
     // Ensure current scrolling doesn't go past the pixels vector
     size_t const index = static_cast<size_t>(_scrolling) * static_cast<size_t>(w);
@@ -296,7 +303,7 @@ void Area::clear() noexcept
 
 void Area::pixelsGetDimensions(int& w, int& h) const noexcept
 {
-    _current_pixels->getDimensions(w, h);
+    (*_current_pixels)->getDimensions(w, h);
 }
 
 void Area::getDimensions(int& width, int& height) const noexcept
@@ -396,7 +403,7 @@ void Area::cursorPlace(int x, int y) try
 
     _internal::Line::cit line = _lines.cbegin();
     FT_Vector pen;
-    pen.x = (_buffer_infos.isLTR() ? _margin_v : (_w - _margin_v)) << 6;
+    pen.x = (_buffer_infos->isLTR() ? _margin_v : (_w - _margin_v)) << 6;
     pen.y = _margin_h;
     for (; line != _lines.cend(); ++line) {
         pen.y += line->fullsize;
@@ -406,17 +413,17 @@ void Area::cursorPlace(int x, int y) try
         --line;
     }
 
-    bool click_is_ltr = _buffer_infos.isLTR();
+    bool click_is_ltr = _buffer_infos->isLTR();
     bool i_is_ltr = click_is_ltr;
-    pen.x += (line->x_offset(_buffer_infos.isLTR()) << 6) * (i_is_ltr ? 1 : -1);
+    pen.x += (line->x_offset(_buffer_infos->isLTR()) << 6) * (i_is_ltr ? 1 : -1);
 
     // Do some magic
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
         // Get glyph info
-        _internal::GlyphInfo const& glyph(_buffer_infos.getGlyph(i));
+        _internal::GlyphInfo const& glyph(_buffer_infos->getGlyph(i));
 
         // Check if text direction changed between previous glyphs
-        if ((_buffer_infos.getBuffer(i).fmt.lng_direction == "ltr") != i_is_ltr) {
+        if ((_buffer_infos->getBuffer(i).fmt.lng_direction == "ltr") != i_is_ltr) {
             // Check that click coordinates aren't on this specific glyph
             int clicked_x = (pen.x + glyph.pos.x_advance) >> 6;
             if (click_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
@@ -424,7 +431,7 @@ void Area::cursorPlace(int x, int y) try
                 return;
             }
             // Replace pen to make up for direction changes
-            line->replace_pen(pen, _buffer_infos, i);
+            line->replace_pen(pen, *_buffer_infos, i);
             // Update direction of cursor
             i_is_ltr = !i_is_ltr;
             // Update direction of click area if needed
@@ -451,30 +458,30 @@ void Area::cursorPlace(int x, int y) try
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
-size_t Area::_move_cursor_line(_internal::Line::cit line, int x)
+size_t Area::_move_cursor_line(_internal::Line const* line, int x)
 {
     if (_edit_x < 0)
         _edit_x = x;
     else
         x = _edit_x;
     size_t cursor = line->first_glyph;
-    size_t const glyph_count = _buffer_infos.glyphCount();
-    bool line_is_ltr = _buffer_infos.isLTR();
+    size_t const glyph_count = _buffer_infos->glyphCount();
+    bool line_is_ltr = _buffer_infos->isLTR();
     bool is_ltr = line_is_ltr;
-    for (int new_x = (is_ltr ? (_margin_h + line->x_offset(_buffer_infos.isLTR())) :
-        (_w - _margin_h - line->x_offset(_buffer_infos.isLTR()))) << 6;
+    for (int new_x = (is_ltr ? (_margin_h + line->x_offset(_buffer_infos->isLTR())) :
+        (_w - _margin_h - line->x_offset(_buffer_infos->isLTR()))) << 6;
         cursor < line->last_glyph && cursor < glyph_count;
         ++cursor)
     {
-        int const offset = _buffer_infos.getGlyph(cursor).pos.x_advance;
-        if ((_buffer_infos.getBuffer(cursor).fmt.lng_direction == "ltr") != is_ltr) {
+        int const offset = _buffer_infos->getGlyph(cursor).pos.x_advance;
+        if ((_buffer_infos->getBuffer(cursor).fmt.lng_direction == "ltr") != is_ltr) {
             // Check that click coordinates aren't on this specific glyph
             int clicked_x = (x + offset) >> 6;
             if (line_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
                 break;
             }
             FT_Vector pen{ new_x, 0 };
-            line->replace_pen(pen, _buffer_infos, cursor);
+            line->replace_pen(pen, *_buffer_infos, cursor);
             new_x = pen.x;
             is_ltr = !is_ltr;
             clicked_x = (pen.x - offset) >> 6;
@@ -542,24 +549,24 @@ void Area::_cursorMove(Move direction) try
         reset_edit_x = false;
         if (line == _lines.cend() - 1) break;
         ++line;
-        _edit_cursor = _move_cursor_line(line, x);
+        _edit_cursor = _move_cursor_line(&(*line), x);
         break;
 
     case Move::Up:
         reset_edit_x = false;
         if (line == _lines.cbegin()) break;
         --line;
-        _edit_cursor = _move_cursor_line(line, x);
+        _edit_cursor = _move_cursor_line(&(*line), x);
         break;
 
     case Move::CtrlRight:
         if (_edit_cursor >= _glyph_count) break;
-        _edit_cursor = _ctrl_jump(_buffer_infos, _edit_cursor, 1);
+        _edit_cursor = _ctrl_jump(*_buffer_infos, _edit_cursor, 1);
         break;
 
     case Move::CtrlLeft:
         if (_edit_cursor == 0) break;
-        _edit_cursor = _ctrl_jump(_buffer_infos, _edit_cursor, -1);
+        _edit_cursor = _ctrl_jump(*_buffer_infos, _edit_cursor, -1);
         break;
 
     case Move::Start:
@@ -643,13 +650,13 @@ void Area::_cursorDeleteText(Delete direction) try
 
     case Delete::CtrlRight:
         if (cursor >= _glyph_count) break;
-        tmp = _ctrl_jump(_buffer_infos, cursor, 1);
+        tmp = _ctrl_jump(*_buffer_infos, cursor, 1);
         count = tmp - cursor;
         break;
 
     case Delete::CtrlLeft:
         if (cursor == 0) break;
-        tmp = _ctrl_jump(_buffer_infos, cursor, -1);
+        tmp = _ctrl_jump(*_buffer_infos, cursor, -1);
         count = cursor - tmp;
         cursor = tmp;
         break;
@@ -734,18 +741,18 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
         pen.y += it->fullsize;
     }
 
-    bool is_ltr = _buffer_infos.isLTR();
+    bool is_ltr = _buffer_infos->isLTR();
     if (is_ltr)
-        pen.x = (_margin_v + line->x_offset(_buffer_infos.isLTR())) << 6;
+        pen.x = (_margin_v + line->x_offset(_buffer_infos->isLTR())) << 6;
     else
-        pen.x = (_w - _margin_v - line->x_offset(_buffer_infos.isLTR())) << 6;
+        pen.x = (_w - _margin_v - line->x_offset(_buffer_infos->isLTR())) << 6;
     for (size_t n = line->first_glyph; n < _edit_cursor && n < _glyph_count; ++n) {
-        auto const& buffer = _buffer_infos.getBuffer(n);
+        auto const& buffer = _buffer_infos->getBuffer(n);
         if ((buffer.fmt.lng_direction == "ltr") != is_ltr) {
             is_ltr = !is_ltr;
-            line->replace_pen(pen, _buffer_infos, n);
+            line->replace_pen(pen, *_buffer_infos, n);
         }
-        pen.x += _buffer_infos.getGlyph(n).pos.x_advance * (is_ltr ? 1 : -1);
+        pen.x += _buffer_infos->getGlyph(n).pos.x_advance * (is_ltr ? 1 : -1);
     }
     x = pen.x >> 6;
     y = pen.y;
@@ -777,8 +784,8 @@ void Area::_updateLines() try
     _lines.clear();
     _lines.emplace_back();
     _internal::Line::it line = _lines.begin();
-    if (!_buffer_infos.empty()) {
-        line->alignment = _buffer_infos.front().fmt.aligmnent;
+    if (!_buffer_infos->empty()) {
+        line->alignment = _buffer_infos->front().fmt.aligmnent;
     }
     size_t cursor = 0;
 
@@ -788,8 +795,8 @@ void Area::_updateLines() try
     
     while (cursor < _glyph_count) {
         // Retrieve glyph infos
-        _internal::GlyphInfo const& glyph = _buffer_infos.getGlyph(cursor);
-        _internal::BufferInfo const& buffer = _buffer_infos.getBuffer(cursor);
+        _internal::GlyphInfo const& glyph = _buffer_infos->getGlyph(cursor);
+        _internal::BufferInfo const& buffer = _buffer_infos->getBuffer(cursor);
 
         // Update sizes
         int const charsize = buffer.fmt.charsize;
@@ -851,7 +858,7 @@ void Area::_updateLines() try
     line->last_glyph = cursor;
     // Add line size if empty (for input visibility)
     if (line->first_glyph == line->last_glyph) {
-        auto const& buffer = _buffer_infos.getBuffer(cursor);
+        auto const& buffer = _buffer_infos->getBuffer(cursor);
         line->charsize = buffer.fmt.charsize;
         line->fullsize = static_cast<int>(static_cast<float>(line->charsize)
             * buffer.fmt.line_spacing);
@@ -889,8 +896,8 @@ CATCH_AND_RETHROW_METHOD_EXC;
 // Updates _buffer_infos and _glyph_count, then calls _updateLines();
 void Area::_updateBufferInfos() try
 {
-    _buffer_infos.update(_buffers);
-    _glyph_count = _buffer_infos.glyphCount();
+    _buffer_infos->update(_buffers);
+    _glyph_count = _buffer_infos->glyphCount();
     _updateLines();
 }
 CATCH_AND_RETHROW_METHOD_EXC;
@@ -922,7 +929,7 @@ void Area::_drawIfNeeded()
     }
     // Determine if a function needs to be edited
     if (!_draw) {
-        for (auto const& buffer : _buffer_infos) {
+        for (auto const& buffer : *_buffer_infos) {
             if (buffer.fmt.effect == Effect::Vibrate) {
                 using namespace std::chrono_literals;
                 if (now - _last_vibrate_update >= 33ms) {
@@ -946,7 +953,7 @@ void Area::_drawIfNeeded()
         return;
     }
     // Skip if a draw call is already running
-    if (_processing_pixels->isRunning()) {
+    if ((*_processing_pixels)->isRunning()) {
         return;
     }
     // Update processing pixels if needed
@@ -968,11 +975,11 @@ void Area::_drawIfNeeded()
     _getCursorPhysicalPos(data.cursor_x, data.cursor_y);
     data.cursor_h = _internal::Line::which(_lines, _edit_cursor)->fullsize;
     data.last_glyph = _print_mode == PrintMode::Typewriter ? static_cast<size_t>(_tw_cursor) : _glyph_count;
-    data.buffer_infos = _buffer_infos;
+    data.buffer_infos = *_buffer_infos;
     data.lines = _lines;
     data.bg_color = _bg_color;
     // Async draw
-    _processing_pixels->run(data);
+    (*_processing_pixels)->run(data);
     _draw = false;
 }
 

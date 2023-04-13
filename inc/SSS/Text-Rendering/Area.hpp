@@ -1,7 +1,7 @@
 #ifndef SSS_TR_AREA_HPP
 #define SSS_TR_AREA_HPP
 
-#include "_internal/AreaInternals.hpp"
+#include "Format.hpp"
 
 /** @file
  *  Defines SSS::TR::Area.
@@ -18,6 +18,15 @@ namespace SSS::Log::TR {
 
 SSS_TR_BEGIN;
 
+INTERNAL_BEGIN;
+
+struct Line;
+class Buffer;
+class BufferInfoVector;
+class AreaPixels;
+
+INTERNAL_END;
+
 enum class Move;    // Pre-declaration
 enum class Delete;  // Pre-declaration
 
@@ -26,6 +35,11 @@ enum class PrintMode {
     Typewriter,
     // More later?
 };
+
+// Ignore warning about STL exports as they're private members
+#pragma warning(push, 2)
+#pragma warning(disable: 4251)
+#pragma warning(disable: 4275)
 
 /** The class handling most of the text rendering logic.
  *
@@ -46,93 +60,8 @@ enum class PrintMode {
  * 
  *  @sa Format, init(), loadFont()
  */
-class Area : public Base {
-private:
-    // Map ID of the area
-    uint32_t const _id;
-    bool _wrapping{ true };
-    // Width of area
-    int _w;
-    // Height of area
-    int _h;
-    // Height of _pixels -> must NEVER be lower than _h
-    int _pixels_h{ 0 };
-    // Scrolling index, in pixels
-    int _scrolling{ 0 };
-
-    // Default vertical margin, in pixels
-    static int _default_margin_v;
-    // Default horizontal margin, in pixels
-    static int _default_margin_h;
-    // Vertical margin, in pixels
-    int _margin_v{ _default_margin_v };
-    // Horizontal margin, in pixels
-    int _margin_h{ _default_margin_h };
-
-    // True -> enables _drawIfNeeded()
-    bool _draw{ true };
-    // Print mode, default = instantaneous
-    PrintMode _print_mode{ PrintMode::Instant };
-    // TypeWriter -> characters per second.
-    int _tw_cps{ 60 };
-    // TypeWriter -> cursor advance
-    float _tw_cursor{ 0.f };
-
-    // Managed by update(), used in "pixelsXXX" functions
-    bool _changes_pending{ false };
-    // Last time the update() function was called
-    std::chrono::steady_clock::time_point _last_update{ std::chrono::steady_clock::now() };
-    // Last time an Effect::Vibrate was updated
-    std::chrono::steady_clock::time_point _last_vibrate_update{};
-
-    // Double-Buffer array
-    using _PixelBuffers = std::array<_internal::AreaPixels, 2>;
-    // Async processing buffers
-    _PixelBuffers _pixels;
-    // Const iterator used in pixelsGet(), managed by update()
-    _PixelBuffers::const_iterator _current_pixels{ _pixels.cbegin() };
-    // Iterator managed by _drawIfNeeded()
-    _PixelBuffers::iterator _processing_pixels{ _pixels.begin() };
-
-    RGBA32 _bg_color{ 0, 0, 0, 0 };
-    // Map of formats to feed to internal buffers
-    std::map<uint32_t, Format> _formats;
-    // Buffer vector, one for each differing format
-    std::vector<_internal::Buffer::Ptr> _buffers;
-    // Buffer informations
-    _internal::BufferInfoVector _buffer_infos;
-    // Total number of glyphs in all ACTIVE buffers
-    size_t _glyph_count{ 0 };
-
-    // Whether this Area is focusable
-    bool _is_focusable{ false };
-    // Cursor's glyph related position
-    // Managed in "Cursor" functions, used in "cursorAddText" functions
-    // Set to first be at the end of text by default.
-    size_t _edit_cursor{ 0 };
-    // Cursor physical position for moving lines
-    int _edit_x{ -1 };
-    // Timer determining if the edit cursor should be displayed
-    std::chrono::nanoseconds _edit_timer{ 0 };
-    // Whether to display the edit cursor
-    bool _edit_display_cursor{ false };
-
-
-    // Indexes of line breaks & charsizes
-    std::vector<_internal::Line> _lines;
-
-    /** Unique instance pointer, which are stored in a map.
-     *  This is the only way to refer to Area instances.
-     *  @sa create(), remove().
-     */
-    using Ptr = std::unique_ptr<Area>;
-    
-    // Static map of allocated instances
-    static std::map<uint32_t, Ptr> _instances;
-
-    static bool _focused_state;
-    static uint32_t _focused_id;
-
+class SSS_TR_API Area : public Base {
+protected:
     // Constructor, creates a default Buffer
     Area(uint32_t id);
 
@@ -336,7 +265,7 @@ public:
     void cursorPlace(int x, int y);
 
 private:
-    size_t _move_cursor_line(_internal::Line::cit line, int x);
+    size_t _move_cursor_line(_internal::Line const* line, int x);
     void _cursorMove(Move direction);
     void _cursorAddText(std::u32string str);
     void _cursorDeleteText(Delete direction);
@@ -370,6 +299,91 @@ public:
     int getTypeWriterSpeed() const noexcept { return _tw_cps; };
 
 private:
+    // Map ID of the area
+    uint32_t const _id;
+    bool _wrapping{ true };
+    // Width of area
+    int _w;
+    // Height of area
+    int _h;
+    // Height of _pixels -> must NEVER be lower than _h
+    int _pixels_h{ 0 };
+    // Scrolling index, in pixels
+    int _scrolling{ 0 };
+
+    // Default vertical margin, in pixels
+    static int _default_margin_v;
+    // Default horizontal margin, in pixels
+    static int _default_margin_h;
+    // Vertical margin, in pixels
+    int _margin_v{ _default_margin_v };
+    // Horizontal margin, in pixels
+    int _margin_h{ _default_margin_h };
+
+    // True -> enables _drawIfNeeded()
+    bool _draw{ true };
+    // Print mode, default = instantaneous
+    PrintMode _print_mode{ PrintMode::Instant };
+    // TypeWriter -> characters per second.
+    int _tw_cps{ 60 };
+    // TypeWriter -> cursor advance
+    float _tw_cursor{ 0.f };
+
+    // Managed by update(), used in "pixelsXXX" functions
+    bool _changes_pending{ false };
+    // Last time the update() function was called
+    std::chrono::steady_clock::time_point _last_update{ std::chrono::steady_clock::now() };
+    // Last time an Effect::Vibrate was updated
+    std::chrono::steady_clock::time_point _last_vibrate_update{};
+
+    // Double-Buffer array
+    using _PixelBuffers = std::array<std::unique_ptr<_internal::AreaPixels>, 2>;
+    // Async processing buffers
+    _PixelBuffers _pixels;
+    // Const iterator used in pixelsGet(), managed by update()
+    _PixelBuffers::const_iterator _current_pixels{ _pixels.cbegin() };
+    // Iterator managed by _drawIfNeeded()
+    _PixelBuffers::iterator _processing_pixels{ _pixels.begin() };
+
+    RGBA32 _bg_color{ 0, 0, 0, 0 };
+    // Map of formats to feed to internal buffers
+    std::map<uint32_t, Format> _formats;
+    // Buffer vector, one for each differing format
+    std::vector<std::unique_ptr<_internal::Buffer>> _buffers;
+    // Buffer informations
+    std::unique_ptr<_internal::BufferInfoVector> _buffer_infos;
+    // Total number of glyphs in all ACTIVE buffers
+    size_t _glyph_count{ 0 };
+
+    // Whether this Area is focusable
+    bool _is_focusable{ false };
+    // Cursor's glyph related position
+    // Managed in "Cursor" functions, used in "cursorAddText" functions
+    // Set to first be at the end of text by default.
+    size_t _edit_cursor{ 0 };
+    // Cursor physical position for moving lines
+    int _edit_x{ -1 };
+    // Timer determining if the edit cursor should be displayed
+    std::chrono::nanoseconds _edit_timer{ 0 };
+    // Whether to display the edit cursor
+    bool _edit_display_cursor{ false };
+
+
+    // Indexes of line breaks & charsizes
+    std::vector<_internal::Line> _lines;
+
+    /** Unique instance pointer, which are stored in a map.
+     *  This is the only way to refer to Area instances.
+     *  @sa create(), remove().
+     */
+    using Ptr = std::unique_ptr<Area>;
+    
+    // Static map of allocated instances
+    static std::map<uint32_t, Ptr> _instances;
+
+    static bool _focused_state;
+    static uint32_t _focused_id;
+
     // Computes _edit_cursor's relative position on the Area
     void _getCursorPhysicalPos(int& x, int& y) const noexcept;
     // Ensures _scrolling has a valid value
@@ -383,6 +397,9 @@ private:
     void _drawIfNeeded();
 };
 
+#pragma warning(pop)
+
 SSS_TR_END;
+
 
 #endif // SSS_TR_AREA_HPP

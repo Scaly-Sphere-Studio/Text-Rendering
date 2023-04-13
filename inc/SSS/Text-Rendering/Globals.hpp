@@ -83,28 +83,28 @@ INTERNAL_END;
  *  relative or absolute.
  *  @sa loadFont(), unloadFont(), clearFonts().
  */
-void addFontDir(std::string const& dir_path);
+SSS_TR_API void addFontDir(std::string const& dir_path);
 /** Loads a font in cache, to be used via Format::font.
  *  @param[in] font_filename Font file name. Must contain
  *  extension, eg: \c "arial.ttf".
  *  @sa addFontDir(), unloadFont(), clearFonts().
  */
-void loadFont(std::string const& font_filename);
+SSS_TR_API void loadFont(std::string const& font_filename);
 /** Deletes a font that is no longer needed from cache.
  *  @param[in] font_filename Font file name. Must contain
  *  extension, eg: \c "arial.ttf".
  *  @sa addFontDir(), loadFont(), clearFonts().
  */
-void unloadFont(std::string const& font_filename);
+SSS_TR_API void unloadFont(std::string const& font_filename);
 /** Deletes all fonts from cache.
  *  Automatically called from terminate().
  *  @sa addFontDir(), loadFont(), unloadFont().
  */
-void clearFonts() noexcept;
+SSS_TR_API void clearFonts() noexcept;
 
 /** \cond TODO*/
-void setDPI(FT_UInt hdpi, FT_UInt vdpi);
-void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept;
+SSS_TR_API void setDPI(FT_UInt hdpi, FT_UInt vdpi);
+SSS_TR_API void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept;
 /** \endcond*/
 
 SSS_TR_END;
