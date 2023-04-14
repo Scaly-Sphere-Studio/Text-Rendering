@@ -15,14 +15,14 @@
     <Filter Include="inc\TR">
       <UniqueIdentifier>{f2a4a496-d11d-45d7-8a4d-3ff9ab124173}</UniqueIdentifier>
     </Filter>
-    <Filter Include="inc\TR\internal">
-      <UniqueIdentifier>{4297f1e8-6cb7-42ca-b375-82efbccf8098}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\internal">
       <UniqueIdentifier>{bd92cd88-077c-48e2-b41a-799e0a73f71d}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\DemoMain">
       <UniqueIdentifier>{c119e72d-2b0a-4775-9142-717097a2e187}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="inc\internal">
+      <UniqueIdentifier>{4297f1e8-6cb7-42ca-b375-82efbccf8098}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -38,38 +38,38 @@
     <None Include="Demo.lua" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\SSS\Text-Rendering.hpp">
+    <ClInclude Include="inc\Text-Rendering.hpp">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\AreaInternals.hpp">
-      <Filter>inc\TR\internal</Filter>
+    <ClInclude Include="src\_internal\AreaInternals.hpp">
+      <Filter>inc\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Buffer.hpp">
-      <Filter>inc\TR\internal</Filter>
+    <ClInclude Include="src\_internal\Buffer.hpp">
+      <Filter>inc\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\FontSize.hpp">
-      <Filter>inc\TR\internal</Filter>
+    <ClInclude Include="src\_internal\FontSize.hpp">
+      <Filter>inc\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\_includes.hpp">
-      <Filter>inc\TR\internal</Filter>
+    <ClInclude Include="src\_internal\Font.hpp">
+      <Filter>inc\internal</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\pointers.hpp">
-      <Filter>inc\TR\internal</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Font.hpp">
-      <Filter>inc\TR\internal</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Format.hpp">
+    <ClInclude Include="inc\Text-Rendering\Format.hpp">
       <Filter>inc\TR</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Area.hpp">
+    <ClInclude Include="inc\Text-Rendering\Area.hpp">
       <Filter>inc\TR</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Globals.hpp">
+    <ClInclude Include="inc\Text-Rendering\Globals.hpp">
       <Filter>inc\TR</Filter>
     </ClInclude>
-    <ClInclude Include="inc\SSS\Text-Rendering\Lua.hpp">
+    <ClInclude Include="inc\Text-Rendering\Lua.hpp">
       <Filter>inc\TR</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\Text-Rendering\_includes.hpp">
+      <Filter>inc\TR</Filter>
+    </ClInclude>
+    <ClInclude Include="src\_internal\Lib.hpp">
+      <Filter>inc\internal</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -88,9 +88,6 @@
     <ClCompile Include="src\_internal\Font.cpp">
       <Filter>src\internal</Filter>
     </ClCompile>
-    <ClCompile Include="src\Globals.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\DemoMain\DemoMain.cpp">
       <Filter>src\DemoMain</Filter>
     </ClCompile>
@@ -99,6 +96,9 @@
     </ClCompile>
     <ClCompile Include="src\Lua.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\_internal\Lib.cpp">
+      <Filter>src\internal</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

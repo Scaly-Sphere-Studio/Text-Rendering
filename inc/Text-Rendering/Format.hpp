@@ -1,7 +1,7 @@
 #ifndef SSS_TR_FORMAT_HPP
 #define SSS_TR_FORMAT_HPP
 
-#include "_internal/_includes.hpp"
+#include "_includes.hpp"
 
 /** @file
  *  Defines SSS::TR::Format and subsequent classes.

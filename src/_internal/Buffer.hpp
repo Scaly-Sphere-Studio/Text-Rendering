@@ -2,7 +2,7 @@
 #define SSS_TR_BUFFER_HPP
 
 #include "Font.hpp"
-#include "../Format.hpp"
+#include "Text-Rendering/Format.hpp"
 
 /** @file
  *  Defines internal glyph and kerning info classes.

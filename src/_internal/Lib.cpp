@@ -1,8 +1,8 @@
-#include "SSS/Text-Rendering/Globals.hpp"
-#include "SSS/Text-Rendering/Area.hpp"
+#include "Lib.hpp"
+#include "Font.hpp"
+#include "Text-Rendering/Area.hpp"
 
 SSS_TR_BEGIN;
-
 INTERNAL_BEGIN;
 
 Lib::Lib()
@@ -138,8 +138,6 @@ void Lib::getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept
 
 INTERNAL_END;
 
-
-
 void addFontDir(std::string const& font_dir) try
 {
     _internal::Lib::addFontDir(font_dir);
@@ -171,7 +169,6 @@ void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept
 {
     _internal::Lib::getDPI(hdpi, vdpi);
 }
-
 
 
 SSS_TR_END;

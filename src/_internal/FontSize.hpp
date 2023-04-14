@@ -1,7 +1,7 @@
 #ifndef SSS_TR_FONTSIZE_HPP
 #define SSS_TR_FONTSIZE_HPP
 
-#include "pointers.hpp"
+#include "Lib.hpp"
 
 /** @file
  *  Defines internal font sizes management classes.

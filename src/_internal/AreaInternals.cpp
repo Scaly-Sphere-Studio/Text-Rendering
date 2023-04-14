@@ -1,5 +1,4 @@
-#include "SSS/Text-Rendering/_internal/AreaInternals.hpp"
-#include "SSS/Text-Rendering/Globals.hpp"
+#include "AreaInternals.hpp"
 
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;

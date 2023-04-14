@@ -1,4 +1,6 @@
-#include "SSS/Text-Rendering/Lua.hpp"
+#include "Text-Rendering/Lua.hpp"
+#include "Text-Rendering/Globals.hpp"
+#include "Text-Rendering/Area.hpp"
 
 SSS_TR_BEGIN;
 

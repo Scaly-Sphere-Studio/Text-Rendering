@@ -1,20 +1,11 @@
 #ifndef SSS_TR_GLOBALS_HPP
 #define SSS_TR_GLOBALS_HPP
 
-#include "_internal/Font.hpp"
+#include "_includes.hpp"
 
 /** @file
  *  Defines global functions and enums.
  */
-
-namespace SSS::Log::TR {
-    /** Logging properties for SSS::TR globals.*/
-    struct Lib : public LogBase<Lib> {
-        using LOG_STRUCT_BASICS(TR, Lib);
-        /** Logs both SSS::TR::init() and SSS::TR::terminate().*/
-        bool init = false;
-    };
-}
 
 SSS_TR_BEGIN;
 
@@ -41,42 +32,6 @@ enum class Delete {
     CtrlRight,  /**< Delete the word at the right of the cursor.*/
     CtrlLeft,   /**< Delete the word at the left of the cursor.*/
 };
-
-INTERNAL_BEGIN;
-
-class Lib {
-private:
-    FT_Library_Ptr _ptr;    // FreeType library pointer
-
-    FT_UInt _hdpi{ 96 };    // Screen's horizontal dpi
-    FT_UInt _vdpi{ 0 };     // Screen's vertical dpi
-
-    using FontDirs = std::deque<std::string>;
-    FontDirs _font_dirs;    // Font directories
-    using FontMap = std::map<std::string, Font::Ptr>;
-    FontMap _fonts;         // Fonts
-
-    using Ptr = std::unique_ptr<Lib>;
-    static Lib& getInstance();
-    
-    Lib();
-public:
-    ~Lib();
-
-    static FT_Library getPtr() noexcept;
-
-    static void addFontDir(std::string const&);
-    static FontDirs const& getFontDirs() noexcept;
-
-    static Font& getFont(std::string const& font_filename);
-    static void unloadFont(std::string const&);
-    static void clearFonts() noexcept;
-
-    static void setDPI(FT_UInt, FT_UInt);
-    static void getDPI(FT_UInt&, FT_UInt&) noexcept;
-};
-
-INTERNAL_END;
 
 /** Adds user-defined font directory, along with system-defined ones.
  *  @param[in] dir_path The directory path to be added. Can be

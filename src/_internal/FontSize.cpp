@@ -1,5 +1,4 @@
-#include "SSS/Text-Rendering/_internal/FontSize.hpp"
-#include "SSS/Text-Rendering/Globals.hpp"
+#include "FontSize.hpp"
 
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;
@@ -80,7 +79,7 @@ void FontSize::setCharsize()
 {
     // Get DPI
     FT_UInt hdpi, vdpi;
-    getDPI(hdpi, vdpi);
+    Lib::getDPI(hdpi, vdpi);
     // Set charsize
     FT_Error error = FT_Set_Char_Size(_ft_face, _charsize << 6, 0, hdpi, vdpi);
     THROW_IF_FT_ERROR("FT_Set_Char_Size()");

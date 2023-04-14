@@ -1,6 +1,6 @@
-#include "SSS/Text-Rendering/Area.hpp"
-#include "SSS/Text-Rendering/_internal/AreaInternals.hpp"
-#include "SSS/Text-Rendering/Globals.hpp"
+#include "Text-Rendering/Area.hpp"
+#include "_internal/AreaInternals.hpp"
+#include "Text-Rendering/Globals.hpp"
 
 SSS_TR_BEGIN;
 

@@ -1,5 +1,4 @@
-#include "SSS/Text-Rendering/_internal/Font.hpp"
-#include "SSS/Text-Rendering/Globals.hpp"
+#include "Font.hpp"
 
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;

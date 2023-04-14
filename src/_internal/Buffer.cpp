@@ -1,5 +1,4 @@
-#include "SSS/Text-Rendering/_internal/Buffer.hpp"
-#include "SSS/Text-Rendering/Globals.hpp"
+#include "Buffer.hpp"
 
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;

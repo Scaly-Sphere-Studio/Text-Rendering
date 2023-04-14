@@ -2,8 +2,7 @@
 #define SSS_TR_LUA_HPP
 
 #include <sol/sol.hpp>
-#include "SSS/Text-Rendering/Globals.hpp"
-#include "SSS/Text-Rendering/Area.hpp"
+#include "_includes.hpp"
 
 SSS_TR_BEGIN;
 

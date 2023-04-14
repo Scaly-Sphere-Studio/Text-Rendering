@@ -35,17 +35,17 @@
     <None Include="vcpkg_scripts\Remove.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\SSS\Text-Rendering.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\FontSize.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\_includes.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Buffer.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\Font.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\pointers.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Area.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Format.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\_internal\AreaInternals.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Globals.hpp" />
-    <ClInclude Include="inc\SSS\Text-Rendering\Lua.hpp" />
+    <ClInclude Include="inc\Text-Rendering.hpp" />
+    <ClInclude Include="src\_internal\FontSize.hpp" />
+    <ClInclude Include="inc\Text-Rendering\_includes.hpp" />
+    <ClInclude Include="src\_internal\Buffer.hpp" />
+    <ClInclude Include="src\_internal\Font.hpp" />
+    <ClInclude Include="src\_internal\Lib.hpp" />
+    <ClInclude Include="inc\Text-Rendering\Area.hpp" />
+    <ClInclude Include="inc\Text-Rendering\Format.hpp" />
+    <ClInclude Include="src\_internal\AreaInternals.hpp" />
+    <ClInclude Include="inc\Text-Rendering\Globals.hpp" />
+    <ClInclude Include="inc\Text-Rendering\Lua.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\_internal\FontSize.cpp" />
@@ -53,7 +53,6 @@
     <ClCompile Include="src\_internal\Buffer.cpp" />
     <ClCompile Include="src\_internal\AreaInternals.cpp" />
     <ClCompile Include="src\Area.cpp" />
-    <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\Lua.cpp">
       <ExcludedFromBuild Condition="('$(SSS_LUA)' == '') and ('$(Configuration)'!='Demo')">true</ExcludedFromBuild>
     </ClCompile>
@@ -63,6 +62,7 @@
     <ClCompile Include="src\DemoMain\DemoMain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)'!='Demo'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\_internal\Lib.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -184,7 +184,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>SSS_TR_EXPORTS;WIN32;_DEBUG;DEBUG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc; .</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ProgramDataBaseFileName>$(Outdir)$(TargetName).pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -204,7 +204,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>SSS_TR_EXPORTS;_DEBUG;DEBUG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc; .</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ProgramDataBaseFileName>$(Outdir)$(TargetName).pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -248,7 +248,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;DEBUG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SSS_TR_DEMO;WIN32;NDEBUG;DEBUG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -296,7 +296,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;DEBUG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SSS_TR_DEMO;NDEBUG;DEBUG_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>.\inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>

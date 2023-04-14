@@ -2,9 +2,13 @@
 #define SSS_TR_INCLUDES_HPP
 
 #ifdef SSS_TR_EXPORTS
-#define SSS_TR_API __declspec(dllexport)
+# define SSS_TR_API __declspec(dllexport)
 #else
-#define SSS_TR_API __declspec(dllimport)
+# ifdef SSS_TR_DEMO
+#  define SSS_TR_API
+# else
+#  define SSS_TR_API __declspec(dllimport)
+# endif
 #endif
 
 
