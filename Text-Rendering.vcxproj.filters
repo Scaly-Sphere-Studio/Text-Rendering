@@ -94,9 +94,6 @@
     <ClCompile Include="src\DemoMain\opengl.cpp">
       <Filter>src\DemoMain</Filter>
     </ClCompile>
-    <ClCompile Include="src\Lua.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\_internal\Lib.cpp">
       <Filter>src\internal</Filter>
     </ClCompile>

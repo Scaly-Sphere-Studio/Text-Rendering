@@ -1,7 +1,3 @@
 Source: sss-text-rendering
 Description: Text rendering using FreeType and HarfBuzz
 Build-Depends: freetype, harfbuzz, sss-commons
-
-Feature: lua
-Description: Lib features integrated in lua.
-Build-Depends: sss-commons[lua]

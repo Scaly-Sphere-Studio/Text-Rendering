@@ -1,11 +1,11 @@
 #ifndef SSS_TR_HPP
 #define SSS_TR_HPP
 
+#include "Text-Rendering/Globals.hpp"
+#include "Text-Rendering/Area.hpp"
 #ifdef SSS_LUA
 #include "Text-Rendering/Lua.hpp"
 #endif // SSS_LUA
-#include "Text-Rendering/Globals.hpp"
-#include "Text-Rendering/Area.hpp"
 
 /** @file
  *  Header of the

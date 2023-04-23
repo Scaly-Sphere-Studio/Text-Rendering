@@ -53,9 +53,6 @@
     <ClCompile Include="src\_internal\Buffer.cpp" />
     <ClCompile Include="src\_internal\AreaInternals.cpp" />
     <ClCompile Include="src\Area.cpp" />
-    <ClCompile Include="src\Lua.cpp">
-      <ExcludedFromBuild Condition="('$(SSS_LUA)' == '') and ('$(Configuration)'!='Demo')">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="src\DemoMain\opengl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)'!='Demo'">true</ExcludedFromBuild>
     </ClCompile>
