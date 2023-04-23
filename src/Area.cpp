@@ -114,7 +114,7 @@ Area* Area::get(uint32_t id) noexcept
     return _instances.at(id).get();
 }
 
-Format Area::getFormat(uint32_t id)
+Format Area::getFormat(uint32_t id) const noexcept
 {
     if (_formats.count(id) != 0) {
         return _formats.at(id);

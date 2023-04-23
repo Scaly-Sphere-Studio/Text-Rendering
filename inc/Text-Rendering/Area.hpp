@@ -111,14 +111,16 @@ public:
 
     inline uint32_t getID() const noexcept { return _id; };
 
-    Format getFormat(uint32_t id = 0);
+    Format getFormat(uint32_t id) const noexcept;
+    inline Format getFormat() const noexcept { return getFormat(0); };
 
     /** Modifies internal format for given ID.
      *  @param[in] src The source format to be copied.
      *  @param[in] id The format ID to be modified. Default: \c 0.
      *  @sa Format.
      */
-    void setFormat(Format const& src, uint32_t id = 0);
+    void setFormat(Format const& src, uint32_t id);
+    inline void setFormat(Format const& src) { setFormat(src, 0); };
 
     static void setDefaultMargins(int marginV, int marginH) noexcept;
     static void getDefaultMargins(int& marginV, int& marginH) noexcept;

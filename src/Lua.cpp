@@ -78,8 +78,14 @@ void lua_setup_TR(sol::state& lua) try
     area["clear_color"] = sol::property(&Area::getClearColor, &Area::setClearColor);
     area["clear"] = &Area::clear;
     // Format
-    area["getFmt"] = &Area::getFormat;
-    area["setFmt"] = &Area::setFormat;
+    area["getFmt"] = sol::overload(
+        sol::resolve<Format() const>(&Area::getFormat),
+        sol::resolve<Format (uint32_t) const>(&Area::getFormat)
+    );
+    area["setFmt"] = sol::overload(
+        sol::resolve<void (Format const&)>(&Area::setFormat),
+        sol::resolve<void (Format const&, uint32_t)>(&Area::setFormat)
+    );
     area["wrapping"] = sol::property(&Area::getWrapping, &Area::setWrapping);
     // Margins
     area["getMargins"] = [](Area& area) {

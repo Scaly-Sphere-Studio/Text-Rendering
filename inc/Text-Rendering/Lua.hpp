@@ -1,6 +1,9 @@
 #ifndef SSS_TR_LUA_HPP
 #define SSS_TR_LUA_HPP
 
+#define SOL_ALL_SAFETIES_ON 1
+#define SOL_SAFE_NUMERICS 1
+#define SOL_STRINGS_ARE_NUMBERS 1
 #include <sol/sol.hpp>
 #include "_includes.hpp"
 
