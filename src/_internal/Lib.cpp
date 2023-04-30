@@ -1,9 +1,12 @@
 #include "Lib.hpp"
 #include "Font.hpp"
 #include "Text-Rendering/Area.hpp"
+#include "Text-Rendering\Globals.hpp"
 
 SSS_TR_BEGIN;
 INTERNAL_BEGIN;
+
+Lib::Ptr Lib::_singleton;
 
 Lib::Lib()
 {
@@ -59,11 +62,16 @@ Lib::~Lib()
 
 Lib& Lib::getInstance()
 {
-    static Ptr singleton(new Lib);
-    return *singleton;
+    if (!_singleton) {
+        _singleton.reset(new Lib());
+    }
+    return *_singleton;
 }
 
-
+void Lib::terminate()
+{
+    _singleton.reset();
+}
 
 FT_Library Lib::getPtr() noexcept
 {
@@ -137,6 +145,16 @@ void Lib::getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept
 }
 
 INTERNAL_END;
+
+SSS_TR_API void init()
+{
+    _internal::Lib::getPtr();
+}
+
+SSS_TR_API void terminate()
+{
+    _internal::Lib::terminate();
+}
 
 void addFontDir(std::string const& font_dir) try
 {

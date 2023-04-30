@@ -46,12 +46,14 @@ private:
     FontMap _fonts;         // Fonts
 
     using Ptr = std::unique_ptr<Lib>;
+    static Ptr _singleton;
     static Lib& getInstance();
 
     Lib();
 public:
     ~Lib();
 
+    static void terminate();
     static FT_Library getPtr() noexcept;
 
     static void addFontDir(std::string const&);

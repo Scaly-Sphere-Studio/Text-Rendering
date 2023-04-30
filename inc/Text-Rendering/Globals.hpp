@@ -33,6 +33,9 @@ enum class Delete {
     CtrlLeft,   /**< Delete the word at the left of the cursor.*/
 };
 
+SSS_TR_API void init();
+SSS_TR_API void terminate();
+
 /** Adds user-defined font directory, along with system-defined ones.
  *  @param[in] dir_path The directory path to be added. Can be
  *  relative or absolute.

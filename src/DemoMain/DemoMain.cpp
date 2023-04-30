@@ -1,5 +1,5 @@
 #define SSS_LUA
-#include "SSS/Text-Rendering.hpp"
+#include "Text-Rendering.hpp"
 #include "opengl.cpp"
 
 static std::string const arabic_lorem_ipsum =
@@ -127,5 +127,6 @@ int main() try
     }
 
     glfwTerminate();
+    TR::terminate();
 }
 CATCH_AND_LOG_FUNC_EXC;
