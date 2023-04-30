@@ -76,8 +76,13 @@ inline void lua_setup_TR(sol::state& lua) try
         vec["y"] = &FT_Vector::y;
     }
     // Area
-    auto area = tr.new_usertype<Area>("Area", sol::no_constructor,
-        sol::base_classes, sol::bases<Base>());
+    auto area = tr.new_usertype<Area>("Area", sol::factories(
+        sol::resolve<Area& (uint32_t)>(&Area::create),
+        sol::resolve<Area& ()>(&Area::create),
+        sol::resolve<Area& (int, int)>(&Area::create),
+        sol::resolve<Area& (std::u32string const&, Format)>(&Area::create)),
+        sol::base_classes, sol::bases<Base>()
+    );
     // Parse & clear
     area["string"] = sol::property(&Area::parseStringU32, &Area::getStringU32);
     area["clear_color"] = sol::property(&Area::getClearColor, &Area::setClearColor);
@@ -115,12 +120,6 @@ inline void lua_setup_TR(sol::state& lua) try
     area["print_mode"] = sol::property(&Area::getPrintMode, &Area::setPrintMode);
     area["TW_speed"] = sol::property(&Area::getTypeWriterSpeed, &Area::setTypeWriterSpeed);
     // Static
-    area["create"] = sol::overload(
-        sol::resolve<Area& (uint32_t)>(&Area::create),
-        sol::resolve<Area& ()>(&Area::create),
-        sol::resolve<Area& (int, int)>(&Area::create),
-        sol::resolve<Area& (std::u32string const&, Format)>(&Area::create)
-    );
     area["get"] = &Area::get;
     area["getFocused"] = &Area::getFocused;
     area["resetFocus"] = &Area::resetFocus;
@@ -132,6 +131,8 @@ inline void lua_setup_TR(sol::state& lua) try
     });
 
     tr["addFontDir"] = &addFontDir;
+    tr["init"] = &init;
+    tr["terminate"] = &terminate;
 }
 CATCH_AND_RETHROW_FUNC_EXC;
 

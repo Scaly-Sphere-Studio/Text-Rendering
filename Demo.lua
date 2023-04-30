@@ -15,7 +15,7 @@ Proin ultrices bibendum imperdiet.
 Suspendisse vitae fermentum ante,
 eget cursus dolor.]]
 
-area = TR.Area.create()
+area = TR.Area.new()
 local fmt = area:getFmt(0)
 
 --fmt.font = "opensans/OpenSans[wdth,wght].ttf"
@@ -41,7 +41,7 @@ TR.addFontDir("C:/dev/fonts")
 area.margin_h = 30
 area.string = lorem_ipsum
 area.clear_color = RGBA.new(0xFF888888)
-area.wrapping = false
+area.wrapping = true
 
 --area.print_mode = TR.PrintMode.Typewriter
 area.TW_speed = 42
