@@ -262,6 +262,11 @@ void Area::update()
     _last_update = std::chrono::steady_clock::now();
 }
 
+bool Area::hasRunningThread() const noexcept
+{
+    return (*_processing_pixels)->isRunning();
+}
+
 void const* Area::pixelsGet() const try
 {
     RGBA32::Vector const& pixels = (*_current_pixels)->getPixels();

@@ -194,6 +194,8 @@ public:
      *  @sa clear(), pixelsGet().
      */
     void update();
+
+    bool hasRunningThread() const noexcept;
     
     /** Returns \c true when internal pixels were modified and the
      *  user needs to retrieve them.
