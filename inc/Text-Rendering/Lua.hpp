@@ -120,9 +120,9 @@ inline void lua_setup_TR(sol::state& lua) try
     area["print_mode"] = sol::property(&Area::getPrintMode, &Area::setPrintMode);
     area["TW_speed"] = sol::property(&Area::getTypeWriterSpeed, &Area::setTypeWriterSpeed);
     // Static
-    area["get"] = &Area::get;
-    area["getFocused"] = &Area::getFocused;
-    area["resetFocus"] = &Area::resetFocus;
+    tr["getArea"] = &Area::get;
+    tr["getFocusedArea"] = &Area::getFocused;
+    tr["resetFocusedArea"] = &Area::resetFocus;
 
     // PrintMode
     tr.new_enum<PrintMode>("PrintMode", {
