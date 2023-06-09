@@ -2,6 +2,7 @@
 #define SSS_TR_AREA_HPP
 
 #include "Format.hpp"
+#include <stack>
 
 /** @file
  *  Defines SSS::TR::Area.
@@ -111,16 +112,13 @@ public:
 
     inline uint32_t getID() const noexcept { return _id; };
 
-    Format getFormat(uint32_t id) const noexcept;
-    inline Format getFormat() const noexcept { return getFormat(0); };
+    inline Format getFormat() const noexcept { return _format; };
 
     /** Modifies internal format for given ID.
      *  @param[in] src The source format to be copied.
-     *  @param[in] id The format ID to be modified. Default: \c 0.
      *  @sa Format.
      */
-    void setFormat(Format const& src, uint32_t id);
-    inline void setFormat(Format const& src) { setFormat(src, 0); };
+    void setFormat(Format const& src);
 
     static void setDefaultMargins(int marginV, int marginH) noexcept;
     static void getDefaultMargins(int& marginV, int& marginH) noexcept;
@@ -170,7 +168,10 @@ public:
     void parseStringU32(std::u32string const& str);
     /** \overload*/
     void parseString(std::string const& str);
-    
+private:
+    void _parseFmt(std::stack<Format>& fmts, std::u32string const& data);
+
+public:
     std::u32string getStringU32() const;
     std::string getString() const;
 
@@ -350,8 +351,8 @@ private:
     _PixelBuffers::iterator _processing_pixels{ _pixels.begin() };
 
     RGBA32 _bg_color{ 0, 0, 0, 0 };
-    // Map of formats to feed to internal buffers
-    std::map<uint32_t, Format> _formats;
+    // Base format to feed to internal buffers
+    Format _format;
     // Buffer vector, one for each differing format
     std::vector<std::unique_ptr<_internal::Buffer>> _buffers;
     // Buffer informations

@@ -1,8 +1,62 @@
 #include "Text-Rendering/Area.hpp"
 #include "_internal/AreaInternals.hpp"
 #include "Text-Rendering/Globals.hpp"
+#include <nlohmann/json.hpp>
+
+static void from_json(nlohmann::json const& j, FT_Vector& vec)
+{
+    if (j.contains("x"))
+        j.at("x").get_to(vec.x);
+    if (j.contains("y"))
+        j.at("y").get_to(vec.y);
+}
 
 SSS_TR_BEGIN;
+
+static void from_json(nlohmann::json const& j, Color& color)
+{
+    if (j.is_number_unsigned()) {
+        color.rgb = j.get<uint32_t>();
+        color.func = ColorFunc::None;
+        return;
+    }
+    if (auto const f = j.get<ColorFunc>(); f != ColorFunc::Invalid) {
+        color.func = f;
+        return;
+    }
+    if (j.contains("r"))
+        j.at("r").get_to(color.r);
+    if (j.contains("g"))
+        j.at("g").get_to(color.g);
+    if (j.contains("b"))
+        j.at("b").get_to(color.b);
+    if (j.contains("rgb"))
+        color.rgb = j.at("rgb").get<uint32_t>();
+    if (j.contains("func"))
+        j.at("func").get_to(color.func);
+}
+
+NLOHMANN_JSON_SERIALIZE_ENUM(Alignment, {
+    { Alignment::Invalid, nullptr },
+    { Alignment::Left, "Left" },
+    { Alignment::Center, "Center" },
+    { Alignment::Right, "Right" },
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(Effect, {
+    { Effect::Invalid, nullptr },
+    { Effect::None, "None" },
+    { Effect::Vibrate, "Vibrate" },
+    { Effect::Waves, "Waves" },
+    { Effect::FadingWaves, "FadingWaves" },
+})
+
+NLOHMANN_JSON_SERIALIZE_ENUM(ColorFunc, {
+    { ColorFunc::Invalid, nullptr },
+    { ColorFunc::None, "None" },
+    { ColorFunc::Rainbow, "Rainbow" },
+    { ColorFunc::RainbowFixed, "RainbowFixed" },
+})
 
 std::map<uint32_t, Area::Ptr> Area::_instances{};
 int Area::_default_margin_h{ 10 };
@@ -114,24 +168,11 @@ Area* Area::get(uint32_t id) noexcept
     return _instances.at(id).get();
 }
 
-Format Area::getFormat(uint32_t id) const noexcept
-{
-    if (_formats.count(id) != 0) {
-        return _formats.at(id);
-    }
-    return Format();
-}
-
     // --- Basic functions ---
 
-void Area::setFormat(Format const& format, uint32_t id) try
+void Area::setFormat(Format const& format) try
 {
-    if (_formats.count(id) == 0) {
-        _formats.insert(std::make_pair(id, format));
-    }
-    else {
-        _formats.at(id) = format;
-    }
+    _format = format;
     if (!_buffers.empty())
         parseStringU32(_buffer_infos->getString());
 }
@@ -174,6 +215,65 @@ void Area::setClearColor(RGBA32 color)
     _draw = true;
 }
 
+void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
+{
+    auto const json = nlohmann::json::parse(data);
+
+    if (json.empty() || json.is_null()) {
+        if (fmts.size() > 1)
+            fmts.pop();
+        return;
+    }
+
+    fmts.push(fmts.top());
+    Format& fmt = fmts.top();
+
+    auto const has_value = [&json](char const* key) {
+        return json.contains(key) && !json.at(key).is_null();
+    };
+
+    // Font
+    if (has_value("font"))
+        fmt.font = json.at("font").get<std::string>();
+    // Style
+    if (has_value("charsize"))
+        fmt.charsize = json.at("charsize").get<int>();
+    if (has_value("has_outline"))
+        fmt.has_outline = json.at("has_outline").get<bool>();
+    if (has_value("outline_size"))
+        fmt.outline_size = json.at("outline_size").get<int>();
+    if (has_value("has_shadow"))
+        fmt.has_shadow = json.at("has_shadow").get<bool>();
+    if (has_value("shadow_offset"))
+        fmt.shadow_offset = json.at("shadow_offset").get<FT_Vector>();
+    if (has_value("line_spacing"))
+        fmt.line_spacing = json.at("line_spacing").get<float>();
+    if (has_value("aligmnent"))
+        fmt.aligmnent = json.at("aligmnent").get<Alignment>();
+    if (has_value("effect"))
+        fmt.effect = json.at("effect").get<Effect>();
+    if (has_value("effect_offset"))
+        fmt.effect_offset = json.at("effect_offset").get<int>();
+    // Color
+    if (has_value("text_color"))
+        fmt.text_color = json.at("text_color").get<Color>();
+    if (has_value("outline_color"))
+        fmt.outline_color = json.at("outline_color").get<Color>();
+    if (has_value("shadow_color"))
+        fmt.shadow_color = json.at("shadow_color").get<Color>();
+    if (has_value("alpha"))
+        fmt.alpha = json.at("alpha").get<float>();
+    // Language
+    if (has_value("lng_tag"))
+        fmt.lng_tag = json.at("lng_tag").get<std::string>();
+    if (has_value("lng_script"))
+        fmt.lng_script = json.at("lng_script").get<std::string>();
+    if (has_value("lng_direction"))
+        fmt.lng_direction = json.at("lng_direction").get<std::string>();
+    if (has_value("word_dividers"))
+        fmt.word_dividers = json.at("word_dividers").get<std::u32string>();
+}
+
 void Area::parseStringU32(std::u32string const& str) try
 {
     auto const new_buffer = [&](bool& is_first, Format const& opt, std::u32string const& str) {
@@ -186,30 +286,30 @@ void Area::parseStringU32(std::u32string const& str) try
     };
     clear();
     bool is_first = true;
-    Format opt = _formats[0];
+    std::stack<Format> fmts;
+    fmts.push(_format);
     size_t i = 0;
     while (i != str.size()) {
         size_t const opening_braces = str.find(U"{{", i);
         if (opening_braces == std::string::npos) {
             // add buffer and load sub string
-            new_buffer(is_first, opt, str.substr(i));
+            new_buffer(is_first, fmts.top(), str.substr(i));
             break;
         }
         else {
             // find closing braces
             size_t const closing_braces = str.find(U"}}", opening_braces + 2);
             if (closing_braces == std::string::npos) {
-                new_buffer(is_first, opt, str.substr(i));
+                new_buffer(is_first, fmts.top(), str.substr(i));
                 break;
             }
             // add buffer if needed
             size_t diff = opening_braces - i;
             if (diff > 0)
-                new_buffer(is_first, opt, str.substr(i, diff));
-            // parse id and change options
-            diff = closing_braces - opening_braces - 2 - 5;
-            opt = _formats[std::stoul(str32ToStr(
-                str.substr(opening_braces + 2 + 5, diff)))];
+                new_buffer(is_first, fmts.top(), str.substr(i, diff));
+
+           _parseFmt(fmts, str.substr(opening_braces + 1, closing_braces - opening_braces));
+
             // skip to next sub strings
             i = closing_braces + 2;
         }

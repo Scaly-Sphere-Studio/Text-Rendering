@@ -11,6 +11,7 @@ SSS_TR_BEGIN;
 
 /** */
 enum class Alignment {
+    Invalid = -1,
     Left,
     Center,
     Right
@@ -18,6 +19,7 @@ enum class Alignment {
 
 /** */
 enum class Effect {
+    Invalid = -1,
     None,
     Vibrate,
     Waves,
@@ -26,6 +28,7 @@ enum class Effect {
 
 /** Used in Color to determine the color at runtime.*/
 enum class ColorFunc {
+    Invalid = -1,
     None,           /**< No function, the Config::plain color is used.*/
     Rainbow,        /**< The color is determined by width ratio and time.*/
     RainbowFixed,   /**< Same as #rainbow, but not time-based.*/
@@ -40,7 +43,14 @@ struct Color : public RGB24 {
  *  @sa Color, ColorFunc, Alignment, Effect.
  */
 struct Format {
-    
+private:
+    static std::unique_ptr<Format> _default;
+
+public:
+    static Format& default_fmt;
+
+    Format() noexcept { if (_default) *this = *_default; };
+
     // --- FONT ---
 
     /** Font file name (can be initialised before processing, but not mandatory).

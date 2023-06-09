@@ -39,6 +39,8 @@ inline void lua_setup_TR(sol::state& lua) try
         fmt["lng_script"] = &Format::lng_script;
         fmt["lng_direction"] = &Format::lng_direction;
         fmt["word_dividers"] = &Format::word_dividers;
+        // Global default value
+        tr["default_fmt"] = &Format::default_fmt;
 
         // Alignment (enum)
         tr.new_enum<Alignment>("Alignment", {
@@ -88,14 +90,8 @@ inline void lua_setup_TR(sol::state& lua) try
     area["clear_color"] = sol::property(&Area::getClearColor, &Area::setClearColor);
     area["clear"] = &Area::clear;
     // Format
-    area["getFmt"] = sol::overload(
-        sol::resolve<Format() const>(&Area::getFormat),
-        sol::resolve<Format(uint32_t) const>(&Area::getFormat)
-    );
-    area["setFmt"] = sol::overload(
-        sol::resolve<void(Format const&)>(&Area::setFormat),
-        sol::resolve<void(Format const&, uint32_t)>(&Area::setFormat)
-    );
+    area["getFmt"] = &Area::getFormat;
+    area["setFmt"] = &Area::setFormat;
     area["wrapping"] = sol::property(&Area::getWrapping, &Area::setWrapping);
     // Margins
     area["getMargins"] = [](Area& area) {
