@@ -83,6 +83,13 @@ void AreaPixels::_asyncFunction(AreaData data)
             param.pen.x = (_w - data.margin_v - line.x_offset(data.buffer_infos.isLTR())) << 6;
         param.pen.y = -(data.margin_h << 6);
     }
+    // Draw selected text's background
+    if (data.selected.state) {
+        param.is_selected_bg = true;
+        _drawGlyphs(data, param);
+        if (_beingCanceled()) return;
+        param.is_selected_bg = false;
+    }
     // Draw Outline shadows
     param.is_shadow = true;
     param.is_outline = true;
@@ -137,7 +144,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
             // Handle line breaks. Return true if pen goes out of bound
             if (cursor == line->last_glyph && line != data.lines.end() - 1) {
                 param.pen.x = (area_is_ltr ? data.margin_v : (_w - data.margin_v)) << 6;
-                param.pen.y -= static_cast<int>(line->fullsize) << 6;
+                param.pen.y -= line->fullsize << 6;
                 ++line;
                 param.pen.x += (line->x_offset(area_is_ltr) << 6) * (area_is_ltr ? 1 : -1);
                 param.charsize = line->charsize;
@@ -155,19 +162,36 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
                 param.pen.y += glyph_info.pos.y_advance;
             }
         };
-        if (!is_ltr)
+        if (param.is_selected_bg) {
+            if (cursor >= data.selected.first && cursor < data.selected.last) {
+                int x = (is_ltr ? param.pen.x : param.pen.x - glyph_info.pos.x_advance) >> 6;
+                int const x_max = (is_ltr ? param.pen.x + glyph_info.pos.x_advance : param.pen.x) >> 6,
+                          y_max = -(param.pen.y >> 6) + line->fullsize;
+                for ( ; x < x_max; ++x) {
+                    for (int y = -(param.pen.y >> 6); y < y_max; ++y) {
+                        if (x < 0 || y < 0 || x >= _w || y >= _pixels_h)
+                            continue;
+                        _pixels[(size_t)(x + y * _w)] = RGB24(0, 0, 128);
+                    }
+                }
+            }
             move_cursor();
-        if (!glyph_info.is_new_line) {
-            try {
-                _drawGlyph(param, buffer_info, glyph_info);
-            }
-            catch (std::exception const& e) {
-                std::string str(toString("cursor #") + toString(cursor));
-                throw_exc(CONTEXT_MSG(str, e.what()));
-            }
         }
-        if (is_ltr)
-            move_cursor();
+        else {
+            if (!is_ltr)
+                move_cursor();
+            if (!glyph_info.is_new_line) {
+                try {
+                    _drawGlyph(param, buffer_info, glyph_info);
+                }
+                catch (std::exception const& e) {
+                    std::string str(toString("cursor #") + toString(cursor));
+                    throw_exc(CONTEXT_MSG(str, e.what()));
+                }
+            }
+            if (is_ltr)
+                move_cursor();
+        }
     }
 }
 

@@ -105,6 +105,28 @@ int main() try
         glBindVertexArray(ids[vao]);
         glBindTexture(GL_TEXTURE_2D, ids[tex]);
 
+        bool const ctrl = glfwGetKey(window.get(), GLFW_KEY_LEFT_CONTROL) ||
+                          glfwGetKey(window.get(), GLFW_KEY_RIGHT_CONTROL);
+        if ((glfwGetKey(window.get(), GLFW_KEY_LEFT_CONTROL) ||
+            glfwGetKey(window.get(), GLFW_KEY_RIGHT_CONTROL)) &&
+            glfwGetKey(window.get(), GLFW_KEY_A))
+            area.selectAll();
+
+        bool const shift = glfwGetKey(window.get(), GLFW_KEY_LEFT_SHIFT) ||
+                           glfwGetKey(window.get(), GLFW_KEY_RIGHT_SHIFT);
+        if (shift)
+            area.lockSelection();
+        if (glfwGetMouseButton(window.get(), GLFW_MOUSE_BUTTON_1)) {
+            double x, y;
+            glfwGetCursorPos(window.get(), &x, &y);
+            int h, w;
+            glfwGetWindowSize(window.get(), &h, &w);
+            x -= w / 2;
+            area.cursorPlace((int)x, (int)y);
+        }
+        else if (!shift)
+            area.unlockSelection();
+
         // Update texture if needed
         area.update();
         if (area.pixelsWereChanged()) {

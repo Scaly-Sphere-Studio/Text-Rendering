@@ -27,6 +27,7 @@ enum class Move {
  *  @sa Area::cursorDeleteText().
  */
 enum class Delete {
+    Invalid = -1,
     Right,      /**< Delete the character at the right of the cursor.*/
     Left,       /**< Delete the character at the left of the cursor.*/
     CtrlRight,  /**< Delete the word at the right of the cursor.*/

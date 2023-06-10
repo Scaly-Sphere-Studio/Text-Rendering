@@ -317,6 +317,8 @@ void Area::parseStringU32(std::u32string const& str) try
     size_t tmp = _glyph_count;
     _updateBufferInfos();
     _edit_cursor += _glyph_count - tmp;
+    if (!_lock_selection)
+        _locked_cursor = _edit_cursor;
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -398,6 +400,7 @@ void Area::clear() noexcept
     _buffers.front()->changeString(U"");
     _updateBufferInfos();
     _edit_cursor = 0;
+    _locked_cursor = 0;
     // Reset lines
     _updateLines();
     // Reset typewriter
@@ -522,6 +525,13 @@ void Area::cursorPlace(int x, int y) try
     bool i_is_ltr = click_is_ltr;
     pen.x += (line->x_offset(_buffer_infos->isLTR()) << 6) * (i_is_ltr ? 1 : -1);
 
+
+    auto const select_text = [&]() {
+        if (!_lock_selection) {
+            _locked_cursor = _edit_cursor;
+            lockSelection();
+        }
+    };
     // Do some magic
     for (size_t i = line->first_glyph; i < line->last_glyph; ++i) {
         // Get glyph info
@@ -533,6 +543,7 @@ void Area::cursorPlace(int x, int y) try
             int clicked_x = (pen.x + glyph.pos.x_advance) >> 6;
             if (click_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
                 _edit_cursor = i;
+                select_text();
                 return;
             }
             // Replace pen to make up for direction changes
@@ -553,6 +564,7 @@ void Area::cursorPlace(int x, int y) try
         int const clicked_x = (pen.x + glyph.pos.x_advance / 2) >> 6;
         if (click_is_ltr ? (clicked_x > x) : (clicked_x < x)) {
             _edit_cursor = i;
+            select_text();
             return;
         }
         // Advance after computing X if LTR
@@ -560,8 +572,17 @@ void Area::cursorPlace(int x, int y) try
             pen.x += glyph.pos.x_advance;
     }
     _edit_cursor = line->last_glyph;
+    select_text();
 }
 CATCH_AND_RETHROW_METHOD_EXC;
+
+void Area::selectAll() noexcept
+{
+    _edit_cursor = _glyph_count;
+    _locked_cursor = 0;
+    _edit_x = -1;
+    _draw = true;
+}
 
 size_t Area::_move_cursor_line(_internal::Line const* line, int x)
 {
@@ -683,6 +704,9 @@ void Area::_cursorMove(Move direction) try
         break;
 
     }
+    if (!_lock_selection)
+        _locked_cursor = _edit_cursor;
+
     _draw = true;
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
@@ -699,6 +723,9 @@ void Area::_cursorAddText(std::u32string str) try
     }
     if (_buffers.empty()) {
         throw_exc("No buffer was given beforehand.");
+    }
+    if (_locked_cursor != _edit_cursor) {
+        _cursorDeleteText(Delete::Invalid);
     }
     size_t cursor = _edit_cursor;
     size_t size = 0;
@@ -727,6 +754,8 @@ void Area::_cursorAddText(std::u32string str) try
         _tw_cursor += static_cast<float>(size);
     }
     _edit_cursor += size;
+    if (_lock_selection)
+        _locked_cursor = _edit_cursor;
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
 }
@@ -741,7 +770,18 @@ void Area::_cursorDeleteText(Delete direction) try
     }
 
     size_t tmp;
-    switch (direction) {
+    if (_locked_cursor != _edit_cursor) {
+        if (_locked_cursor < _edit_cursor) {
+            count = _edit_cursor - _locked_cursor;
+            _edit_cursor = _locked_cursor;
+            cursor = _edit_cursor;
+        }
+        else {
+            count = _locked_cursor - _edit_cursor;
+        }
+        direction = Delete::Invalid;
+    }
+    else switch (direction) {
     case Delete::Right:
         if (cursor >= _glyph_count) break;
         count = 1;
@@ -771,14 +811,14 @@ void Area::_cursorDeleteText(Delete direction) try
     if (count == 0)
         return;
 
-    size_t size = 0;
+    size_t const size = count;
     for (_internal::Buffer::Ptr const& ptr : _buffers) {
         _internal::Buffer& buffer = *ptr;
-        if (buffer.glyphCount() > cursor) {
-            size_t const tmp = buffer.glyphCount();
+        if (size_t const tmp = buffer.glyphCount(); tmp > cursor) {
             buffer.deleteText(cursor, count);
-            size = tmp - buffer.glyphCount();
-            break;
+            count -= tmp - buffer.glyphCount();
+            if (count == 0)
+                break;
         }
         cursor -= buffer.glyphCount();
     }
@@ -787,6 +827,7 @@ void Area::_cursorDeleteText(Delete direction) try
         // Move cursor
         _edit_cursor -= size;
     }
+    _locked_cursor = _edit_cursor;
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
 }
@@ -1080,6 +1121,11 @@ void Area::_drawIfNeeded()
     _getCursorPhysicalPos(data.cursor_x, data.cursor_y);
     data.cursor_h = _internal::Line::which(_lines, _edit_cursor)->fullsize;
     data.last_glyph = _print_mode == PrintMode::Typewriter ? static_cast<size_t>(_tw_cursor) : _glyph_count;
+    if (_locked_cursor != _edit_cursor) {
+        data.selected.first = _locked_cursor < _edit_cursor ? _locked_cursor : _edit_cursor;
+        data.selected.last = _locked_cursor > _edit_cursor ? _locked_cursor : _edit_cursor;
+        data.selected.state = true;
+    }
     data.buffer_infos = *_buffer_infos;
     data.lines = _lines;
     data.bg_color = _bg_color;

@@ -40,6 +40,7 @@ struct DrawParameters {
     size_t effect_cursor{ 0 }; // Current cursor index (groups arabic glyphs)
     // Draw type : { false, false } would draw simple text,
     // and { true, true } would draw the shadows of the outlines
+    bool is_selected_bg{ false };// Draw background of selected text
     bool is_shadow{ true };     // Draw text or its shadow
     bool is_outline{ true };    // Draw glyphs or their outlines
 };
@@ -58,6 +59,11 @@ struct AreaData {
     int cursor_h{ 0 }; // Cursor's height
     // Draw infos
     size_t last_glyph{ 0 }; // Last glyph to draw (excluded)
+    struct {
+        size_t first{ 0 };
+        size_t last{ 0 };
+        bool state{ false };
+    } selected;
     Line::vector lines;     // Line vector
     BufferInfoVector buffer_infos; // Glyph infos
     RGBA32 bg_color{ 0 };   // Area's background clear color

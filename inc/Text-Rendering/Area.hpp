@@ -268,6 +268,9 @@ public:
      *  @sa cursorMove(), cursorAddText(), cursorDeleteText()
      */
     void cursorPlace(int x, int y);
+    inline void lockSelection() noexcept { _lock_selection = true; };
+    inline void unlockSelection() noexcept { _lock_selection = false; };
+    void selectAll() noexcept;
 
 private:
     size_t _move_cursor_line(_internal::Line const* line, int x);
@@ -373,6 +376,8 @@ private:
     // Whether to display the edit cursor
     bool _edit_display_cursor{ false };
 
+    bool _lock_selection{ false };
+    size_t _locked_cursor{ 0 };
 
     // Indexes of line breaks & charsizes
     std::vector<_internal::Line> _lines;
