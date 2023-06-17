@@ -175,6 +175,8 @@ public:
     std::u32string getStringU32() const;
     std::string getString() const;
 
+    std::string getUnparsedString() const;
+
     // TODO: get string keeping format
     //std::u32string getStringU32Formatted() const;
     //std::string getStringFormatted() const;

@@ -26,7 +26,7 @@ inline void lua_setup_TR(sol::state& lua) try
         fmt["has_shadow"] = &Format::has_shadow;
         fmt["shadow_offset"] = &Format::shadow_offset;
         fmt["line_spacing"] = &Format::line_spacing;
-        fmt["alignment"] = &Format::aligmnent;
+        fmt["alignment"] = &Format::alignment;
         fmt["effect"] = &Format::effect;
         fmt["effect_offset"] = &Format::effect_offset;
         // Color

@@ -11,6 +11,11 @@ static void from_json(nlohmann::json const& j, FT_Vector& vec)
         j.at("y").get_to(vec.y);
 }
 
+static void to_json(nlohmann::json& j, FT_Vector const& vec)
+{
+    j = nlohmann::json{ { "x", vec.x }, { "y", vec.y } };
+}
+
 SSS_TR_BEGIN;
 
 static void from_json(nlohmann::json const& j, Color& color)
@@ -34,6 +39,14 @@ static void from_json(nlohmann::json const& j, Color& color)
         color.rgb = j.at("rgb").get<uint32_t>();
     if (j.contains("func"))
         j.at("func").get_to(color.func);
+}
+
+static void to_json(nlohmann::json& j, Color const& color)
+{
+    if (color.func == ColorFunc::None)
+        j = color.rgb ;
+    else
+        j = color.func ;
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(Alignment, {
@@ -248,8 +261,8 @@ void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
         fmt.shadow_offset = json.at("shadow_offset").get<FT_Vector>();
     if (has_value("line_spacing"))
         fmt.line_spacing = json.at("line_spacing").get<float>();
-    if (has_value("aligmnent"))
-        fmt.aligmnent = json.at("aligmnent").get<Alignment>();
+    if (has_value("alignment"))
+        fmt.alignment = json.at("alignment").get<Alignment>();
     if (has_value("effect"))
         fmt.effect = json.at("effect").get<Effect>();
     if (has_value("effect_offset"))
@@ -335,6 +348,90 @@ std::u32string Area::getStringU32() const
 std::string Area::getString() const
 {
     return str32ToStr(getStringU32());
+}
+
+static std::string fmtDiff(Format const& parent, Format const& child)
+{
+    nlohmann::json ret;
+
+    if (parent.font != child.font)
+        ret["font"] = child.font;
+    if (parent.charsize != child.charsize)
+        ret["charsize"] = child.charsize;
+    if (parent.has_outline != child.has_outline)
+        ret["has_outline"] = child.has_outline;
+    if (parent.outline_size != child.outline_size)
+        ret["outline_size"] = child.outline_size;
+    if (parent.has_shadow != child.has_shadow)
+        ret["has_shadow"] = child.has_shadow;
+    if (parent.shadow_offset != child.shadow_offset)
+        ret["shadow_offset"] = child.shadow_offset;
+    if (parent.line_spacing != child.line_spacing)
+        ret["line_spacing"] = child.line_spacing;
+    if (parent.alignment != child.alignment)
+        ret["alignment"] = child.alignment;
+    if (parent.effect != child.effect)
+        ret["effect"] = child.effect;
+    if (parent.effect_offset != child.effect_offset)
+        ret["effect_offset"] = child.effect_offset;
+    if (parent.effect_offset != child.effect_offset)
+        ret["effect_offset"] = child.effect_offset;
+    if (parent.text_color != child.text_color)
+        ret["text_color"] = child.text_color;
+    if (parent.outline_color != child.outline_color)
+        ret["outline_color"] = child.outline_color;
+    if (parent.shadow_color != child.shadow_color)
+        ret["shadow_color"] = child.shadow_color;
+    if (parent.alpha != child.alpha)
+        ret["alpha"] = child.alpha;
+    if (parent.lng_tag != child.lng_tag)
+        ret["lng_tag"] = child.lng_tag;
+    if (parent.lng_script != child.lng_script)
+        ret["lng_script"] = child.lng_script;
+    if (parent.lng_direction != child.lng_direction)
+        ret["lng_direction"] = child.lng_direction;
+    if (parent.word_dividers != child.word_dividers)
+        ret["word_dividers"] = child.word_dividers;
+
+    return '{' + ret.dump() + '}';
+}
+
+std::string Area::getUnparsedString() const
+{
+    std::vector<Format> fmts;
+    fmts.emplace_back(_format);
+    std::string ret;
+
+    for (auto& ptr : _buffers) {
+        auto const& buffer = *ptr;
+        if (buffer.getString().empty())
+            continue;
+        Format const buffer_fmt = buffer.getFormat();
+        if (buffer_fmt == fmts.back()) {
+            ret.append(str32ToStr(buffer.getString()));
+            continue;
+        }
+        bool done = false;
+        for (size_t i = 1; i < fmts.size(); ++i) {
+            Format const& fmt = fmts.at(fmts.size() - i - 1);
+            if (buffer_fmt == fmt) {
+                for (size_t j = 0; j < i; ++j) {
+                    ret.append("{{}}");
+                }
+                ret.append(str32ToStr(buffer.getString()));
+                done = true;
+                break;
+            }
+        }
+        if (done) continue;
+
+        ret.append(fmtDiff(fmts.back(), buffer_fmt));
+        fmts.emplace_back(buffer_fmt);
+
+        ret.append(str32ToStr(buffer.getString()));
+    }
+
+    return ret;
 }
 
 void Area::updateAll()
@@ -754,8 +851,7 @@ void Area::_cursorAddText(std::u32string str) try
         _tw_cursor += static_cast<float>(size);
     }
     _edit_cursor += size;
-    if (_lock_selection)
-        _locked_cursor = _edit_cursor;
+    _locked_cursor = _edit_cursor;
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
 }
@@ -931,7 +1027,7 @@ void Area::_updateLines() try
     _lines.emplace_back();
     _internal::Line::it line = _lines.begin();
     if (!_buffer_infos->empty()) {
-        line->alignment = _buffer_infos->front().fmt.aligmnent;
+        line->alignment = _buffer_infos->front().fmt.alignment;
     }
     size_t cursor = 0;
 
@@ -993,7 +1089,7 @@ void Area::_updateLines() try
             line = _lines.end() - 1;
             line->first_glyph = cursor + 1;
             line->scrolling = (line - 1)->scrolling;
-            line->alignment = buffer.fmt.aligmnent;
+            line->alignment = buffer.fmt.alignment;
             // Reset pen
             pen = { _margin_v << 6, _margin_h << 6 };
         }
