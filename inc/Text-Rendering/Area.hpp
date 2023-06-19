@@ -3,6 +3,7 @@
 
 #include "Format.hpp"
 #include <stack>
+#include <nlohmann/json.hpp>
 
 /** @file
  *  Defines SSS::TR::Area.
@@ -175,6 +176,7 @@ public:
     std::u32string getStringU32() const;
     std::string getString() const;
 
+    std::u32string getUnparsedStringU32() const;
     std::string getUnparsedString() const;
 
     // TODO: get string keeping format
@@ -273,6 +275,8 @@ public:
     inline void lockSelection() noexcept { _lock_selection = true; };
     inline void unlockSelection() noexcept { _lock_selection = false; };
     void selectAll() noexcept;
+
+    void formatSelection(nlohmann::json const& json);
 
 private:
     size_t _move_cursor_line(_internal::Line const* line, int x);

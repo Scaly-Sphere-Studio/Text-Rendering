@@ -40,8 +40,8 @@ struct Color : public RGB24 {
     inline bool operator==(Color const& color) const {
         if (func != color.func)
             return false;
-        else if (func == ColorFunc::None)
-            return rgb == rgb;
+        else if (func == ColorFunc::None || color.func == ColorFunc::None)
+            return rgb == color.rgb;
         return true;
     };
 };

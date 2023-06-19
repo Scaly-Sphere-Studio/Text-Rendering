@@ -1,7 +1,6 @@
 #include "Text-Rendering/Area.hpp"
 #include "_internal/AreaInternals.hpp"
 #include "Text-Rendering/Globals.hpp"
-#include <nlohmann/json.hpp>
 
 static void from_json(nlohmann::json const& j, FT_Vector& vec)
 {
@@ -20,7 +19,7 @@ SSS_TR_BEGIN;
 
 static void from_json(nlohmann::json const& j, Color& color)
 {
-    if (j.is_number_unsigned()) {
+    if (j.is_number()) {
         color.rgb = j.get<uint32_t>();
         color.func = ColorFunc::None;
         return;
@@ -228,19 +227,8 @@ void Area::setClearColor(RGBA32 color)
     _draw = true;
 }
 
-void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
+static void jsonToFmt(nlohmann::json const& json, Format& fmt)
 {
-    auto const json = nlohmann::json::parse(data);
-
-    if (json.empty() || json.is_null()) {
-        if (fmts.size() > 1)
-            fmts.pop();
-        return;
-    }
-
-    fmts.push(fmts.top());
-    Format& fmt = fmts.top();
-
     auto const has_value = [&json](char const* key) {
         return json.contains(key) && !json.at(key).is_null();
     };
@@ -285,6 +273,22 @@ void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
         fmt.lng_direction = json.at("lng_direction").get<std::string>();
     if (has_value("word_dividers"))
         fmt.word_dividers = json.at("word_dividers").get<std::u32string>();
+}
+
+void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
+{
+    auto const json = nlohmann::json::parse(data);
+
+    if (json.empty() || json.is_null()) {
+        if (fmts.size() > 1)
+            fmts.pop();
+        return;
+    }
+
+    fmts.push(fmts.top());
+    Format& fmt = fmts.top();
+
+    jsonToFmt(json, fmt);
 }
 
 void Area::parseStringU32(std::u32string const& str) try
@@ -396,11 +400,11 @@ static std::string fmtDiff(Format const& parent, Format const& child)
     return '{' + ret.dump() + '}';
 }
 
-std::string Area::getUnparsedString() const
+std::u32string Area::getUnparsedStringU32() const
 {
     std::vector<Format> fmts;
     fmts.emplace_back(_format);
-    std::string ret;
+    std::u32string ret;
 
     for (auto& ptr : _buffers) {
         auto const& buffer = *ptr;
@@ -408,7 +412,7 @@ std::string Area::getUnparsedString() const
             continue;
         Format const buffer_fmt = buffer.getFormat();
         if (buffer_fmt == fmts.back()) {
-            ret.append(str32ToStr(buffer.getString()));
+            ret.append(buffer.getString());
             continue;
         }
         bool done = false;
@@ -416,22 +420,28 @@ std::string Area::getUnparsedString() const
             Format const& fmt = fmts.at(fmts.size() - i - 1);
             if (buffer_fmt == fmt) {
                 for (size_t j = 0; j < i; ++j) {
-                    ret.append("{{}}");
+                    ret.append(U"{{}}");
                 }
-                ret.append(str32ToStr(buffer.getString()));
+                ret.append(buffer.getString());
+                fmts.resize(fmts.size() - i);
                 done = true;
                 break;
             }
         }
         if (done) continue;
 
-        ret.append(fmtDiff(fmts.back(), buffer_fmt));
+        ret.append(strToStr32(fmtDiff(fmts.back(), buffer_fmt)));
         fmts.emplace_back(buffer_fmt);
 
-        ret.append(str32ToStr(buffer.getString()));
+        ret.append(buffer.getString());
     }
 
     return ret;
+}
+
+std::string Area::getUnparsedString() const
+{
+    return str32ToStr(getUnparsedStringU32());
 }
 
 void Area::updateAll()
@@ -679,6 +689,52 @@ void Area::selectAll() noexcept
     _locked_cursor = 0;
     _edit_x = -1;
     _draw = true;
+}
+
+void Area::formatSelection(nlohmann::json const& json)
+{
+    if (_edit_cursor == _locked_cursor)
+        return;
+    if (json.empty() || json.is_null())
+        return;
+
+    size_t first = _edit_cursor < _locked_cursor ? _edit_cursor : _locked_cursor,
+           last  = _edit_cursor > _locked_cursor ? _edit_cursor : _locked_cursor;
+
+    for (size_t i = 0; i < _buffers.size(); ++i) {
+        auto& buffer = *_buffers.at(i);
+
+        if (first < buffer.glyphCount()) {
+
+            // Lambda to split buffer in two
+            auto const split_buffer = [&](size_t index) {
+                std::u32string const body = buffer.getString().substr(0, index),
+                                     head = buffer.getString().substr(index);
+                buffer.changeString(body);
+                _buffers.insert(_buffers.cbegin() + i + 1,
+                    std::make_unique<_internal::Buffer>(buffer.getFormat()));
+                _buffers.at(i + 1)->changeString(head);
+            };
+
+            if (first != 0)
+                split_buffer(first);
+            else {
+                if (last < buffer.glyphCount())
+                    split_buffer(last);
+                Format fmt = buffer.getFormat();
+                jsonToFmt(json, fmt);
+                buffer.changeFormat(fmt);
+            }
+        }
+
+        if (first != 0)
+            first -= buffer.glyphCount();
+        last -= buffer.glyphCount();
+        if (last == 0)
+            break;
+    }
+
+    _updateBufferInfos();
 }
 
 size_t Area::_move_cursor_line(_internal::Line const* line, int x)

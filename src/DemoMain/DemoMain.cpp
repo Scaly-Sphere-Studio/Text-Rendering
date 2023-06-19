@@ -127,6 +127,10 @@ int main() try
         else if (!shift)
             area.unlockSelection();
 
+        if (glfwGetKey(window.get(), GLFW_KEY_F4) == GLFW_PRESS) {
+            area.formatSelection(nlohmann::json{{ "text_color", 255 }});
+        }
+
         // Update texture if needed
         area.update();
         if (area.pixelsWereChanged()) {

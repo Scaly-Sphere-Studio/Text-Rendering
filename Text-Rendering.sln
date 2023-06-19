@@ -9,6 +9,8 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Demo (Debug)|x64 = Demo (Debug)|x64
+		Demo (Debug)|x86 = Demo (Debug)|x86
 		Demo|x64 = Demo|x64
 		Demo|x86 = Demo|x86
 		Release|x64 = Release|x64
@@ -19,6 +21,10 @@ Global
 		{61906663-BCC1-4C79-BCF9-FFE326041193}.Debug|x64.Build.0 = Debug|x64
 		{61906663-BCC1-4C79-BCF9-FFE326041193}.Debug|x86.ActiveCfg = Debug|Win32
 		{61906663-BCC1-4C79-BCF9-FFE326041193}.Debug|x86.Build.0 = Debug|Win32
+		{61906663-BCC1-4C79-BCF9-FFE326041193}.Demo (Debug)|x64.ActiveCfg = Demo (Debug)|x64
+		{61906663-BCC1-4C79-BCF9-FFE326041193}.Demo (Debug)|x64.Build.0 = Demo (Debug)|x64
+		{61906663-BCC1-4C79-BCF9-FFE326041193}.Demo (Debug)|x86.ActiveCfg = Demo (Debug)|Win32
+		{61906663-BCC1-4C79-BCF9-FFE326041193}.Demo (Debug)|x86.Build.0 = Demo (Debug)|Win32
 		{61906663-BCC1-4C79-BCF9-FFE326041193}.Demo|x64.ActiveCfg = Demo|x64
 		{61906663-BCC1-4C79-BCF9-FFE326041193}.Demo|x64.Build.0 = Demo|x64
 		{61906663-BCC1-4C79-BCF9-FFE326041193}.Demo|x86.ActiveCfg = Demo|Win32
