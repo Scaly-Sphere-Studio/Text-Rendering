@@ -34,33 +34,22 @@ enum class ColorFunc {
     RainbowFixed,   /**< Same as #rainbow, but not time-based.*/
 };
 
-struct Color : public RGB24 {
+struct SSS_TR_API Color : public RGB24 {
     using RGB24::RGB24;
     ColorFunc func{ ColorFunc::None };
-    inline bool operator==(Color const& color) const {
-        if (func != color.func)
-            return false;
-        else if (func == ColorFunc::None || color.func == ColorFunc::None)
-            return rgb == color.rgb;
-        return true;
-    };
+    bool operator==(Color const& color) const;
 };
 
-inline bool operator==(FT_Vector const& a, FT_Vector const& b) {
-    return a.x == b.x && a.y == b.y;
-}
+// Ignore warning about STL exports as they're private members
+#pragma warning(push, 2)
+#pragma warning(disable: 4251)
+#pragma warning(disable: 4275)
 
 /** Structure defining text formats to be used in Area instances.
  *  @sa Color, ColorFunc, Alignment, Effect.
  */
-struct Format {
-private:
-    static std::unique_ptr<Format> _default;
-
-public:
-    static Format& default_fmt;
-
-    Format() noexcept { if (_default) *this = *_default; };
+struct SSS_TR_API Format {
+    Format() noexcept;
     bool operator==(Format const&) const = default;
 
     // --- FONT ---
@@ -95,7 +84,7 @@ public:
      *  @default <tt>(3, 3)</tt>
      *  @sa #has_shadow.
      */
-    FT_Vector shadow_offset{ 3, 3 };
+    int shadow_offset_x{ 3 }, shadow_offset_y{ 3 };
     /** Spacing between lines.
      *  @default \c 1.5
      */
@@ -153,6 +142,10 @@ public:
      */
     std::u32string word_dividers{ U" " };
 };
+
+#pragma warning(pop)
+
+SSS_TR_API extern Format default_fmt;
 
 SSS_TR_END;
 

@@ -56,6 +56,7 @@
     <ClInclude Include="inc\Text-Rendering\Lua.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Format.cpp" />
     <ClCompile Include="src\_internal\FontSize.cpp" />
     <ClCompile Include="src\_internal\Font.cpp" />
     <ClCompile Include="src\_internal\Buffer.cpp" />

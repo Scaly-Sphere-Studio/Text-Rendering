@@ -274,8 +274,8 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     }
 
     if (param.is_shadow) {
-        args.x0 += buffer_info.fmt.shadow_offset.x;
-        args.y0 += buffer_info.fmt.shadow_offset.y;
+        args.x0 += buffer_info.fmt.shadow_offset_x;
+        args.y0 += buffer_info.fmt.shadow_offset_y;
     }
 
     _copyBitmap(args);

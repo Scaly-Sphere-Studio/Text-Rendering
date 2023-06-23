@@ -24,7 +24,8 @@ inline void lua_setup_TR(sol::state& lua) try
         fmt["has_outline"] = &Format::has_outline;
         fmt["outline_size"] = &Format::outline_size;
         fmt["has_shadow"] = &Format::has_shadow;
-        fmt["shadow_offset"] = &Format::shadow_offset;
+        fmt["shadow_offset_x"] = &Format::shadow_offset_x;
+        fmt["shadow_offset_y"] = &Format::shadow_offset_y;
         fmt["line_spacing"] = &Format::line_spacing;
         fmt["alignment"] = &Format::alignment;
         fmt["effect"] = &Format::effect;
@@ -40,7 +41,7 @@ inline void lua_setup_TR(sol::state& lua) try
         fmt["lng_direction"] = &Format::lng_direction;
         fmt["word_dividers"] = &Format::word_dividers;
         // Global default value
-        tr["default_fmt"] = &Format::default_fmt;
+        tr["default_fmt"] = std::ref(default_fmt);
 
         // Alignment (enum)
         tr.new_enum<Alignment>("Alignment", {
@@ -71,11 +72,6 @@ inline void lua_setup_TR(sol::state& lua) try
         color["g"] = &Color::g;
         color["b"] = &Color::b;
         color["func"] = &Color::func;
-
-        // FT_Vector (FreeType struct)
-        auto vec = tr.new_usertype<FT_Vector>("FT_Vector");
-        vec["x"] = &FT_Vector::x;
-        vec["y"] = &FT_Vector::y;
     }
     // Area
     auto area = tr.new_usertype<Area>("Area", sol::factories(

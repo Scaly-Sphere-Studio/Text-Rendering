@@ -2,19 +2,6 @@
 #include "_internal/AreaInternals.hpp"
 #include "Text-Rendering/Globals.hpp"
 
-static void from_json(nlohmann::json const& j, FT_Vector& vec)
-{
-    if (j.contains("x"))
-        j.at("x").get_to(vec.x);
-    if (j.contains("y"))
-        j.at("y").get_to(vec.y);
-}
-
-static void to_json(nlohmann::json& j, FT_Vector const& vec)
-{
-    j = nlohmann::json{ { "x", vec.x }, { "y", vec.y } };
-}
-
 SSS_TR_BEGIN;
 
 static void from_json(nlohmann::json const& j, Color& color)
@@ -245,8 +232,10 @@ static void jsonToFmt(nlohmann::json const& json, Format& fmt)
         fmt.outline_size = json.at("outline_size").get<int>();
     if (has_value("has_shadow"))
         fmt.has_shadow = json.at("has_shadow").get<bool>();
-    if (has_value("shadow_offset"))
-        fmt.shadow_offset = json.at("shadow_offset").get<FT_Vector>();
+    if (has_value("shadow_offset_x"))
+        fmt.shadow_offset_x = json.at("shadow_offset_x").get<int>();
+    if (has_value("shadow_offset_y"))
+        fmt.shadow_offset_y = json.at("shadow_offset_y").get<int>();
     if (has_value("line_spacing"))
         fmt.line_spacing = json.at("line_spacing").get<float>();
     if (has_value("alignment"))
@@ -368,8 +357,10 @@ static std::string fmtDiff(Format const& parent, Format const& child)
         ret["outline_size"] = child.outline_size;
     if (parent.has_shadow != child.has_shadow)
         ret["has_shadow"] = child.has_shadow;
-    if (parent.shadow_offset != child.shadow_offset)
-        ret["shadow_offset"] = child.shadow_offset;
+    if (parent.shadow_offset_x != child.shadow_offset_x)
+        ret["shadow_offset_x"] = child.shadow_offset_x;
+    if (parent.shadow_offset_y != child.shadow_offset_y)
+        ret["shadow_offset_y"] = child.shadow_offset_y;
     if (parent.line_spacing != child.line_spacing)
         ret["line_spacing"] = child.line_spacing;
     if (parent.alignment != child.alignment)

@@ -188,8 +188,4 @@ void getDPI(FT_UInt& hdpi, FT_UInt& vdpi) noexcept
     _internal::Lib::getDPI(hdpi, vdpi);
 }
 
-std::unique_ptr<Format> Format::_default { std::make_unique<Format>() };
-
-Format& Format::default_fmt{ *_default };
-
 SSS_TR_END;

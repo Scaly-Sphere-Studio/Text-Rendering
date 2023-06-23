@@ -97,5 +97,8 @@
     <ClCompile Include="src\_internal\Lib.cpp">
       <Filter>src\internal</Filter>
     </ClCompile>
+    <ClCompile Include="src\Format.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
