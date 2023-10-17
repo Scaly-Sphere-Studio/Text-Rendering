@@ -141,6 +141,9 @@ struct SSS_TR_API Format {
      *  @default \c U" " <em>(blank space)</em>
      */
     std::u32string word_dividers{ U" " };
+
+    std::u32string tw_short_pauses{ U",;:" };
+    std::u32string tw_long_pauses{ U".!?" };
 };
 
 #pragma warning(pop)

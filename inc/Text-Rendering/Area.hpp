@@ -342,6 +342,7 @@ private:
     int _tw_cps{ 60 };
     // TypeWriter -> cursor advance
     float _tw_cursor{ 0.f };
+    std::chrono::duration<float> _tw_sleep{ 0 };
 
     // Managed by update(), used in "pixelsXXX" functions
     bool _changes_pending{ false };

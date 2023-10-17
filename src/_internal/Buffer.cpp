@@ -31,6 +31,14 @@ _internal::BufferInfo const& BufferInfoVector::getBuffer(size_t cursor) const tr
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
+char32_t const& BufferInfoVector::getChar(size_t cursor) const try
+{
+    BufferInfo const& buff = getBuffer(cursor);
+    GlyphInfo const& glyph = getGlyph(cursor);
+    return buff.str.at(glyph.info.cluster);
+}
+CATCH_AND_RETHROW_METHOD_EXC;
+
 std::u32string BufferInfoVector::getString() const
 {
     std::u32string str;
@@ -132,8 +140,9 @@ void Buffer::deleteText(size_t cursor, size_t count)
 {
     if (count == 0)
         return;
-    uint32_t const index = _getClusterIndex(cursor);
-    _str.erase(_str.cbegin() + index, _str.cbegin() + index + count);
+    uint32_t const first = _getClusterIndex(cursor);
+    uint32_t const last = first + count < glyphCount() ? first + count : glyphCount();
+    _str.erase(_str.cbegin() + first, _str.cbegin() + last);
     _buffer_info.str = _str;
     _updateBuffer();
 }

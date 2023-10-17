@@ -2,6 +2,8 @@
 #include "_internal/AreaInternals.hpp"
 #include "Text-Rendering/Globals.hpp"
 
+#include <cwctype>
+
 SSS_TR_BEGIN;
 
 static void from_json(nlohmann::json const& j, Color& color)
@@ -971,6 +973,7 @@ void Area::_cursorDeleteText(Delete direction) try
         _edit_cursor -= size;
     }
     _locked_cursor = _edit_cursor;
+    _tw_cursor = static_cast<float>(_glyph_count);
     _edit_display_cursor = true;
     _edit_timer = std::chrono::nanoseconds(0);
 }
@@ -1073,9 +1076,15 @@ void Area::_updateLines() try
     _lines.clear();
     _lines.emplace_back();
     _internal::Line::it line = _lines.begin();
-    if (!_buffer_infos->empty()) {
-        line->alignment = _buffer_infos->front().fmt.alignment;
+    if (_buffer_infos->empty()) {
+        line->alignment = _format.alignment;
+        line->charsize = _format.charsize;
+        line->fullsize = static_cast<int>(static_cast<float>(_format.charsize) * _format.line_spacing);
+        return;
     }
+    
+    Alignment const main_alignment = _buffer_infos->front().fmt.alignment;
+    line->alignment = main_alignment;
     size_t cursor = 0;
 
     size_t last_divider(0);
@@ -1087,6 +1096,10 @@ void Area::_updateLines() try
         _internal::GlyphInfo const& glyph = _buffer_infos->getGlyph(cursor);
         _internal::BufferInfo const& buffer = _buffer_infos->getBuffer(cursor);
 
+        // Update alignment
+        if (line->alignment != buffer.fmt.alignment && buffer.fmt.alignment == main_alignment) {
+            line->alignment = main_alignment;
+        }
         // Update sizes
         int const charsize = buffer.fmt.charsize;
         if (line->charsize < charsize) {
@@ -1185,6 +1198,16 @@ CATCH_AND_RETHROW_METHOD_EXC;
 // Updates _buffer_infos and _glyph_count, then calls _updateLines();
 void Area::_updateBufferInfos() try
 {
+    if (!_buffers.empty()) {
+        for (auto it = _buffers.cbegin() + 1; it != _buffers.cend(); ) {
+            if ((*it)->glyphCount() == 0)
+                it = _buffers.erase(it);
+            else
+                ++it;
+        }
+        if (_buffers.size() > 1 && _buffers.front()->glyphCount() == 0)
+            _buffers.erase(_buffers.cbegin());
+    }
     _buffer_infos->update(_buffers);
     _glyph_count = _buffer_infos->glyphCount();
     _updateLines();
@@ -1194,22 +1217,65 @@ CATCH_AND_RETHROW_METHOD_EXC;
 // Draws current area if _draw is set to true
 void Area::_drawIfNeeded()
 {
-    auto const now = std::chrono::steady_clock::now();
+    using namespace std::chrono;
+    using namespace std::chrono_literals;
+
+    auto const now = steady_clock::now();
     auto const diff = now - _last_update;
 
     // Determine if TypeWriter is needed
     if (_print_mode == PrintMode::Typewriter && static_cast<size_t>(_tw_cursor) < _glyph_count) {
-        auto const ns_per_char = std::chrono::duration<float>(1) / _tw_cps;
-        _tw_cursor += diff / ns_per_char;
-        if (static_cast<size_t>(_tw_cursor) > _glyph_count) {
-            _tw_cursor = static_cast<float>(_glyph_count);
+        
+        if (_tw_sleep != 0ns) {
+            if (_tw_sleep < diff)
+                _tw_sleep = 0ns;
+            else
+                _tw_sleep -= diff;
         }
-        _draw = true;
+
+        if (_tw_sleep == 0ns) {
+
+            auto const ns_per_char = duration<float>(1) / _tw_cps;
+            float new_cursor = _tw_cursor + diff / ns_per_char;
+            if (static_cast<size_t>(new_cursor) > _glyph_count) {
+                new_cursor = static_cast<float>(_glyph_count);
+            }
+
+            for (size_t first = static_cast<size_t>(_tw_cursor) + 1,
+                    last = static_cast<size_t>(new_cursor);
+                first <= last && first < _glyph_count-1;
+                ++first)
+            {
+                char32_t const c = _buffer_infos->getChar(first);
+                auto const& fmt = _buffer_infos->getBuffer(first).fmt;
+                for (size_t i = 0;
+                    i < fmt.tw_short_pauses.size() && i < fmt.tw_long_pauses.size();
+                    i++)
+                {
+                    if (i < fmt.tw_short_pauses.size() && c == fmt.tw_short_pauses.at(i)
+                        && std::iswspace(_buffer_infos->getChar(first + 1)))
+                    {
+                        _tw_cursor = static_cast<float>(first + 1);
+                        _tw_sleep = ns_per_char * 6;
+                    }
+                    if (i < fmt.tw_long_pauses.size() && c == fmt.tw_long_pauses.at(i)
+                        && std::iswspace(_buffer_infos->getChar(first + 1)))
+                    {
+                        _tw_cursor = static_cast<float>(first + 1);
+                        _tw_sleep = ns_per_char * 12;
+                    }
+                }
+            }
+        
+            if (_tw_sleep == 0ns) {
+                _tw_cursor = new_cursor;
+                _draw = true;
+            }
+        }
     }
     // Determine if cursor needs to be drawn
     if (isFocused()) {
         _edit_timer += diff;
-        using namespace std::chrono_literals;
         if (_edit_timer >= 500ms) {
             _edit_timer %= 500ms;
             _edit_display_cursor = !_edit_display_cursor;
@@ -1220,7 +1286,6 @@ void Area::_drawIfNeeded()
     if (!_draw) {
         for (auto const& buffer : *_buffer_infos) {
             if (buffer.fmt.effect == Effect::Vibrate) {
-                using namespace std::chrono_literals;
                 if (now - _last_vibrate_update >= 33ms) {
                     _last_vibrate_update = now;
                     _draw = true;
