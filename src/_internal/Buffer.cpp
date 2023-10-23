@@ -140,8 +140,8 @@ void Buffer::deleteText(size_t cursor, size_t count)
 {
     if (count == 0)
         return;
-    uint32_t const first = _getClusterIndex(cursor);
-    uint32_t const last = first + count < glyphCount() ? first + count : glyphCount();
+    size_t const first = _getClusterIndex(cursor);
+    size_t const last = first + count < glyphCount() ? first + count : glyphCount();
     _str.erase(_str.cbegin() + first, _str.cbegin() + last);
     _buffer_info.str = _str;
     _updateBuffer();

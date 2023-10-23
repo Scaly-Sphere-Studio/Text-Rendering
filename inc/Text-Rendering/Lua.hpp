@@ -40,6 +40,8 @@ inline void lua_setup_TR(sol::state& lua) try
         fmt["lng_script"] = &Format::lng_script;
         fmt["lng_direction"] = &Format::lng_direction;
         fmt["word_dividers"] = &Format::word_dividers;
+        fmt["tw_short_pauses"] = &Format::tw_short_pauses;
+        fmt["tw_long_pauses"] = &Format::tw_long_pauses;
         // Global default value
         tr["default_fmt"] = std::ref(default_fmt);
 

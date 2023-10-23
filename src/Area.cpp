@@ -254,7 +254,7 @@ static void jsonToFmt(nlohmann::json const& json, Format& fmt)
     if (has_value("shadow_color"))
         fmt.shadow_color = json.at("shadow_color").get<Color>();
     if (has_value("alpha"))
-        fmt.alpha = json.at("alpha").get<float>();
+        fmt.alpha = json.at("alpha").get<uint8_t>();
     // Language
     if (has_value("lng_tag"))
         fmt.lng_tag = json.at("lng_tag").get<std::string>();
@@ -263,7 +263,11 @@ static void jsonToFmt(nlohmann::json const& json, Format& fmt)
     if (has_value("lng_direction"))
         fmt.lng_direction = json.at("lng_direction").get<std::string>();
     if (has_value("word_dividers"))
-        fmt.word_dividers = json.at("word_dividers").get<std::u32string>();
+        fmt.word_dividers = strToStr32(json.at("word_dividers").get<std::string>());
+    if (has_value("tw_short_pauses"))
+        fmt.tw_short_pauses = strToStr32(json.at("tw_short_pauses").get<std::string>());
+    if (has_value("tw_long_pauses"))
+        fmt.tw_long_pauses = strToStr32(json.at("tw_long_pauses").get<std::string>());
 }
 
 void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
@@ -389,6 +393,10 @@ static std::string fmtDiff(Format const& parent, Format const& child)
         ret["lng_direction"] = child.lng_direction;
     if (parent.word_dividers != child.word_dividers)
         ret["word_dividers"] = child.word_dividers;
+    if (parent.tw_short_pauses != child.tw_short_pauses)
+        ret["tw_short_pauses"] = child.tw_short_pauses;
+    if (parent.tw_long_pauses != child.tw_long_pauses)
+        ret["tw_long_pauses"] = child.tw_long_pauses;
 
     return '{' + ret.dump() + '}';
 }
@@ -1252,17 +1260,17 @@ void Area::_drawIfNeeded()
                     i < fmt.tw_short_pauses.size() && i < fmt.tw_long_pauses.size();
                     i++)
                 {
-                    if (i < fmt.tw_short_pauses.size() && c == fmt.tw_short_pauses.at(i)
-                        && std::iswspace(_buffer_infos->getChar(first + 1)))
+                    char32_t const
+                        sh_c = i < fmt.tw_short_pauses.size() ? fmt.tw_short_pauses.at(i) : 0,
+                        lo_c = i < fmt.tw_long_pauses.size() ? fmt.tw_long_pauses.at(i) : 0;
+
+                    if ((c == sh_c || c == lo_c)
+                        && std::iswspace(static_cast<wchar_t>(_buffer_infos->getChar(first + 1))))
                     {
                         _tw_cursor = static_cast<float>(first + 1);
-                        _tw_sleep = ns_per_char * 6;
-                    }
-                    if (i < fmt.tw_long_pauses.size() && c == fmt.tw_long_pauses.at(i)
-                        && std::iswspace(_buffer_infos->getChar(first + 1)))
-                    {
-                        _tw_cursor = static_cast<float>(first + 1);
-                        _tw_sleep = ns_per_char * 12;
+                        _tw_sleep = ns_per_char * (lo_c == c ? 12 : 6);
+                        _draw = true;
+                        break;
                     }
                 }
             }
