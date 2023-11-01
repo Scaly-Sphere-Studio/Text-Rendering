@@ -1098,16 +1098,26 @@ void Area::_updateLines() try
     size_t last_divider(0);
     int last_divider_x{ 0 };
     FT_Vector pen({ _margin_v << 6, _margin_h << 6 });
+
+    bool add_line = false;
     
     while (cursor < _glyph_count) {
         // Retrieve glyph infos
         _internal::GlyphInfo const& glyph = _buffer_infos->getGlyph(cursor);
         _internal::BufferInfo const& buffer = _buffer_infos->getBuffer(cursor);
 
-        // Update alignment
-        if (line->alignment != buffer.fmt.alignment && buffer.fmt.alignment == main_alignment) {
-            line->alignment = main_alignment;
+        // Add line if needed
+        if (add_line) {
+            _lines.emplace_back();
+            line = _lines.end() - 1;
+            line->first_glyph = cursor;
+            line->scrolling = (line - 1)->scrolling;
+            line->alignment = buffer.fmt.alignment;
+            // Reset pen
+            pen = { _margin_v << 6, _margin_h << 6 };
+            add_line = false;
         }
+
         // Update sizes
         int const charsize = buffer.fmt.charsize;
         if (line->charsize < charsize) {
@@ -1118,9 +1128,13 @@ void Area::_updateLines() try
             line->fullsize = fullsize;
         }
         // If glyph is a word divider, mark it as possible line break
+        // Else, update alignment
         if (glyph.is_word_divider) {
             last_divider = cursor;
             last_divider_x = pen.x;
+        }
+        else if (line->alignment != buffer.fmt.alignment && buffer.fmt.alignment == main_alignment) {
+            line->alignment = main_alignment;
         }
         // Update pen position
         if (!glyph.is_new_line) {
@@ -1152,14 +1166,7 @@ void Area::_updateLines() try
             }
             last_divider = 0;
             last_divider_x = 0;
-            // Add line if needed
-            _lines.emplace_back();
-            line = _lines.end() - 1;
-            line->first_glyph = cursor + 1;
-            line->scrolling = (line - 1)->scrolling;
-            line->alignment = buffer.fmt.alignment;
-            // Reset pen
-            pen = { _margin_v << 6, _margin_h << 6 };
+            add_line = true;
         }
         // Only increment cursor if not a line break
         ++cursor;

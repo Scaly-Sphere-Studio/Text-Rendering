@@ -238,6 +238,7 @@ public:
     void pixelsGetDimensions(int& width, int& height) const noexcept;
 
     void getDimensions(int& width, int& height) const noexcept;
+    inline auto getDimensions() const noexcept { return std::make_tuple(_w, _h); };
     inline int getWidth() const noexcept { return _w; };
     inline int getHeight() const noexcept { return _h; };
     /** Sets new dimensions values for internal pixels.

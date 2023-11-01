@@ -225,7 +225,7 @@ void Buffer::_shape() try
             }
         }
         // Check if the glyph is a new line
-        if (glyph.info.codepoint == 0 && _str.at(glyph.info.cluster) == '\n') {
+        if (_str.at(glyph.info.cluster) == '\n') {
             glyph.is_new_line = true;
             glyph.is_word_divider = true;
         }
