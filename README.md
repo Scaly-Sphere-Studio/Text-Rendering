@@ -1,3 +1,3 @@
 <p align="center">
-<img src="webp/Text Rendering Demo.webp">
+<img src="webp/demo.webp">
 </p>
