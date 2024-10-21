@@ -26,6 +26,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         using namespace SSS::TR;
         bool const ctrl = mods & GLFW_MOD_CONTROL;
         switch (key) {
+        case GLFW_KEY_F1:
+            Area::get(0)->setPrintMode(PrintMode::Instant);
+            Area::get(0)->setPrintMode(PrintMode::Typewriter);
+            break;
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_KP_0:
         case GLFW_KEY_F5:
@@ -69,6 +73,19 @@ static void char_callback(GLFWwindow* ptr, unsigned int codepoint)
     SSS::TR::Area::cursorAddText(str);
 }
 
+glm::mat4 VP;
+
+// Resize callback
+static void size_callback(GLFWwindow* ptr, int w, int h)
+{
+    glViewport(0, 0, w, h);
+    auto const view = glm::lookAt(glm::vec3(0, 0, 3), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
+    const float w2 = static_cast<float>(w) / 2.f,
+        h2 = static_cast<float>(h) / 2.f;
+    auto const proj = glm::ortho(-w2, w2, -h2, h2, 0.1f, 100.f);
+    VP = proj * view;
+}
+
 int main() try
 {
     using namespace SSS;
@@ -86,10 +103,14 @@ int main() try
     // OpenGL
     WindowPtr window;
     GLuint ids[5];
-    glm::mat4 VP, scaling, MVP;
+    glm::mat4 scaling, MVP;
     load_opengl(window, ids, VP);
     glfwSetKeyCallback(window.get(), key_callback);
     glfwSetCharCallback(window.get(), char_callback);
+    glfwSetWindowSizeCallback(window.get(), size_callback);
+
+    auto [w, h] = area.getDimensions();
+    glfwSetWindowSize(window.get(), w, h);
 
     FrameTimer fps;
 
