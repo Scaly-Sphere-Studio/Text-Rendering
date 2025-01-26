@@ -91,6 +91,7 @@ inline void lua_setup_TR(sol::state& lua) try
     area["getFmt"] = &Area::getFormat;
     area["setFmt"] = &Area::setFormat;
     area["wrapping"] = sol::property(&Area::getWrapping, &Area::setWrapping);
+    area["wrapping_max_width"] = sol::property(&Area::getWrappingMaxWidth, &Area::setWrappingMaxWidth);
     // Margins
     area["getMargins"] = [](Area& area) {
         return std::make_tuple(area.getMarginV(), area.getMarginH());

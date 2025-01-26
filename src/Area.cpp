@@ -110,6 +110,17 @@ bool Area::getWrapping() const noexcept
     return _wrapping;
 }
 
+void Area::setWrappingMaxWidth(int max_w) noexcept
+{
+    _wrapping_w = max_w;
+    _updateBufferInfos();
+}
+
+int Area::getWrappingMaxWidth() const noexcept
+{
+    return _wrapping_w;
+}
+
 Area& Area::create(uint32_t id) try
 {
     Ptr& area = _instances[id];
@@ -1143,9 +1154,10 @@ void Area::_updateLines() try
         }
 
         // If wrapping mode is disabled and the pen is out of bound, we should line break
-        if (glyph.is_new_line ||
-            (!_wrapping && ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v))))
-        {
+        if (glyph.is_new_line
+            || (!_wrapping && ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v)))
+            || (_wrapping && _wrapping_w && ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_wrapping_w - _margin_v)))
+        ) {
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
                 if (cursor != 0)
