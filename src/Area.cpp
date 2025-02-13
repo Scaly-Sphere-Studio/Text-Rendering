@@ -110,15 +110,33 @@ bool Area::getWrapping() const noexcept
     return _wrapping;
 }
 
+void Area::setWrappingMinWidth(int min_w) noexcept
+{
+    _min_w = min_w;
+    _updateBufferInfos();
+}
+
+int Area::getWrappingMinWidth() const noexcept
+{
+    return _min_w;
+}
+
 void Area::setWrappingMaxWidth(int max_w) noexcept
 {
-    _wrapping_w = max_w;
+    _max_w = max_w;
     _updateBufferInfos();
 }
 
 int Area::getWrappingMaxWidth() const noexcept
 {
-    return _wrapping_w;
+    return _max_w;
+}
+
+int Area::getUsedWidth() const noexcept
+{
+    return std::max_element(_lines.cbegin(), _lines.cend(),
+        [](auto& a, auto& b)->bool { return a.used_width < b.used_width; }
+    )->used_width + static_cast<int>(_wrapping);
 }
 
 Area& Area::create(uint32_t id) try
@@ -1156,7 +1174,7 @@ void Area::_updateLines() try
         // If wrapping mode is disabled and the pen is out of bound, we should line break
         if (glyph.is_new_line
             || (!_wrapping && ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_w - _margin_v)))
-            || (_wrapping && _wrapping_w && ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_wrapping_w - _margin_v)))
+            || (_wrapping && _max_w && ((pen.x >> 6) < _margin_v || (pen.x >> 6) >= (_max_w - _margin_v)))
         ) {
             // If no word divider was found, hard break the line
             if (last_divider == 0) {
@@ -1168,13 +1186,12 @@ void Area::_updateLines() try
                 cursor = last_divider;
                 line->used_width = last_divider_x >> 6;
             }
-            if (glyph.is_new_line)
-                line->unused_width = _w - _margin_v - (pen.x >> 6);
 
             line->last_glyph = cursor;
             line->scrolling += line->fullsize;
-            if (_wrapping && _w < (line->used_width + _margin_v)) {
-                _w = line->used_width + _margin_v;
+            line->used_width += _margin_v;
+            if (_wrapping && _w < line->used_width) {
+                _w = line->used_width;
             }
             last_divider = 0;
             last_divider_x = 0;
@@ -1193,16 +1210,18 @@ void Area::_updateLines() try
             * buffer.fmt.line_spacing);
     }
     line->scrolling += line->fullsize;
-    line->used_width = pen.x >> 6;
+    line->used_width = (pen.x >> 6) + _margin_v;
     if (_wrapping) {
-        if (_w < (line->used_width + _margin_v)) {
-            _w = line->used_width + _margin_v;
+        if (_w < (line->used_width)) {
+            _w = line->used_width;
         }
         ++_w;
     }
+    if (_w < _min_w)
+        _w = _min_w;
     // Compute unused width of each line
     for (auto& line : _lines) {
-        line.unused_width = _w - _margin_v - line.used_width;
+        line.unused_width = _w - line.used_width;
         if (_wrapping) {
             _h += static_cast<int>(line.fullsize);
         }

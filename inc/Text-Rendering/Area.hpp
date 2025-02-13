@@ -77,8 +77,12 @@ public:
     void setWrapping(bool wrapping) noexcept;
     bool getWrapping() const noexcept;
 
+    void setWrappingMinWidth(int min_w) noexcept;
+    int getWrappingMinWidth() const noexcept;
     void setWrappingMaxWidth(int max_w) noexcept;
     int getWrappingMaxWidth() const noexcept;
+
+    int getUsedWidth() const noexcept;
 
     /** Creates an Area instance which will be stored in the internal #Map.
      *  @param[in] id The ID at which the new instance will be stored.
@@ -320,7 +324,8 @@ private:
     // Map ID of the area
     uint32_t const _id;
     bool _wrapping{ true };
-    int _wrapping_w{ 0 };
+    int _min_w{ 0 };
+    int _max_w{ 0 };
     // Width of area
     int _w;
     // Height of area

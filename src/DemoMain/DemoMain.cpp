@@ -28,7 +28,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         switch (key) {
         case GLFW_KEY_F1:
             Area::get(0)->setPrintMode(PrintMode::Instant);
-            Area::get(0)->setPrintMode(PrintMode::Typewriter);
+            //Area::get(0)->setPrintMode(PrintMode::Typewriter);
             break;
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_KP_0:
@@ -99,6 +99,7 @@ int main() try
     TR::lua_setup_TR(lua);
     lua.unsafe_script_file("Demo.lua");
     TR::Area& area = lua["area"];
+    area.setFocus(true);
 
     // OpenGL
     WindowPtr window;
@@ -140,9 +141,6 @@ int main() try
         if (glfwGetMouseButton(window.get(), GLFW_MOUSE_BUTTON_1)) {
             double x, y;
             glfwGetCursorPos(window.get(), &x, &y);
-            int h, w;
-            glfwGetWindowSize(window.get(), &h, &w);
-            x -= w / 2;
             area.cursorPlace((int)x, (int)y);
         }
         else if (!shift)

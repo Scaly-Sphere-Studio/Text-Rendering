@@ -3,7 +3,10 @@ print("Demo.lua start")
 local lorem_ipsum =
 [[Lorem ipsum dolor sit amet,
 consectetur adipiscing elit.
-Pellentesque vitae velit ante. Suspendisse nulla lacus, tempor sit amet iaculis non, scelerisque.{{
+Pellentesque vitae velit ante.
+Suspendisse nulla lacus,
+tempor sit amet iaculis non,
+scelerisque.{{
     "text_color": "Rainbow",
     "effect": "Waves",
     "alignment": "Right",
@@ -11,9 +14,7 @@ Pellentesque vitae velit ante. Suspendisse nulla lacus, tempor sit amet iaculis 
     "lng_tag": "ar",
     "lng_script": "Arab",
     "lng_direction": "rtl"
-}}
-يرغب في الحب {{}}
-sed est.
+}} يرغب في الحب {{}} sed est.
 Aenean pharetra ipsum sit amet sem lobortis,
 a cursus felis semper.
 Integer nec tortor ex.
@@ -46,13 +47,14 @@ TR.default_fmt.alignment = TR.Alignment.Center
 area = TR.Area.new(1230, 680)
 
 area.margin_h = 30
-area.string = demo_str
 area.clear_color = RGBA.new(244, 234, 233, 255)
 area.wrapping = true
-area.print_mode = TR.PrintMode.Typewriter
+--area.print_mode = TR.PrintMode.Typewriter
 area.TW_speed = 20
---area.focusable = true;
---area.focus = true;
+area.focusable = true;
+area.focus = true;
+area.string = lorem_ipsum
+area.wrapping = false
 
 
 print("Demo.lua end")
