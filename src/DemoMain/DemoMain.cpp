@@ -98,8 +98,8 @@ int main() try
     lua_setup(lua);
     TR::lua_setup_TR(lua);
     lua.unsafe_script_file("Demo.lua");
-    TR::Area& area = lua["area"];
-    area.setFocus(true);
+    TR::Area::Shared area = lua["area"];
+    area->setFocus(true);
 
     // OpenGL
     WindowPtr window;
@@ -110,7 +110,7 @@ int main() try
     glfwSetCharCallback(window.get(), char_callback);
     glfwSetWindowSizeCallback(window.get(), size_callback);
 
-    auto [w, h] = area.getDimensions();
+    auto [w, h] = area->getDimensions();
     glfwSetWindowSize(window.get(), w, h);
 
     FrameTimer fps;
@@ -132,33 +132,33 @@ int main() try
         if ((glfwGetKey(window.get(), GLFW_KEY_LEFT_CONTROL) ||
             glfwGetKey(window.get(), GLFW_KEY_RIGHT_CONTROL)) &&
             glfwGetKey(window.get(), GLFW_KEY_A))
-            area.selectAll();
+            area->selectAll();
 
         bool const shift = glfwGetKey(window.get(), GLFW_KEY_LEFT_SHIFT) ||
                            glfwGetKey(window.get(), GLFW_KEY_RIGHT_SHIFT);
         if (shift)
-            area.lockSelection();
+            area->lockSelection();
         if (glfwGetMouseButton(window.get(), GLFW_MOUSE_BUTTON_1)) {
             double x, y;
             glfwGetCursorPos(window.get(), &x, &y);
-            area.cursorPlace((int)x, (int)y);
+            area->cursorPlace((int)x, (int)y);
         }
         else if (!shift)
-            area.unlockSelection();
+            area->unlockSelection();
 
         if (glfwGetKey(window.get(), GLFW_KEY_F4) == GLFW_PRESS) {
-            area.formatSelection(nlohmann::json{{ "text_color", 255 }});
+            area->formatSelection(nlohmann::json{{ "text_color", 255 }});
         }
 
         // Update texture if needed
-        area.update();
-        if (area.pixelsWereChanged()) {
+        area->update();
+        if (area->pixelsWereChanged()) {
             int w, h;
-            area.pixelsGetDimensions(w, h);
+            area->pixelsGetDimensions(w, h);
             scaling = glm::scale(glm::mat4(1), glm::vec3(w, h, 1));
             MVP = VP * scaling;
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, area.pixelsGet());
-            area.pixelsAreRetrieved();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, area->pixelsGet());
+            area->pixelsAreRetrieved();
         }
 
         glUniformMatrix4fv(glGetUniformLocation(ids[prog], "u_VP"), 1, false, &MVP[0][0]);
@@ -171,6 +171,8 @@ int main() try
         }
     }
 
+    //lua.stack_clear();
+    //area.reset();
     glfwTerminate();
     TR::terminate();
 }

@@ -59,18 +59,15 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ColorFunc, {
     { ColorFunc::RainbowFixed, "RainbowFixed" },
 })
 
-std::map<uint32_t, Area::Ptr> Area::_instances{};
 int Area::_default_margin_h{ 10 };
 int Area::_default_margin_v{ 10 };
-bool Area::_focused_state{ false };
-uint32_t Area::_focused_id{ 0 };
+Area::Weak Area::_focused{};
 
     // --- Constructor, destructor & clear function ---
 
 // Constructor, creates a default Buffer
-Area::Area(uint32_t id) try
-    :   _id(id),
-        _buffer_infos(std::make_unique<_internal::BufferInfoVector>())
+Area::Area() try
+    : _buffer_infos(std::make_unique<_internal::BufferInfoVector>())
 {
     for (auto& pixels : _pixels) {
         pixels.reset(new _internal::AreaPixels);
@@ -81,7 +78,7 @@ Area::Area(uint32_t id) try
     _updateBufferInfos();
     if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
         char buff[256];
-        sprintf_s(buff, "Created Area #%u.", _id);
+        sprintf_s(buff, "Created Area #%p.", this);
         LOG_TR_MSG(buff);
     }
 }
@@ -92,7 +89,7 @@ Area::~Area() noexcept
 {
     if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
         char buff[256];
-        sprintf_s(buff, "Deleted Area #%u.", _id);
+        sprintf_s(buff, "Deleted Area #%p.", this);
         LOG_TR_MSG(buff);
     }
 }
@@ -139,63 +136,24 @@ int Area::getUsedWidth() const noexcept
     )->used_width + static_cast<int>(_wrapping);
 }
 
-Area& Area::create(uint32_t id) try
+Area::Shared Area::create(int width, int height)
 {
-    Ptr& area = _instances[id];
-    area.reset(new Area(id));
-    return *area;
-}
-CATCH_AND_RETHROW_FUNC_EXC;
-
-Area& Area::create()
-{
-    uint32_t id = 0;
-    // Increment ID until no similar value is found
-    while (_instances.count(id) != 0) {
-        ++id;
-    }
-    return create(id);
-}
-
-Area& Area::create(int width, int height)
-{
-    Area& area = create();
-    area.setDimensions(width, height);
+    Shared area = create();
+    area->setDimensions(width, height);
     return area;
 }
 
-Area& Area::create(std::u32string const& str, Format fmt)
+Area::Shared Area::create(std::u32string const& str, Format fmt)
 {
-    Area& area = create();
-    area.setFormat(fmt);
-    area.parseStringU32(str);
+    Shared area = create();
+    area->setFormat(fmt);
+    area->parseStringU32(str);
     return area;
 }
 
-Area& Area::create(std::string const& str, Format fmt)
+Area::Shared Area::create(std::string const& str, Format fmt)
 {
     return create(strToStr32(str), fmt);
-}
-
-void Area::remove(uint32_t id) try
-{
-    if (_instances.count(id) != 0) {
-        _instances.erase(id);
-    }
-}
-CATCH_AND_RETHROW_FUNC_EXC
-
-void Area::clearAll() noexcept
-{
-    _instances.clear();
-}
-
-Area* Area::get(uint32_t id) noexcept
-{
-    if (_instances.count(id) == 0) {
-        return nullptr;
-    }
-    return _instances.at(id).get();
 }
 
     // --- Basic functions ---
@@ -476,17 +434,24 @@ std::string Area::getUnparsedString() const
 
 void Area::updateAll()
 {
-    for (auto const& pair : _instances) {
-        if (pair.second)
-            pair.second->update();
+    for (Shared area : getInstances()) {
+        area->update();
     }
 }
 
 void Area::notifyAll()
 {
-    for (auto const& pair : _instances) {
-        if (pair.second && pair.second->pixelsWereChanged())
-            pair.second->pixelsAreRetrieved();
+    for (Shared area : getInstances()) {
+        if (area->pixelsWereChanged())
+            area->pixelsAreRetrieved();
+    }
+}
+
+void Area::cancelAll()
+{
+    for (Shared area : getInstances()) {
+        if (area->hasRunningThread())
+            (*area->_processing_pixels)->cancel();
     }
 }
 
@@ -583,25 +548,22 @@ void Area::scroll(int pixels) noexcept
 
 void Area::resetFocus()
 {
-    _focused_state = false;
-    if (_instances.count(_focused_id) != 0) {
-        _instances.at(_focused_id)->setFocus(false);
+    if (Shared area = getFocused(); area) {
+        area->setFocus(false);
+        _focused.reset();
     }
 }
 
-Area* Area::getFocused() noexcept
+Area::Shared Area::getFocused() noexcept
 {
-    if (_focused_state && _instances.count(_focused_id) != 0) {
-        return _instances.at(_focused_id).get();
-    }
-    return nullptr;
+    return _focused.lock();
 }
 
 void Area::setFocusable(bool focusable)
 {
     if (_is_focusable == focusable)
         return;
-    if (_is_focusable && _focused_id == _id) {
+    if (_is_focusable && isFocused()) {
         resetFocus();
     }
     _is_focusable = focusable;
@@ -615,18 +577,17 @@ void Area::setFocus(bool state)
     // Make this window focused
     if (state) {
         // Unfocus previous window if different
-        if (_focused_id != _id && _instances.count(_focused_id) != 0) {
-            _instances.at(_focused_id)->setFocus(false);
+        if (Shared focused = getFocused(); focused && focused != shared_from_this()) {
+            focused->setFocus(false);
         }
-        _focused_id = _id;
-        _focused_state = true;
+        _focused = weak_from_this();
         _edit_display_cursor = true;
         _edit_timer = std::chrono::nanoseconds(0);
         _draw = true;
     }
     // Unfocus this window
-    else if (_focused_id == _id) {
-        _focused_state = false;
+    else if (isFocused()) {
+        _focused.reset();
         _edit_display_cursor = false;
         _draw = true;
     }
@@ -634,7 +595,8 @@ void Area::setFocus(bool state)
 
 bool Area::isFocused() const noexcept
 {
-    return _focused_state && _focused_id == _id;
+    Shared focused = getFocused();
+    return focused && focused == shared_from_this();
 }
 
 void Area::cursorPlace(int x, int y) try
@@ -1018,7 +980,7 @@ CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::cursorMove(Move direction)
 {
-    Area* area = getFocused();
+    Shared area = getFocused();
     if (area) {
         area->_cursorMove(direction);
     }
@@ -1026,7 +988,7 @@ void Area::cursorMove(Move direction)
 
 void Area::cursorAddText(std::u32string str)
 {
-    Area* area = getFocused();
+    Shared area = getFocused();
     if (area) {
         area->_cursorAddText(str);
     }
@@ -1039,7 +1001,7 @@ void Area::cursorAddText(std::string str)
 
 void Area::cursorDeleteText(Delete direction)
 {
-    Area* area = getFocused();
+    Shared area = getFocused();
     if (area) {
         area->_cursorDeleteText(direction);
     }

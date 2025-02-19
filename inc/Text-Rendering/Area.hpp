@@ -62,10 +62,11 @@ enum class PrintMode {
  * 
  *  @sa Format, init(), loadFont()
  */
-class SSS_TR_API Area : public Base {
+class SSS_TR_API Area : public InstancedClass<Area> {
+    friend SharedClass;
 protected:
-    // Constructor, creates a default Buffer
-    Area(uint32_t id);
+    // Constructor
+    Area();
 
 public:
     /** Destructor, clears internal cache.
@@ -84,41 +85,18 @@ public:
 
     int getUsedWidth() const noexcept;
 
+    using InstancedClass::create;
     /** Creates an Area instance which will be stored in the internal #Map.
-     *  @param[in] id The ID at which the new instance will be stored.
      *  @param[in] width The area's width, in pixels. Must be above 0.
      *  @param[in] height The area's height, in pixels. Must be above 0.
      *  @return A const-ref to the created Area::Ptr.
      *  @throw std::runtime_error If \c width or \c height are <= 0.
      *  @sa get(), remove().
      */
-    static Area& create(uint32_t id);
-    static Area& create();
+    static Shared create(int width, int height);
 
-    static Area& create(int width, int height);
-
-    static Area& create(std::u32string const& str, Format fmt = Format());
-    static Area& create(std::string const& str, Format fmt = Format());
-    
-    /** Returns a pointer to corresponding Area instance, or
-     *  nullptr if no instance corresponds to given argument.
-     *  @sa create(), remove()
-     */
-    static Area* get(uint32_t id) noexcept;
-
-    /** Removes an Area instance from the internal #Map.
-     *  @param[in] id The ID of instance to be deleted.
-     *  @sa create(), clearAll().
-     */
-    static void remove(uint32_t id);
-
-    /** Clears the internal instance #Map.
-     *  Equivalent to calling remove() on every single instance.
-     *  @sa remove()
-     */
-    static void clearAll() noexcept;
-
-    inline uint32_t getID() const noexcept { return _id; };
+    static Shared create(std::u32string const& str, Format fmt = Format());
+    static Shared create(std::string const& str, Format fmt = Format());
 
     inline Format getFormat() const noexcept { return _format; };
 
@@ -199,6 +177,7 @@ public:
 
     static void updateAll();
     static void notifyAll();
+    static void cancelAll();
 
     /** Draws modifications when needed, and sets the return value of
      *  pixelsWereChanged() to \c true when changes are finished.
@@ -271,7 +250,7 @@ public:
     bool isFocused() const noexcept;
 
     static void resetFocus();
-    static Area* getFocused() noexcept;
+    static Shared getFocused() noexcept;
 
     /** Places the editing cursor at given coordinates.
      *  The cursor is by default at the end of the text.
@@ -321,8 +300,6 @@ public:
     int getTypeWriterSpeed() const noexcept { return _tw_cps; };
 
 private:
-    // Map ID of the area
-    uint32_t const _id;
     bool _wrapping{ true };
     int _min_w{ 0 };
     int _max_w{ 0 };
@@ -404,12 +381,8 @@ private:
      *  @sa create(), remove().
      */
     using Ptr = std::unique_ptr<Area>;
-    
-    // Static map of allocated instances
-    static std::map<uint32_t, Ptr> _instances;
 
-    static bool _focused_state;
-    static uint32_t _focused_id;
+    static Weak _focused;
 
     // Computes _edit_cursor's relative position on the Area
     void _getCursorPhysicalPos(int& x, int& y) const noexcept;

@@ -49,8 +49,8 @@ Lib::Lib()
 
 Lib::~Lib()
 {
-    // Clean
-    Area::clearAll();
+    // Ensure all areas stopped drawing
+    Area::cancelAll();
     clearFonts();
     _ptr.reset();
 

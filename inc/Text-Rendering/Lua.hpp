@@ -77,10 +77,9 @@ inline void lua_setup_TR(sol::state& lua) try
     }
     // Area
     auto area = tr.new_usertype<Area>("Area", sol::factories(
-        sol::resolve<Area& (uint32_t)>(&Area::create),
-        sol::resolve<Area& ()>(&Area::create),
-        sol::resolve<Area& (int, int)>(&Area::create),
-        sol::resolve<Area& (std::u32string const&, Format)>(&Area::create)),
+        sol::resolve<Area::Shared ()>(&Area::create),
+        sol::resolve<Area::Shared (int, int)>(&Area::create),
+        sol::resolve<Area::Shared (std::u32string const&, Format)>(&Area::create)),
         sol::base_classes, sol::bases<Base>()
     );
     // Parse & clear
