@@ -7,8 +7,9 @@ Pellentesque vitae velit ante.
 Suspendisse nulla lacus,
 tempor sit amet iaculis non,
 scelerisque.{{
+    "charsize": 50,
     "text_color": "Rainbow",
-    "effect": "Waves",
+    "effect": "",
     "alignment": "Right",
     "shadow_offset": {"x": -3},
     "lng_tag": "ar",
@@ -33,9 +34,9 @@ TR.addFontDir("C:/dev/fonts")
 TR.default_fmt.font = "CALIBRI.TTF"
 TR.default_fmt.charsize = 30
 TR.default_fmt.has_outline = true
---TR.default_fmt.has_shadow = true
+TR.default_fmt.has_shadow = true
 TR.default_fmt.outline_size = 2
-TR.default_fmt.line_spacing = 1.75
+TR.default_fmt.line_spacing = 1.5
 TR.default_fmt.outline_color.rgb = RGB.new(212, 164, 159).rgb
 TR.default_fmt.text_color.rgb = RGB.new(230, 192, 188).rgb
 TR.default_fmt.shadow_color.rgb = RGB.new(194, 121, 114).rgb
@@ -46,7 +47,7 @@ TR.default_fmt.alignment = TR.Alignment.Center
 
 area = TR.Area.new(1230, 680)
 
-area.margin_h = 30
+area.margin_h = 0
 area.clear_color = RGBA.new(244, 234, 233, 255)
 area.wrapping = true
 --area.print_mode = TR.PrintMode.Typewriter

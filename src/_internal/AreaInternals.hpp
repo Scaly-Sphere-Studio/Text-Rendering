@@ -17,6 +17,7 @@ struct Line {
     size_t first_glyph{ 0 }; // First glyph of the line
     size_t last_glyph{ 0 };  // Line break after rendering glyph
     int fullsize{ 0 };       // Line's full size, in pixels
+    int y_offset{ 0 };       // Line's y offset (half of fullsize - charsize)
     int charsize{ 0 };       // The highest charsize on the line
     int scrolling{ 0 };      // Total scrolling for this line to be above the top
     int used_width{ 0 };     // Line's used vertical width, in pixels

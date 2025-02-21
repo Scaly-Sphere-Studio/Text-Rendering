@@ -129,6 +129,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
     // Draw the glyphs
     Line::cit line = data.lines.cbegin();
     param.charsize = line->charsize;
+    param.pen.y -= line->y_offset << 6;
     bool const area_is_ltr = data.buffer_infos.isLTR();
     bool is_ltr = data.buffer_infos.isLTR();
     for (size_t cursor = 0; cursor < data.last_glyph; ++cursor) {
@@ -144,9 +145,10 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
             // Handle line breaks. Return true if pen goes out of bound
             if (cursor == line->last_glyph && line != data.lines.end() - 1) {
                 param.pen.x = (area_is_ltr ? data.margin_v : (_w - data.margin_v)) << 6;
-                param.pen.y -= line->fullsize << 6;
+                param.pen.y -= (line->fullsize - line->y_offset) << 6;
                 ++line;
                 param.pen.x += (line->x_offset(area_is_ltr) << 6) * (area_is_ltr ? 1 : -1);
+                param.pen.y -= line->y_offset << 6;
                 param.charsize = line->charsize;
                 ++param.effect_cursor;
                 if (buffer_info.fmt.lng_direction != data.buffer_infos.getDirection()) {
@@ -163,6 +165,8 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
             }
         };
         if (param.is_selected_bg) {
+            // Cancel y offset
+            param.pen.y += line->y_offset << 6;
             if (cursor >= data.selected.first && cursor < data.selected.last) {
                 int x = (is_ltr ? param.pen.x : param.pen.x - glyph_info.pos.x_advance) >> 6;
                 int const x_max = (is_ltr ? param.pen.x + glyph_info.pos.x_advance : param.pen.x) >> 6,
@@ -175,6 +179,7 @@ void AreaPixels::_drawGlyphs(AreaData const& data, DrawParameters param)
                     }
                 }
             }
+            param.pen.y -= line->y_offset << 6;
             move_cursor();
         }
         else {

@@ -1027,8 +1027,8 @@ void Area::_getCursorPhysicalPos(int& x, int& y) const noexcept
     _internal::Line::cit line(_internal::Line::which(_lines, _edit_cursor));
 
     FT_Vector pen;
-    pen.y = _margin_h + _lines.cbegin()->charsize * 4 / 3;
-    for (_internal::Line::cit it = _lines.cbegin() + 1; it <= line; ++it) {
+    pen.y = _margin_h;
+    for (_internal::Line::cit it = _lines.cbegin(); it <= line; ++it) {
         pen.y += it->fullsize;
     }
 
@@ -1114,9 +1114,12 @@ void Area::_updateLines() try
         if (line->charsize < charsize) {
             line->charsize = charsize;
         }
-        int const fullsize = static_cast<int>(static_cast<float>(charsize) * buffer.fmt.line_spacing);
+        int const fullsize = static_cast<int>(static_cast<float>(charsize) *
+            buffer.fmt.line_spacing);
         if (line->fullsize < fullsize) {
             line->fullsize = fullsize;
+            line->y_offset = (fullsize - static_cast<int>(1.3f *
+                static_cast<float>(charsize))) / 2;
         }
         // If glyph is a word divider, mark it as possible line break
         // Else, update alignment
@@ -1168,8 +1171,10 @@ void Area::_updateLines() try
     if (line->first_glyph == line->last_glyph) {
         auto const& buffer = _buffer_infos->getBuffer(cursor);
         line->charsize = buffer.fmt.charsize;
-        line->fullsize = static_cast<int>(static_cast<float>(line->charsize)
-            * buffer.fmt.line_spacing);
+        line->fullsize = static_cast<int>(static_cast<float>(line->charsize) *
+            buffer.fmt.line_spacing);
+        line->y_offset = (line->fullsize - static_cast<int>(1.3f *
+            static_cast<float>(line->charsize))) / 2;
     }
     line->scrolling += line->fullsize;
     line->used_width = (pen.x >> 6) + _margin_v;
