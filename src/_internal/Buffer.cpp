@@ -55,7 +55,7 @@ void BufferInfoVector::update(std::vector<Buffer::Ptr> const& buffers)
     reserve(buffers.size());
     for (Buffer::Ptr const& ptr : buffers) {
         _internal::Buffer& buffer = *ptr;
-        emplace_back(buffer._buffer_info);
+        emplace_back(buffer._info);
         _glyph_count += buffer.glyphCount();
     }
     if (!empty())
@@ -73,7 +73,6 @@ void BufferInfoVector::clear() noexcept
 
 // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
 Buffer::Buffer(Format const& opt) try
-    : _opt(opt)
 {
     // Create buffer (and reference it to prevent early deletion)
     _buffer.reset(hb_buffer_reference(hb_buffer_create()));
@@ -105,8 +104,7 @@ Buffer::~Buffer()
 
 void Buffer::changeString(std::u32string const& str)
 {
-    _str = str;
-    _buffer_info.str = _str;
+    _info.str = str;
     _updateBuffer();
 }
 
@@ -118,16 +116,17 @@ void Buffer::changeString(std::string const& str)
 uint32_t Buffer::_getClusterIndex(size_t cursor)
 {
     if (cursor >= glyphCount()) {
-        return static_cast<uint32_t>(glyphCount());
+        if (glyphCount())
+            return _info.glyphs.back().info.cluster + 1;
+        return 0;
     }
-    return _buffer_info.glyphs.at(cursor).info.cluster;
+    return _info.glyphs.at(cursor).info.cluster;
 }
 
 void Buffer::insertText(std::u32string const& str, size_t cursor)
 {
     uint32_t const index = _getClusterIndex(cursor);
-    _str.insert(_str.cbegin() + index, str.cbegin(), str.cend());
-    _buffer_info.str = _str;
+    _info.str.insert(_info.str.cbegin() + index, str.cbegin(), str.cend());
     _updateBuffer();
 }
 
@@ -141,9 +140,8 @@ void Buffer::deleteText(size_t cursor, size_t count)
     if (count == 0)
         return;
     size_t const first = _getClusterIndex(cursor);
-    size_t const last = first + count < glyphCount() ? first + count : glyphCount();
-    _str.erase(_str.cbegin() + first, _str.cbegin() + last);
-    _buffer_info.str = _str;
+    size_t const last = first + count < _info.str.size() ? first + count : _info.str.size();
+    _info.str.erase(_info.str.cbegin() + first, _info.str.cbegin() + last);
     _updateBuffer();
 }
 
@@ -159,17 +157,15 @@ void Buffer::_changeFormat(Format const& opt) try
     // Retrieve Font (must be loaded)
     Font& font = Lib::getFont(opt.font);
 
-    _opt = opt;
-    _buffer_info.fmt = opt;
-    for (char& c : _buffer_info.fmt.lng_direction)
+    _info.fmt = opt;
+    for (char& c : _info.fmt.lng_direction)
         c = std::tolower(c);
 
     // Set buffer properties
     _properties.direction = hb_direction_from_string(opt.lng_direction.c_str(), -1);
     _properties.script = hb_script_from_string(opt.lng_script.c_str(), -1);
     _properties.language = hb_language_from_string(opt.lng_tag.c_str(), -1);
-    _locale = std::locale(opt.lng_tag);
-    _buffer_info.locale = _locale;
+    _info.locale = std::locale(opt.lng_tag);
 
     // Convert word dividers to glyph indexes
     _wd_indexes.clear();
@@ -191,17 +187,18 @@ void Buffer::_updateBuffer()
 void Buffer::_shape() try
 {
     // Retrieve Font (must be loaded)
-    Font& font = Lib::getFont(_opt.font);
+    Font& font = Lib::getFont(_info.fmt.font);
 
-    font.setCharsize(_opt.charsize);
+    font.setCharsize(_info.fmt.charsize);
     // Add string to buffer
-    uint32_t const* indexes = reinterpret_cast<uint32_t const*>(&_str[0]);
-    int size = static_cast<int>(_str.size());
+    uint32_t const* indexes = reinterpret_cast<uint32_t const*>(&_info.str[0]);
+    int size = static_cast<int>(_info.str.size());
     hb_buffer_add_utf32(_buffer.get(), indexes, size, 0U, size);
     // Set properties
     hb_buffer_set_segment_properties(_buffer.get(), &_properties);
+    hb_buffer_set_cluster_level(_buffer.get(), HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
     // Shape buffer and retrieve informations
-    hb_shape(font.getHBFont(_opt.charsize), _buffer.get(), nullptr, 0);
+    hb_shape(font.getHBFont(_info.fmt.charsize), _buffer.get(), nullptr, 0);
 
     // Retrieve glyph informations
     unsigned int glyph_count = 0;
@@ -209,12 +206,12 @@ void Buffer::_shape() try
     // Retrieve glyph positions
     hb_glyph_position_t const* pos = hb_buffer_get_glyph_positions(_buffer.get(), nullptr);
 
-    _buffer_info.glyphs.clear();
-    _buffer_info.glyphs.resize(glyph_count);
+    _info.glyphs.clear();
+    _info.glyphs.resize(glyph_count);
     for (size_t i = 0; i < glyph_count; ++i) {
         // Reverse if RTL
-        size_t const index = _buffer_info.fmt.lng_direction == "ltr" ? i : (glyph_count - (i + 1));
-        _internal::GlyphInfo& glyph = _buffer_info.glyphs.at(index);
+        size_t const index = _info.fmt.lng_direction == "ltr" ? i : (glyph_count - (i + 1));
+        _internal::GlyphInfo& glyph = _info.glyphs.at(index);
         glyph.info = info[i];
         glyph.pos = pos[i];
         // Check if the glyph is a word divider
@@ -225,32 +222,31 @@ void Buffer::_shape() try
             }
         }
         // Check if the glyph is a new line
-        if (_str.at(glyph.info.cluster) == '\n') {
+        if (_info.str.at(glyph.info.cluster) == '\n') {
             glyph.is_new_line = true;
             glyph.is_word_divider = true;
         }
     }
-
     // Now that we have all needed informations,
     // reset buffer to free HarfBuzz's internal cache
     // (this does NOT free the buffer itself, only its contents)
     hb_buffer_reset(_buffer.get());
 }
-CATCH_AND_RETHROW_METHOD_EXC;
+CATCH_AND_LOG_METHOD_EXC;
 
 void Buffer::_loadGlyphs()
 {
     // Retrieve Font (must be loaded)
-    Font& font = Lib::getFont(_opt.font);
+    Font& font = Lib::getFont(_info.fmt.font);
 
     // Load glyphs
-    int const outline_size = _opt.has_outline ? _opt.outline_size : 0;
+    int const outline_size = _info.fmt.has_outline ? _info.fmt.outline_size : 0;
     std::unordered_set<hb_codepoint_t> glyph_ids;
-    for (_internal::GlyphInfo const& glyph : _buffer_info.glyphs) {
+    for (_internal::GlyphInfo const& glyph : _info.glyphs) {
         glyph_ids.insert(glyph.info.codepoint);
     }
     for (hb_codepoint_t const& glyph_id: glyph_ids) {
-        font.loadGlyph(glyph_id, _opt.charsize, outline_size);
+        font.loadGlyph(glyph_id, _info.fmt.charsize, outline_size);
     }
 }
 

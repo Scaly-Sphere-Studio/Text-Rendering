@@ -166,9 +166,9 @@ int main() try
         // Draw & print
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glfwSwapBuffers(window.get());
-        if (fps.addFrame() && fps.get() != 60) {
-            LOG_CTX_MSG("fps", fps.getFormatted());
-        }
+        //if (fps.addFrame() && fps.get() != 60) {
+        //    LOG_CTX_MSG("fps", fps.getFormatted());
+        //}
     }
 
     //lua.stack_clear();

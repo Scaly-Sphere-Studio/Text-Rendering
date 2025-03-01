@@ -87,28 +87,19 @@ public:
     // Reshapes the buffer with given parameters
     void changeFormat(Format const& opt);
 
-    inline size_t glyphCount() const noexcept { return _buffer_info.glyphs.size(); };
+    inline size_t glyphCount() const noexcept { return _info.glyphs.size(); };
 
-    inline std::u32string getString() const noexcept { return _str; };
-    inline Format getFormat() const noexcept { return _opt; };
+    inline std::u32string getString() const noexcept { return _info.str; };
+    inline Format getFormat() const noexcept { return _info.fmt; };
 
-    inline BufferInfo const& getInfo() const noexcept { return _buffer_info; };
+    inline BufferInfo const& getInfo() const noexcept { return _info; };
 private:
 
-    // Original string converted in uint32 vector
-    // This is because HB doesn't handle CPP types,
-    // and handles UTF32 with uint32_t arrays
-    std::u32string _str;
-    // Buffer options
-    Format _opt;
-    
-    HB_Buffer_Ptr _buffer;   // HarfBuzz buffer
-    BufferInfo _buffer_info; // Buffer informations
+    HB_Buffer_Ptr _buffer;  // HarfBuzz buffer
+    BufferInfo _info;       // Buffer informations
 
     hb_segment_properties_t _properties;    // HB presets : lng, script, direction
     std::vector<uint32_t> _wd_indexes;      // Word dividers as glyph indexes
-    std::locale _locale;
-
 
     // Modifies internal options
     void _changeFormat(Format const& opt);

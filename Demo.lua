@@ -32,6 +32,9 @@ local demo_str =
 TR.addFontDir("C:/dev/fonts")
 
 TR.default_fmt.font = "CALIBRI.TTF"
+--TR.default_fmt.font = "MEIRYO.TTC"
+--TR.default_fmt.lng_tag = "ja"
+--TR.default_fmt.lng_script = "Hira"
 TR.default_fmt.charsize = 30
 TR.default_fmt.has_outline = true
 TR.default_fmt.has_shadow = true
