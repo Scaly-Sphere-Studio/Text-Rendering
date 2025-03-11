@@ -83,4 +83,35 @@ namespace SSS::Log::TR {
     LOG_NAMESPACE_BASICS(Log);
 }
 
+class CommandBase {
+public:
+    virtual void execute() = 0;
+    virtual void undo() = 0;
+    //virtual void merge(CommandBase command) = 0;
+};
+
+class CommandHistory {
+private:
+    std::vector<std::unique_ptr<CommandBase>> _commands;
+    size_t i = 0;
+public:
+    void undo() {
+        if (i != 0)
+            _commands.at(--i)->undo();
+    }
+    void redo() {
+        if (i != _commands.size())
+            _commands.at(i++)->execute();
+    }
+    template<std::derived_from<CommandBase> Command, class... T >
+    void add(T... args) {
+        _commands.erase(_commands.cbegin() + i, _commands.cend());
+        _commands.emplace_back(std::make_unique<Command>((args)...));
+        redo();
+    }
+    void clear() {
+        _commands.clear();
+    }
+};
+
 #endif // SSS_TR_INCLUDES_HPP

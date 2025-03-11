@@ -13,6 +13,7 @@ SSS_TR_BEGIN;
  *  @sa Area::cursorMove().
  */
 enum class Move {
+    None = -1,
     Right,      /**< Move the cursor one character to the right.*/
     Left,       /**< Move the cursor one character to the left.*/
     Down,       /**< Move the cursor one line down.*/

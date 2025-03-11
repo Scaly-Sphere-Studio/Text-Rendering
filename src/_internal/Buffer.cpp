@@ -72,7 +72,7 @@ void BufferInfoVector::clear() noexcept
     // --- Constructor & Destructor ---
 
 // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-Buffer::Buffer(Format const& opt) try
+Buffer::Buffer(TextPart const& part) try
 {
     // Create buffer (and reference it to prevent early deletion)
     _buffer.reset(hb_buffer_reference(hb_buffer_create()));
@@ -80,7 +80,7 @@ Buffer::Buffer(Format const& opt) try
         throw_exc("HarfBuzz buffer allocation failed.");
     }
 
-    _changeFormat(opt);
+    set(part);
 
     if (Log::TR::Buffers::query(Log::TR::Buffers::get().life_state)) {
         char buff[256];
@@ -102,18 +102,31 @@ Buffer::~Buffer()
 
 // --- Basic functions ---
 
+void Buffer::set(TextPart const& part)
+{
+    if (_info.fmt == part.fmt && _info.str == part.str)
+        return;
+    _info.fmt = part.fmt;
+    _info.str = part.str;
+
+    _formatChanged();
+    _updateBuffer();
+}
+
 void Buffer::changeString(std::u32string const& str)
 {
     _info.str = str;
     _updateBuffer();
 }
 
-void Buffer::changeString(std::string const& str)
+void Buffer::changeFormat(Format const& fmt)
 {
-    changeString(strToStr32(str));
+    _info.fmt = fmt;
+    _formatChanged();
+    _updateBuffer();
 }
 
-uint32_t Buffer::_getClusterIndex(size_t cursor)
+uint32_t Buffer::getClusterIndex(size_t cursor) const
 {
     if (cursor >= glyphCount()) {
         if (glyphCount())
@@ -125,7 +138,7 @@ uint32_t Buffer::_getClusterIndex(size_t cursor)
 
 void Buffer::insertText(std::u32string const& str, size_t cursor)
 {
-    uint32_t const index = _getClusterIndex(cursor);
+    uint32_t const index = getClusterIndex(cursor);
     _info.str.insert(_info.str.cbegin() + index, str.cbegin(), str.cend());
     _updateBuffer();
 }
@@ -139,38 +152,31 @@ void Buffer::deleteText(size_t cursor, size_t count)
 {
     if (count == 0)
         return;
-    size_t const first = _getClusterIndex(cursor);
+    size_t const first = getClusterIndex(cursor);
     size_t const last = first + count < _info.str.size() ? first + count : _info.str.size();
     _info.str.erase(_info.str.cbegin() + first, _info.str.cbegin() + last);
     _updateBuffer();
 }
 
-void Buffer::changeFormat(Format const& opt)
-{
-    _changeFormat(opt);
-    _updateBuffer();
-}
-
 // Reshapes the buffer with given parameters
-void Buffer::_changeFormat(Format const& opt) try
+void Buffer::_formatChanged() try
 {
     // Retrieve Font (must be loaded)
-    Font& font = Lib::getFont(opt.font);
+    Font& font = Lib::getFont(_info.fmt.font);
 
-    _info.fmt = opt;
     for (char& c : _info.fmt.lng_direction)
         c = std::tolower(c);
 
     // Set buffer properties
-    _properties.direction = hb_direction_from_string(opt.lng_direction.c_str(), -1);
-    _properties.script = hb_script_from_string(opt.lng_script.c_str(), -1);
-    _properties.language = hb_language_from_string(opt.lng_tag.c_str(), -1);
-    _info.locale = std::locale(opt.lng_tag);
+    _properties.direction = hb_direction_from_string(_info.fmt.lng_direction.c_str(), -1);
+    _properties.script = hb_script_from_string(_info.fmt.lng_script.c_str(), -1);
+    _properties.language = hb_language_from_string(_info.fmt.lng_tag.c_str(), -1);
+    _info.locale = std::locale(_info.fmt.lng_tag);
 
     // Convert word dividers to glyph indexes
     _wd_indexes.clear();
-    _wd_indexes.reserve(opt.word_dividers.size());
-    for (char32_t const& c : opt.word_dividers) {
+    _wd_indexes.reserve(_info.fmt.word_dividers.size());
+    for (char32_t const& c : _info.fmt.word_dividers) {
         FT_UInt const index(FT_Get_Char_Index(font.getFTFace(), c));
         _wd_indexes.push_back(index);
     }

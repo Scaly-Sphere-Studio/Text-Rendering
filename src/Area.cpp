@@ -59,6 +59,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ColorFunc, {
     { ColorFunc::RainbowFixed, "RainbowFixed" },
 })
 
+CommandHistory Area::history{};
 int Area::_default_margin_h{ 10 };
 int Area::_default_margin_v{ 10 };
 Area::Weak Area::_focused{};
@@ -74,7 +75,7 @@ Area::Area() try
         if (!pixels)
             throw_exc("Couldn't allocate internal data");
     }
-    _buffers.push_back(std::make_unique<_internal::Buffer>(Format()));
+    _buffers.push_back(std::make_unique<_internal::Buffer>(TextPart(U"", _format)));
     _updateBufferInfos();
     if (Log::TR::Areas::query(Log::TR::Areas::get().life_state)) {
         char buff[256];
@@ -257,7 +258,7 @@ static void jsonToFmt(nlohmann::json const& json, Format& fmt)
         fmt.tw_long_pauses = strToStr32(json.at("tw_long_pauses").get<std::string>());
 }
 
-void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
+static void _parseFmt(std::stack<Format>& fmts, std::u32string const& data)
 {
     auto const json = nlohmann::json::parse(data);
 
@@ -275,37 +276,28 @@ void Area::_parseFmt(std::stack<Format>& fmts, std::u32string const& data)
 
 void Area::parseStringU32(std::u32string const& str) try
 {
-    auto const new_buffer = [&](bool& is_first, Format const& opt, std::u32string const& str) {
-        if (is_first)
-            _buffers.back()->changeFormat(opt);
-        else
-            _buffers.push_back(std::make_unique<_internal::Buffer>(opt));
-        _buffers.back()->changeString(str);
-        is_first = false;
-    };
-    clear();
-    bool is_first = true;
+    history.clear();
+    std::vector<TextPart> parts;
     std::stack<Format> fmts;
     fmts.push(_format);
     size_t i = 0;
     while (i != str.size()) {
         size_t const opening_braces = str.find(U"{{", i);
         if (opening_braces == std::string::npos) {
-            // add buffer and load sub string
-            new_buffer(is_first, fmts.top(), str.substr(i));
+            parts.emplace_back(str.substr(i), fmts.top());
             break;
         }
         else {
             // find closing braces
             size_t const closing_braces = str.find(U"}}", opening_braces + 2);
             if (closing_braces == std::string::npos) {
-                new_buffer(is_first, fmts.top(), str.substr(i));
+                parts.emplace_back(str.substr(i), fmts.top());
                 break;
             }
-            // add buffer if needed
+            // add part if needed
             size_t diff = opening_braces - i;
             if (diff > 0)
-                new_buffer(is_first, fmts.top(), str.substr(i, diff));
+                parts.emplace_back(str.substr(i, diff), fmts.top());
 
            _parseFmt(fmts, str.substr(opening_braces + 1, closing_braces - opening_braces));
 
@@ -313,17 +305,51 @@ void Area::parseStringU32(std::u32string const& str) try
             i = closing_braces + 2;
         }
     }
-    size_t tmp = _glyph_count;
-    _updateBufferInfos();
-    _edit_cursor += _glyph_count - tmp;
-    if (!_lock_selection)
-        _locked_cursor = _edit_cursor;
+
+    setTextParts(parts);
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
 void Area::parseString(std::string const& str)
 {
     parseStringU32(strToStr32(str));
+}
+
+void Area::setTextParts(std::vector<TextPart> const& text_parts, bool move_cursor)
+{
+    if (text_parts.empty()) {
+        clear();
+        return;
+    }
+    _buffers.resize(text_parts.size());
+    
+    for (size_t i = 0; i < text_parts.size(); i++) {
+        auto const& part = text_parts.at(i);
+        auto& buffer = _buffers.at(i);
+        if (!buffer)
+            buffer = std::make_unique<_internal::Buffer>(part);
+        else
+            buffer->set(part);
+    }
+
+    int const tmp = static_cast<int>(_glyph_count);
+    _updateBufferInfos();
+    int const diff = static_cast<int>(_glyph_count) - tmp;
+    if (move_cursor) {
+        if (_edit_cursor < _locked_cursor)
+            _edit_cursor = _locked_cursor;
+        _edit_cursor += static_cast<size_t>(diff);
+    }
+    _lock_selection = false;
+    _locked_cursor = _edit_cursor;
+    _tw_cursor = std::min(_tw_cursor, static_cast<float>(_glyph_count));
+}
+
+std::vector<TextPart> Area::getTextParts() const
+{
+    std::vector<TextPart> vec;
+    vec.insert(vec.cbegin(), _buffer_infos->cbegin(), _buffer_infos->cend());
+    return vec;
 }
 
 std::u32string Area::getStringU32() const
@@ -499,7 +525,7 @@ void Area::clear() noexcept
     }
     // Reset buffers
     _buffers.resize(1);
-    _buffers.front()->changeString(U"");
+    _buffers.front()->set(TextPart(U"", _format));
     _updateBufferInfos();
     _edit_cursor = 0;
     _locked_cursor = 0;
@@ -531,7 +557,7 @@ void Area::setDimensions(int width, int height) try
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
-    // --- Format functions ---
+// --- Format functions ---
 
 // Scrolls up (negative values) or down (positive values)
 // Any excessive scrolling will be negated,
@@ -691,32 +717,35 @@ void Area::formatSelection(nlohmann::json const& json)
         return;
 
     size_t first = _edit_cursor < _locked_cursor ? _edit_cursor : _locked_cursor,
-           last  = _edit_cursor > _locked_cursor ? _edit_cursor : _locked_cursor;
+        last = _edit_cursor > _locked_cursor ? _edit_cursor : _locked_cursor;
 
-    for (size_t i = 0; i < _buffers.size(); ++i) {
-        auto& buffer = *_buffers.at(i);
+    TextParts parts;
+
+    size_t i = 0;
+    for (; i < _buffers.size(); i++) {
+        auto const& buffer = *_buffers.at(i);
+        parts.emplace_back(buffer.getInfo());
 
         if (first < buffer.glyphCount()) {
-
-            // Lambda to split buffer in two
-            auto const split_buffer = [&](size_t index) {
-                std::u32string const body = buffer.getString().substr(0, index),
-                                     head = buffer.getString().substr(index);
-                buffer.changeString(body);
-                _buffers.insert(_buffers.cbegin() + i + 1,
-                    std::make_unique<_internal::Buffer>(buffer.getFormat()));
-                _buffers.at(i + 1)->changeString(head);
-            };
-
-            if (first != 0)
-                split_buffer(first);
-            else {
-                if (last < buffer.glyphCount())
-                    split_buffer(last);
-                Format fmt = buffer.getFormat();
-                jsonToFmt(json, fmt);
-                buffer.changeFormat(fmt);
+            Format fmt = buffer.getFormat();
+            jsonToFmt(json, fmt);
+            parts.back().fmt = fmt;
+            if (first != 0) {
+                first = buffer.getClusterIndex(first);
+                std::u32string const head = buffer.getString().substr(0, first),
+                    body = buffer.getString().substr(first);
+                parts.back() = TextPart(head, buffer.getFormat());
+                parts.emplace_back(body, fmt);
             }
+            if (last < buffer.glyphCount()) {
+                last = buffer.getClusterIndex(last);
+                std::u32string const head = buffer.getString().substr(first, last - first),
+                    body = buffer.getString().substr(last);
+                parts.back() = TextPart(head, fmt);
+                parts.emplace_back(body, buffer.getFormat());
+                break;
+            }
+            first = 0;
         }
 
         if (first != 0)
@@ -725,8 +754,10 @@ void Area::formatSelection(nlohmann::json const& json)
         if (last == 0)
             break;
     }
+    if (i < _buffers.size() - 1)
+        parts.insert(parts.cend(), _buffer_infos->cbegin() + i + 1, _buffer_infos->cend());
 
-    _updateBufferInfos();
+    history.add<AreaCommand>(shared_from_this(), parts);
 }
 
 size_t Area::_move_cursor_line(_internal::Line const* line, int x)
@@ -853,76 +884,71 @@ void Area::_cursorMove(Move direction) try
         _locked_cursor = _edit_cursor;
 
     _draw = true;
-    _edit_display_cursor = true;
-    _edit_timer = std::chrono::nanoseconds(0);
     if (reset_edit_x)
         _edit_x = -1;
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
-void Area::_cursorAddText(std::u32string str) try
+TextParts Area::_cursorAddText(std::u32string str) try
 {
     if (str.empty()) {
         LOG_OBJ_METHOD_WRN("Empty string.");
-        return;
+        return TextParts(getTextParts());
     }
     if (_buffers.empty()) {
         throw_exc("No buffer was given beforehand.");
     }
+
+    TextParts parts;
     if (_locked_cursor != _edit_cursor) {
-        _cursorDeleteText(Delete::Invalid);
-    }
-    size_t cursor = _edit_cursor;
-    size_t size = 0;
-    if (cursor >= _glyph_count) {
-        _internal::Buffer& buffer = *_buffers.back();
-        size_t const tmp = buffer.glyphCount();
-        buffer.insertText(str, buffer.glyphCount());
-        size = buffer.glyphCount() - tmp;
+        parts = _cursorDeleteText(Delete::Invalid);
     }
     else {
-        for (_internal::Buffer::Ptr const& ptr : _buffers) {
-            _internal::Buffer& buffer = *ptr;
+        parts = TextParts(getTextParts());
+    }
+
+    if (_edit_cursor >= _glyph_count) {
+        parts.back().str.append(str);
+    }
+    else {
+        size_t cursor = std::min(_edit_cursor, _locked_cursor);
+        for (size_t i = 0; i < parts.size(); ++i) {
+            _internal::Buffer& buffer = *_buffers.at(i);
             if (buffer.glyphCount() > cursor) {
-                size_t const tmp = buffer.glyphCount();
-                buffer.insertText(str, cursor);
-                size = buffer.glyphCount() - tmp;
+                TextPart& part = parts.at(i);
+                part.str.insert(part.str.cbegin() + buffer.getClusterIndex(cursor), str.cbegin(), str.cend());
                 break;
             }
             cursor -= buffer.glyphCount();
         }
     }
-    // Update lines as they need to be updated before moving cursor
-    _updateBufferInfos();
-    // Move cursors
-    if (static_cast<size_t>(_tw_cursor) < _edit_cursor) {
-        _tw_cursor += static_cast<float>(size);
-    }
-    _edit_cursor += size;
-    _locked_cursor = _edit_cursor;
-    _edit_display_cursor = true;
-    _edit_timer = std::chrono::nanoseconds(0);
+    parts.move_cursor = true;
+
+
+    return parts;
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
-void Area::_cursorDeleteText(Delete direction) try
+TextParts Area::_cursorDeleteText(Delete direction) try
 {
-    size_t cursor = _edit_cursor;
-    size_t count = 0;
-    if (cursor > _glyph_count) {
-        cursor = _glyph_count;
+    if (_edit_cursor > _glyph_count) {
+        _edit_cursor = _glyph_count;
     }
 
+    TextParts parts;
+
+    size_t cursor = _edit_cursor;
+    size_t count = 0;
     size_t tmp;
     if (_locked_cursor != _edit_cursor) {
         if (_locked_cursor < _edit_cursor) {
             count = _edit_cursor - _locked_cursor;
-            _edit_cursor = _locked_cursor;
-            cursor = _edit_cursor;
+            cursor = _locked_cursor;
         }
         else {
             count = _locked_cursor - _edit_cursor;
         }
+        parts.move_cursor = true;
         direction = Delete::Invalid;
     }
     else switch (direction) {
@@ -953,28 +979,37 @@ void Area::_cursorDeleteText(Delete direction) try
     }
 
     if (count == 0)
-        return;
+        return TextParts(getTextParts());
 
     size_t const size = count;
-    for (_internal::Buffer::Ptr const& ptr : _buffers) {
-        _internal::Buffer& buffer = *ptr;
-        if (size_t const tmp = buffer.glyphCount(); tmp > cursor) {
-            buffer.deleteText(cursor, count);
-            count -= tmp - buffer.glyphCount();
+
+    size_t i = 0;
+    for (; i < _buffers.size(); i++) {
+        _internal::Buffer const& buffer = *_buffers.at(i);
+        TextPart& part = parts.emplace_back(buffer.getInfo());
+        size_t glyph_count = buffer.glyphCount();
+        if (glyph_count > cursor) {
+            size_t const first = buffer.getClusterIndex(cursor);
+            size_t const last = buffer.getClusterIndex(cursor + count);
+            size_t const diff = last - first;
+            part.str.erase(part.str.cbegin() + first, part.str.cbegin() + last);
+            count -= diff;
+            glyph_count -= diff;
+            if (part.str.empty())
+                parts.pop_back();
             if (count == 0)
                 break;
         }
-        cursor -= buffer.glyphCount();
+        cursor -= glyph_count;
     }
-    _updateBufferInfos();
+    if (i < _buffers.size() - 1)
+        parts.insert(parts.cend(), _buffer_infos->cbegin() + i + 1, _buffer_infos->cend());
+
     if (direction == Delete::Left || direction == Delete::CtrlLeft) {
-        // Move cursor
-        _edit_cursor -= size;
+        parts.move_cursor = true;
     }
-    _locked_cursor = _edit_cursor;
-    _tw_cursor = static_cast<float>(_glyph_count);
-    _edit_display_cursor = true;
-    _edit_timer = std::chrono::nanoseconds(0);
+
+    return parts;
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
@@ -990,7 +1025,7 @@ void Area::cursorAddText(std::u32string str)
 {
     Shared area = getFocused();
     if (area) {
-        area->_cursorAddText(str);
+        history.add<AreaCommand>(area, area->_cursorAddText(str));
     }
 }
 
@@ -1003,7 +1038,7 @@ void Area::cursorDeleteText(Delete direction)
 {
     Shared area = getFocused();
     if (area) {
-        area->_cursorDeleteText(direction);
+        history.add<AreaCommand>(area, area->_cursorDeleteText(direction));
     }
 }
 

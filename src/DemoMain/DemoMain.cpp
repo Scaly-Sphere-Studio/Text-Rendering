@@ -62,6 +62,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         case GLFW_KEY_DELETE:
             Area::cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
             break;
+        case GLFW_KEY_W: {
+            if (ctrl)
+                Area::history.undo();
+        }   break;
+        case GLFW_KEY_Y: {
+            if (ctrl)
+                Area::history.redo();
+        }   break;
         }
     }
 }

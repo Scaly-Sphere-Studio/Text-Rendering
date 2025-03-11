@@ -31,11 +31,24 @@ INTERNAL_END;
 
 enum class Move;    // Pre-declaration
 enum class Delete;  // Pre-declaration
+class AreaCommand;
 
 enum class PrintMode {
     Instant,
     Typewriter,
     // More later?
+};
+
+struct TextPart {
+    TextPart() = default;
+    TextPart(std::u32string const& s, Format const& f) : str(s), fmt(f) {};
+    std::u32string str;
+    Format fmt;
+};
+
+class TextParts : public std::vector<TextPart> {
+public:
+    bool move_cursor = false;
 };
 
 // Ignore warning about STL exports as they're private members
@@ -64,6 +77,7 @@ enum class PrintMode {
  */
 class SSS_TR_API Area : public InstancedClass<Area> {
     friend SharedClass;
+    friend AreaCommand;
 protected:
     // Constructor
     Area();
@@ -74,6 +88,8 @@ public:
      *  @sa remove() and clearAll().
      */
     ~Area() noexcept;
+
+    static CommandHistory history;
     
     void setWrapping(bool wrapping) noexcept;
     bool getWrapping() const noexcept;
@@ -154,15 +170,16 @@ public:
     void parseStringU32(std::u32string const& str);
     /** \overload*/
     void parseString(std::string const& str);
-private:
-    void _parseFmt(std::stack<Format>& fmts, std::u32string const& data);
 
-public:
+    void setTextParts(std::vector<TextPart> const& text_parts, bool move_cursor = true);
+    std::vector<TextPart> getTextParts() const;
+
     std::u32string getStringU32() const;
     std::string getString() const;
 
     std::u32string getUnparsedStringU32() const;
     std::string getUnparsedString() const;
+
 
     // TODO: get string keeping format
     //std::u32string getStringU32Formatted() const;
@@ -268,8 +285,8 @@ public:
 private:
     size_t _move_cursor_line(_internal::Line const* line, int x);
     void _cursorMove(Move direction);
-    void _cursorAddText(std::u32string str);
-    void _cursorDeleteText(Delete direction);
+    TextParts _cursorAddText(std::u32string str);
+    TextParts _cursorDeleteText(Delete direction);
 
 public:
     /** Moves the editing cursor in given direction.
@@ -300,6 +317,7 @@ public:
     int getTypeWriterSpeed() const noexcept { return _tw_cps; };
 
 private:
+
     bool _wrapping{ true };
     int _min_w{ 0 };
     int _max_w{ 0 };
@@ -395,6 +413,60 @@ private:
 
     // Draws current area if _draw is set to true
     void _drawIfNeeded();
+};
+
+class AreaCommand : public CommandBase {
+    private:
+    Area::Weak _area;
+    size_t _old_cursor = 0;
+    size_t _old_locked_cursor = 0;
+    std::vector<TextPart> _old_parts;
+    std::vector<TextPart> _new_parts;
+    bool _move_cursor = false;
+
+public:
+    
+    enum class Type {
+        Addition,
+        Deletion,
+        Formatting
+    };
+
+    AreaCommand() = default;
+    ~AreaCommand() = default;
+    AreaCommand(Area::Shared area, TextParts parts)
+        : _area(area),
+          _old_cursor(area->_edit_cursor),
+          _old_locked_cursor(area->_locked_cursor),
+          _old_parts(area->getTextParts()),
+          _new_parts(parts),
+          _move_cursor(parts.move_cursor) {};
+    
+    virtual void execute() override final {
+        Area::Shared area = _area.lock();
+        if (!area) return;
+        area->_edit_cursor = _old_cursor;
+        area->_locked_cursor = _old_locked_cursor;
+        area->setTextParts(_new_parts, _move_cursor);
+        if (area->isFocused()) {
+            area->_draw = true;
+            area->_edit_display_cursor = true;
+            area->_edit_timer = std::chrono::nanoseconds(0);
+        }
+    }
+
+    virtual void undo() override final {
+        Area::Shared area = _area.lock();
+        if (!area) return;
+        area->setTextParts(_old_parts, false);
+        area->_edit_cursor = _old_cursor;
+        area->_locked_cursor = _old_locked_cursor;
+        if (area->isFocused()) {
+            area->_draw = true;
+            area->_edit_display_cursor = true;
+            area->_edit_timer = std::chrono::nanoseconds(0);
+        }
+    }
 };
 
 #pragma warning(pop)

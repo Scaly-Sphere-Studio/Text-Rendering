@@ -2,7 +2,7 @@
 #define SSS_TR_BUFFER_HPP
 
 #include "Font.hpp"
-#include "Text-Rendering/Format.hpp"
+#include "Text-Rendering/Area.hpp"
 
 /** @file
  *  Defines internal glyph and kerning info classes.
@@ -18,6 +18,9 @@ namespace SSS::Log::TR {
 }
 
 SSS_TR_BEGIN;
+
+struct TextPart;
+
 INTERNAL_BEGIN;
 // Pre-declaration
 class Buffer;
@@ -32,11 +35,10 @@ struct GlyphInfo {
     bool is_new_line{ false };      // Whether the glyph is a \n (new line)
 };
 
-struct BufferInfo {
+
+struct BufferInfo : public TextPart {
     std::vector<GlyphInfo> glyphs;  // Glyph infos
-    std::u32string str; // Original string
     std::locale locale; // Locale
-    Format fmt; // Format
 };
 
 class BufferInfoVector : public std::vector<BufferInfo> {
@@ -64,35 +66,32 @@ public:
     using Ptr = std::unique_ptr<Buffer>;
 // --- Constructor & Destructor ---
     
-    // Constructor, creates a HarfBuzz buffer, and shapes it with given parameters.
-    Buffer(Format const& opt);
+    // From TextPart
+    Buffer(TextPart const& part);
     // Destructor
     ~Buffer();
 
 // --- Basic functions ---
 
-    // Reshapes the buffer with given parameters
+    void set(TextPart const& part);
     void changeString(std::u32string const& str);
-    void changeString(std::string const& str);
+    void changeFormat(Format const& fmt);
 
-private:
-    uint32_t _getClusterIndex(size_t cursor);
+    uint32_t getClusterIndex(size_t cursor) const;
 
-public:
     // Insert text at given position
     void insertText(std::u32string const& str, size_t cursor);
     void insertText(std::string const& str, size_t cursor);
     // Deletes text, from first (included) to last (excluded)
     void deleteText(size_t first, size_t last);
-    // Reshapes the buffer with given parameters
-    void changeFormat(Format const& opt);
 
     inline size_t glyphCount() const noexcept { return _info.glyphs.size(); };
 
-    inline std::u32string getString() const noexcept { return _info.str; };
-    inline Format getFormat() const noexcept { return _info.fmt; };
+    inline std::u32string const& getString() const noexcept { return _info.str; };
+    inline Format const& getFormat() const noexcept { return _info.fmt; };
 
     inline BufferInfo const& getInfo() const noexcept { return _info; };
+
 private:
 
     HB_Buffer_Ptr _buffer;  // HarfBuzz buffer
@@ -102,7 +101,7 @@ private:
     std::vector<uint32_t> _wd_indexes;      // Word dividers as glyph indexes
 
     // Modifies internal options
-    void _changeFormat(Format const& opt);
+    void _formatChanged();
 
     void _updateBuffer();
     // Shapes the buffer and retrieve its informations
