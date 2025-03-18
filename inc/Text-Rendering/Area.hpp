@@ -285,8 +285,11 @@ public:
 private:
     size_t _move_cursor_line(_internal::Line const* line, int x);
     void _cursorMove(Move direction);
-    TextParts _cursorAddText(std::u32string str);
-    TextParts _cursorDeleteText(Delete direction);
+    std::optional<TextParts> _cursorAddText(std::u32string str) const;
+    std::tuple<size_t, size_t> _cursorGetInfo() const;
+    std::tuple<TextParts, TextParts> _splitText(size_t cursor, size_t count) const;
+    std::optional<TextParts> _cursorDeleteText(Delete direction) const;
+    std::optional<TextParts> _cursorGetText() const;
 
 public:
     /** Moves the editing cursor in given direction.
@@ -303,12 +306,22 @@ public:
     static void cursorAddText(std::u32string str);
     /** \overload*/
     static void cursorAddText(std::string str);
+    /** Inserts text at the cursor's position.
+     *  The cursor is by default at the end of the text.
+     *  @param[in] str The UTF32 string to be added to existing text.
+     *  @sa cursorPlace(), cursorMove(), cursorDeleteText()
+     */
+    static void cursorAddChar(char32_t c);
+    /** \overload*/
+    static void cursorAddChar(char c);
     /** Deletes text at the cursor's position, in the given direction.
      *  The cursor is by default at the end of the text.
      *  @param[in] direction The deletion direction.
      *  @sa Delete, cursorPlace(), cursorMove(), cursorAddText()
      */
     static void cursorDeleteText(Delete direction);
+
+    static std::u32string cursorGetText();
 
     void setPrintMode(PrintMode mode) noexcept;
     inline PrintMode getPrintMode() const noexcept { return _print_mode; };
@@ -416,26 +429,30 @@ private:
 };
 
 class AreaCommand : public CommandBase {
-    private:
-    Area::Weak _area;
-    size_t _old_cursor = 0;
-    size_t _old_locked_cursor = 0;
-    std::vector<TextPart> _old_parts;
-    std::vector<TextPart> _new_parts;
-    bool _move_cursor = false;
-
 public:
-    
     enum class Type {
         Addition,
         Deletion,
+        Paste,
         Formatting
     };
 
+private:
+    Type const _type;
+    Area::Weak const _area;
+    size_t const _old_cursor = 0;
+    size_t const _old_locked_cursor = 0;
+    std::vector<TextPart> const _old_parts;
+    std::vector<TextPart> _new_parts;
+    bool const _move_cursor = false;
+
+public:
+
     AreaCommand() = default;
     ~AreaCommand() = default;
-    AreaCommand(Area::Shared area, TextParts parts)
-        : _area(area),
+    AreaCommand(Type type, Area::Shared area, TextParts parts)
+        : _type(type),
+          _area(area),
           _old_cursor(area->_edit_cursor),
           _old_locked_cursor(area->_locked_cursor),
           _old_parts(area->getTextParts()),
@@ -466,6 +483,15 @@ public:
             area->_edit_display_cursor = true;
             area->_edit_timer = std::chrono::nanoseconds(0);
         }
+    }
+
+    bool merge(AreaCommand const& new_cmd) {
+        if (_type != new_cmd._type || _area.lock() != new_cmd._area.lock())
+            return false;
+        if (_type == Type::Paste || _type == Type::Formatting)
+            return false;
+        _new_parts = new_cmd._new_parts;
+        return true;
     }
 };
 

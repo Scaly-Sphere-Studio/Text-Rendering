@@ -7,15 +7,10 @@ Pellentesque vitae velit ante.
 Suspendisse nulla lacus,
 tempor sit amet iaculis non,
 scelerisque.{{
-    "charsize": 50,
-    "text_color": "Rainbow",
-    "effect": "",
-    "alignment": "Right",
-    "shadow_offset": {"x": -3},
     "lng_tag": "ar",
     "lng_script": "Arab",
     "lng_direction": "rtl"
-}} يرغب في الحب {{}} sed est.
+}} يرغب في الحب {{}}sed est.
 Aenean pharetra ipsum sit amet sem lobortis,
 a cursus felis semper.
 Integer nec tortor ex.

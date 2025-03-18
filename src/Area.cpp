@@ -716,8 +716,8 @@ void Area::formatSelection(nlohmann::json const& json)
     if (json.empty() || json.is_null())
         return;
 
-    size_t first = _edit_cursor < _locked_cursor ? _edit_cursor : _locked_cursor,
-        last = _edit_cursor > _locked_cursor ? _edit_cursor : _locked_cursor;
+    size_t first = std::min(_edit_cursor, _locked_cursor),
+           last  = std::max(_edit_cursor, _locked_cursor);
 
     TextParts parts;
 
@@ -733,22 +733,21 @@ void Area::formatSelection(nlohmann::json const& json)
             if (first != 0) {
                 first = buffer.getClusterIndex(first);
                 std::u32string const head = buffer.getString().substr(0, first),
-                    body = buffer.getString().substr(first);
+                                     body = buffer.getString().substr(first);
                 parts.back() = TextPart(head, buffer.getFormat());
                 parts.emplace_back(body, fmt);
             }
             if (last < buffer.glyphCount()) {
                 last = buffer.getClusterIndex(last);
                 std::u32string const head = buffer.getString().substr(first, last - first),
-                    body = buffer.getString().substr(last);
+                                     body = buffer.getString().substr(last);
                 parts.back() = TextPart(head, fmt);
                 parts.emplace_back(body, buffer.getFormat());
                 break;
             }
             first = 0;
         }
-
-        if (first != 0)
+        else
             first -= buffer.glyphCount();
         last -= buffer.glyphCount();
         if (last == 0)
@@ -757,7 +756,7 @@ void Area::formatSelection(nlohmann::json const& json)
     if (i < _buffers.size() - 1)
         parts.insert(parts.cend(), _buffer_infos->cbegin() + i + 1, _buffer_infos->cend());
 
-    history.add<AreaCommand>(shared_from_this(), parts);
+    history.add<AreaCommand>(AreaCommand::Type::Formatting, shared_from_this(), parts);
 }
 
 size_t Area::_move_cursor_line(_internal::Line const* line, int x)
@@ -889,19 +888,21 @@ void Area::_cursorMove(Move direction) try
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
-TextParts Area::_cursorAddText(std::u32string str) try
+std::optional<TextParts> Area::_cursorAddText(std::u32string str) const try
 {
     if (str.empty()) {
         LOG_OBJ_METHOD_WRN("Empty string.");
-        return TextParts(getTextParts());
+        return std::nullopt;
     }
     if (_buffers.empty()) {
         throw_exc("No buffer was given beforehand.");
     }
 
     TextParts parts;
-    if (_locked_cursor != _edit_cursor) {
-        parts = _cursorDeleteText(Delete::Invalid);
+    if (auto opt_parts = _cursorDeleteText(Delete::Invalid); opt_parts) {
+        parts = opt_parts.value();
+        if (parts.empty())
+            parts.emplace_back(U"", _format);
     }
     else {
         parts = TextParts(getTextParts());
@@ -929,26 +930,52 @@ TextParts Area::_cursorAddText(std::u32string str) try
 }
 CATCH_AND_RETHROW_METHOD_EXC;
 
-TextParts Area::_cursorDeleteText(Delete direction) try
+std::tuple<size_t, size_t> Area::_cursorGetInfo() const
 {
-    if (_edit_cursor > _glyph_count) {
-        _edit_cursor = _glyph_count;
+    if (_locked_cursor < _edit_cursor)
+        return std::make_tuple(_locked_cursor, _edit_cursor - _locked_cursor);
+    return std::make_tuple(_edit_cursor, _locked_cursor - _edit_cursor);
+}
+
+std::tuple<TextParts, TextParts> Area::_splitText(size_t cursor, size_t count) const
+{
+    TextParts kept, removed;
+
+    size_t i = 0;
+    for (; i < _buffers.size(); i++) {
+        _internal::Buffer const& buffer = *_buffers.at(i);
+        TextPart& part = kept.emplace_back(buffer.getInfo());
+        size_t glyph_count = buffer.glyphCount();
+        if (glyph_count > cursor) {
+            size_t const first = buffer.getClusterIndex(cursor);
+            size_t const last = buffer.getClusterIndex(cursor + count);
+            auto const fit = part.str.cbegin() + first;
+            auto const lit = part.str.cbegin() + last;
+            removed.emplace_back(std::u32string(fit, lit), part.fmt);
+            part.str.erase(fit, lit);
+            count -= last - first;
+            glyph_count -= std::min(buffer.glyphCount(), cursor + count) - cursor;
+            if (part.str.empty())
+                kept.pop_back();
+            if (removed.back().str.empty())
+                removed.pop_back();
+            if (count == 0)
+                break;
+        }
+        cursor -= glyph_count;
     }
+    if (i < _buffers.size() - 1)
+        kept.insert(kept.cend(), _buffer_infos->cbegin() + i + 1, _buffer_infos->cend());
 
-    TextParts parts;
+    return std::make_tuple(std::move(kept), std::move(removed));
+}
 
-    size_t cursor = _edit_cursor;
-    size_t count = 0;
+std::optional<TextParts> Area::_cursorDeleteText(Delete direction) const try
+{
+    auto [cursor, count] = _cursorGetInfo();
     size_t tmp;
+
     if (_locked_cursor != _edit_cursor) {
-        if (_locked_cursor < _edit_cursor) {
-            count = _edit_cursor - _locked_cursor;
-            cursor = _locked_cursor;
-        }
-        else {
-            count = _locked_cursor - _edit_cursor;
-        }
-        parts.move_cursor = true;
         direction = Delete::Invalid;
     }
     else switch (direction) {
@@ -975,43 +1002,34 @@ TextParts Area::_cursorDeleteText(Delete direction) try
         count = cursor - tmp;
         cursor = tmp;
         break;
-
     }
 
     if (count == 0)
-        return TextParts(getTextParts());
+        return std::nullopt;
 
-    size_t const size = count;
+    auto [kept, removed] = _splitText(cursor, count);
 
-    size_t i = 0;
-    for (; i < _buffers.size(); i++) {
-        _internal::Buffer const& buffer = *_buffers.at(i);
-        TextPart& part = parts.emplace_back(buffer.getInfo());
-        size_t glyph_count = buffer.glyphCount();
-        if (glyph_count > cursor) {
-            size_t const first = buffer.getClusterIndex(cursor);
-            size_t const last = buffer.getClusterIndex(cursor + count);
-            size_t const diff = last - first;
-            part.str.erase(part.str.cbegin() + first, part.str.cbegin() + last);
-            count -= diff;
-            glyph_count -= diff;
-            if (part.str.empty())
-                parts.pop_back();
-            if (count == 0)
-                break;
-        }
-        cursor -= glyph_count;
-    }
-    if (i < _buffers.size() - 1)
-        parts.insert(parts.cend(), _buffer_infos->cbegin() + i + 1, _buffer_infos->cend());
+    if (direction == Delete::Right || direction == Delete::CtrlRight)
+        kept.move_cursor = false;
+    else
+        kept.move_cursor = true;
 
-    if (direction == Delete::Left || direction == Delete::CtrlLeft) {
-        parts.move_cursor = true;
-    }
-
-    return parts;
+    return kept;
 }
 CATCH_AND_RETHROW_METHOD_EXC;
+
+std::optional<TextParts> Area::_cursorGetText() const
+{
+    if (_edit_cursor == _locked_cursor) {
+        return std::nullopt;
+    }
+
+    auto [cursor, count] = _cursorGetInfo();
+    auto [unselected, selected] = _splitText(cursor, count);
+
+    return selected;
+}
+
 
 void Area::cursorMove(Move direction)
 {
@@ -1025,7 +1043,9 @@ void Area::cursorAddText(std::u32string str)
 {
     Shared area = getFocused();
     if (area) {
-        history.add<AreaCommand>(area, area->_cursorAddText(str));
+        auto parts = area->_cursorAddText(str);
+        if (parts)
+            history.add<AreaCommand>(AreaCommand::Type::Paste, area, parts.value());
     }
 }
 
@@ -1034,12 +1054,44 @@ void Area::cursorAddText(std::string str)
     cursorAddText(strToStr32(str));
 }
 
+void Area::cursorAddChar(char32_t c)
+{
+    Shared area = getFocused();
+    if (area) {
+        auto parts = area->_cursorAddText(std::u32string(1, c));
+        if (parts)
+            history.add<AreaCommand>(AreaCommand::Type::Addition, area, parts.value());
+    }
+}
+
+void Area::cursorAddChar(char c)
+{
+    cursorAddChar(static_cast<char32_t>(c));
+}
+
 void Area::cursorDeleteText(Delete direction)
 {
     Shared area = getFocused();
     if (area) {
-        history.add<AreaCommand>(area, area->_cursorDeleteText(direction));
+        auto parts = area->_cursorDeleteText(direction);
+        if (parts)
+            history.add<AreaCommand>(AreaCommand::Type::Deletion, area, parts.value());
     }
+}
+
+std::u32string Area::cursorGetText()
+{
+    Shared area = getFocused();
+    if (area) {
+        auto focused = area->_cursorGetText();
+        if (focused) {
+            std::u32string str;
+            for (auto const& part : focused.value())
+                str += part.str;
+            return str;
+        }
+    }
+    return std::u32string();
 }
 
 void Area::setPrintMode(PrintMode mode) noexcept

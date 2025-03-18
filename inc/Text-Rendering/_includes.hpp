@@ -87,27 +87,39 @@ class CommandBase {
 public:
     virtual void execute() = 0;
     virtual void undo() = 0;
-    //virtual void merge(CommandBase command) = 0;
 };
 
 class CommandHistory {
 private:
     std::vector<std::unique_ptr<CommandBase>> _commands;
     size_t i = 0;
+    bool _is_mergeable = false;
 public:
     void undo() {
         if (i != 0)
             _commands.at(--i)->undo();
+        _is_mergeable = false;
     }
     void redo() {
         if (i != _commands.size())
             _commands.at(i++)->execute();
+        _is_mergeable = false;
     }
     template<std::derived_from<CommandBase> Command, class... T >
     void add(T... args) {
+        bool const mergeable = _is_mergeable;
         _commands.erase(_commands.cbegin() + i, _commands.cend());
         _commands.emplace_back(std::make_unique<Command>((args)...));
         redo();
+        if (mergeable && i >= 2) {
+            Command* last_cmd = dynamic_cast<Command*>(_commands.at(i - 2).get());
+            Command*  new_cmd = dynamic_cast<Command*>(_commands.at(i - 1).get());
+            if (last_cmd && new_cmd && last_cmd->merge(*new_cmd)) {
+                _commands.pop_back();
+                --i;
+            }
+        }
+        _is_mergeable = true;
     }
     void clear() {
         _commands.clear();

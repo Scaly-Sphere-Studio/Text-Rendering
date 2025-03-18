@@ -24,11 +24,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 {
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         using namespace SSS::TR;
+        Area::Shared area = Area::getFocused();
+        if (!area)
+            return;
         bool const ctrl = mods & GLFW_MOD_CONTROL;
         switch (key) {
         case GLFW_KEY_F1:
-            Area::get(0)->setPrintMode(PrintMode::Instant);
-            //Area::get(0)->setPrintMode(PrintMode::Typewriter);
+            area->setPrintMode(PrintMode::Instant);
+            //area->setPrintMode(PrintMode::Typewriter);
             break;
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_KP_0:
@@ -62,6 +65,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         case GLFW_KEY_DELETE:
             Area::cursorDeleteText(ctrl ? Delete::CtrlRight : Delete::Right);
             break;
+        case GLFW_KEY_Q: {
+            if (ctrl)
+                area->selectAll();
+            break;
+        }
         case GLFW_KEY_W: {
             if (ctrl)
                 Area::history.undo();
@@ -70,6 +78,22 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             if (ctrl)
                 Area::history.redo();
         }   break;
+        case GLFW_KEY_C: {
+            if (ctrl) {
+                std::string const str = SSS::str32ToStr(Area::cursorGetText());
+                LOG_MSG(str)
+                glfwSetClipboardString(nullptr, str.c_str());
+            }
+            break;
+        }
+        case GLFW_KEY_V: {
+            if (ctrl) {
+                const char* text = glfwGetClipboardString(nullptr);
+                if (text)
+                    Area::cursorAddText(text);
+            }
+            break;
+        }
         }
     }
 }
@@ -77,8 +101,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 // Character input callback
 static void char_callback(GLFWwindow* ptr, unsigned int codepoint)
 {
-    std::u32string str(1, static_cast<char32_t>(codepoint));
-    SSS::TR::Area::cursorAddText(str);
+    SSS::TR::Area::cursorAddChar(static_cast<char32_t>(codepoint));
 }
 
 glm::mat4 VP;
