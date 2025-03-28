@@ -75,7 +75,7 @@ public:
  * 
  *  @sa Format, init(), loadFont()
  */
-class SSS_TR_API Area : public InstancedClass<Area> {
+class SSS_TR_API Area : public Observer, public Subject, public InstancedClass<Area> {
     friend SharedClass;
     friend AreaCommand;
 protected:
@@ -91,6 +91,11 @@ public:
 
     static CommandHistory history;
     
+    enum Event {
+        Content,
+        Resize,
+    };
+
     void setWrapping(bool wrapping) noexcept;
     bool getWrapping() const noexcept;
 
@@ -193,33 +198,17 @@ public:
     void clear() noexcept;
 
     static void updateAll();
-    static void notifyAll();
     static void cancelAll();
 
+private:
     /** Draws modifications when needed, and sets the return value of
      *  pixelsWereChanged() to \c true when changes are finished.
      *  @usage To be called as often as possible in your main loop.
      *  @sa clear(), pixelsGet().
      */
-    void update();
+    virtual void _subjectUpdate(Subject const& subject, int event_id) override;
 
-    bool hasRunningThread() const noexcept;
-    
-    /** Returns \c true when internal pixels were modified and the
-     *  user needs to retrieve them.
-     *  When said pixels are retrieved, pixelsAreRetrieved() needs to
-     *  be called.
-     *  @return \c true when new pixels are to be retrieved, and \c false
-     *  otherwise.
-     *  @sa update(), pixelsGet().
-     */
-    inline bool pixelsWereChanged() const noexcept { return _changes_pending; };
-    /** Tells the Area instance that the new pixels were retrieved by the user.
-     *  This effectively sets the return value of pixelsWereChanged() to \c false.
-     *  @sa update(), pixelsGet().
-     */
-    inline void pixelsAreRetrieved() noexcept { _changes_pending = false; }
-
+public:
     /** Returns a const pointer to the internal pixels array.
      *  
      *  The returned pointer stays valid until -- at least -- the next call
@@ -278,6 +267,7 @@ public:
     void cursorPlace(int x, int y);
     inline void lockSelection() noexcept { _lock_selection = true; };
     inline void unlockSelection() noexcept { _lock_selection = false; };
+    inline void setSelectionLock(bool lock) noexcept { _lock_selection = lock; }
     void selectAll() noexcept;
 
     void formatSelection(nlohmann::json const& json);
@@ -362,8 +352,6 @@ private:
     float _tw_cursor{ 0.f };
     std::chrono::duration<float> _tw_sleep{ 0 };
 
-    // Managed by update(), used in "pixelsXXX" functions
-    bool _changes_pending{ false };
     // Last time the update() function was called
     std::chrono::steady_clock::time_point _last_update{ std::chrono::steady_clock::now() };
     // Last time an Effect::Vibrate was updated

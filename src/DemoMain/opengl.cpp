@@ -180,10 +180,10 @@ inline void load_opengl(WindowPtr& window, GLuint ids[5], glm::mat4& VP) try
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    //glBindVertexArray(0);
+    //glBindBuffer(GL_ARRAY_BUFFER, 0);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    //glBindTexture(GL_TEXTURE_2D, 0);
 
     // Cam
     auto const view = glm::lookAt(glm::vec3(0, 0, 3), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));

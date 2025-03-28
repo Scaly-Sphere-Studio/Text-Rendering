@@ -70,10 +70,11 @@ struct AreaData {
     RGBA32 bg_color{ 0 };   // Area's background clear color
 };
 
-class AreaPixels : public SSS::AsyncBase<AreaData> {
+class AreaPixels : public SSS::Async<AreaData> {
 public:
     inline RGBA32::Vector const& getPixels() const noexcept { return _pixels; };
     inline void getDimensions(int& w, int& h) const noexcept { w = _w; h = _h; };
+    inline auto sizeDiff(AreaPixels const& a) const noexcept { return _w != a._w || _h != a._h; };
 
 private:
     virtual void _asyncFunction(AreaData param);

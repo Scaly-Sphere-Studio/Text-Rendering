@@ -22,9 +22,13 @@ static std::string const arabic_lorem_ipsum =
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    using namespace SSS::TR;
+    Area::Shared area = Area::getFocused();
+    
+    if (area)
+        area->setSelectionLock(mods & GLFW_MOD_SHIFT);
+
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        using namespace SSS::TR;
-        Area::Shared area = Area::getFocused();
         if (!area)
             return;
         bool const ctrl = mods & GLFW_MOD_CONTROL;
@@ -104,7 +108,28 @@ static void char_callback(GLFWwindow* ptr, unsigned int codepoint)
     SSS::TR::Area::cursorAddChar(static_cast<char32_t>(codepoint));
 }
 
-glm::mat4 VP;
+// Used for clickable planes and such
+void mouse_button_callback(GLFWwindow* ptr, int button, int action, int mods)
+{
+    SSS::TR::Area::Shared area = SSS::TR::Area::getInstances().front();
+
+    if (area && button == GLFW_MOUSE_BUTTON_1) {
+        double x, y;
+        glfwGetCursorPos(ptr, &x, &y);
+        area->cursorPlace((int)x, (int)y);
+        if (action == GLFW_RELEASE)
+            area->unlockSelection();
+    }
+}
+
+void mouse_position_callback(GLFWwindow* ptr, double x, double y)
+{
+    SSS::TR::Area::Shared area = SSS::TR::Area::getFocused();
+    if (area && glfwGetMouseButton(ptr, GLFW_MOUSE_BUTTON_1))
+        area->cursorPlace((int)x, (int)y);
+}
+
+glm::mat4 VP, MVP, scaling;
 
 // Resize callback
 static void size_callback(GLFWwindow* ptr, int w, int h)
@@ -115,7 +140,35 @@ static void size_callback(GLFWwindow* ptr, int w, int h)
         h2 = static_cast<float>(h) / 2.f;
     auto const proj = glm::ortho(-w2, w2, -h2, h2, 0.1f, 100.f);
     VP = proj * view;
+    MVP = VP * scaling;
 }
+
+class AreaObserver : public SSS::Observer {
+private:
+    int w = 0, h = 0;
+
+    virtual void _subjectUpdate(SSS::Subject const& subject, int event_id) override
+    {
+        if (!subject.is<SSS::TR::Area>())
+            return;
+        SSS::TR::Area const& area = static_cast<SSS::TR::Area const&>(subject);
+        if (event_id == SSS::TR::Area::Event::Resize) {
+            area.pixelsGetDimensions(w, h);
+            scaling = glm::scale(glm::mat4(1), glm::vec3(w, h, 1));
+            MVP = VP * scaling;
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, area.pixelsGet());
+            glfwSetWindowSize(glfwGetCurrentContext(), w, h);
+        }
+        else
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, area.pixelsGet());
+    };
+
+public:
+    void setArea(SSS::TR::Area::Shared area) {
+        if (area)
+            _observe(*area.get());
+    }
+};
 
 int main() try
 {
@@ -131,14 +184,19 @@ int main() try
     lua.unsafe_script_file("Demo.lua");
     TR::Area::Shared area = lua["area"];
     area->setFocus(true);
+    area->setWrapping(true);
+
+    AreaObserver observer;
+    observer.setArea(area);
 
     // OpenGL
     WindowPtr window;
     GLuint ids[5];
-    glm::mat4 scaling, MVP;
     load_opengl(window, ids, VP);
     glfwSetKeyCallback(window.get(), key_callback);
     glfwSetCharCallback(window.get(), char_callback);
+    glfwSetMouseButtonCallback(window.get(), mouse_button_callback);
+    glfwSetCursorPosCallback(window.get(), mouse_position_callback);
     glfwSetWindowSizeCallback(window.get(), size_callback);
 
     auto [w, h] = area->getDimensions();
@@ -148,50 +206,21 @@ int main() try
 
     // Main loop
     while (!glfwWindowShouldClose(window.get())) {
-
         // Poll events
         glfwPollEvents();
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+        pollAsync();
+        TR::Area::updateAll();
+
+        if (glfwGetKey(window.get(), GLFW_KEY_F4) == GLFW_PRESS) {
+            area->formatSelection(nlohmann::json{ { "text_color", 255 } });
+        }
 
         // Bind needed things
         glUseProgram(ids[prog]);
         glBindVertexArray(ids[vao]);
         glBindTexture(GL_TEXTURE_2D, ids[tex]);
-
-        bool const ctrl = glfwGetKey(window.get(), GLFW_KEY_LEFT_CONTROL) ||
-                          glfwGetKey(window.get(), GLFW_KEY_RIGHT_CONTROL);
-        if ((glfwGetKey(window.get(), GLFW_KEY_LEFT_CONTROL) ||
-            glfwGetKey(window.get(), GLFW_KEY_RIGHT_CONTROL)) &&
-            glfwGetKey(window.get(), GLFW_KEY_A))
-            area->selectAll();
-
-        bool const shift = glfwGetKey(window.get(), GLFW_KEY_LEFT_SHIFT) ||
-                           glfwGetKey(window.get(), GLFW_KEY_RIGHT_SHIFT);
-        if (shift)
-            area->lockSelection();
-        if (glfwGetMouseButton(window.get(), GLFW_MOUSE_BUTTON_1)) {
-            double x, y;
-            glfwGetCursorPos(window.get(), &x, &y);
-            area->cursorPlace((int)x, (int)y);
-        }
-        else if (!shift)
-            area->unlockSelection();
-
-        if (glfwGetKey(window.get(), GLFW_KEY_F4) == GLFW_PRESS) {
-            area->formatSelection(nlohmann::json{{ "text_color", 255 }});
-        }
-
-        // Update texture if needed
-        area->update();
-        if (area->pixelsWereChanged()) {
-            int w, h;
-            area->pixelsGetDimensions(w, h);
-            scaling = glm::scale(glm::mat4(1), glm::vec3(w, h, 1));
-            MVP = VP * scaling;
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, area->pixelsGet());
-            area->pixelsAreRetrieved();
-        }
-
         glUniformMatrix4fv(glGetUniformLocation(ids[prog], "u_VP"), 1, false, &MVP[0][0]);
 
         // Draw & print

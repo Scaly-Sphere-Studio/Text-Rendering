@@ -1,5 +1,5 @@
-#include "Text-Rendering/Area.hpp"
 #include "_internal/AreaInternals.hpp"
+#include "Text-Rendering/Area.hpp"
 #include "Text-Rendering/Globals.hpp"
 
 #include <cwctype>
@@ -74,6 +74,7 @@ Area::Area() try
         pixels.reset(new _internal::AreaPixels);
         if (!pixels)
             throw_exc("Couldn't allocate internal data");
+        _observe(*pixels);
     }
     _buffers.push_back(std::make_unique<_internal::Buffer>(TextPart(U"", _format)));
     _updateBufferInfos();
@@ -461,40 +462,23 @@ std::string Area::getUnparsedString() const
 void Area::updateAll()
 {
     for (Shared area : getInstances()) {
-        area->update();
-    }
-}
-
-void Area::notifyAll()
-{
-    for (Shared area : getInstances()) {
-        if (area->pixelsWereChanged())
-            area->pixelsAreRetrieved();
+        area->_drawIfNeeded();
+        area->_last_update = std::chrono::steady_clock::now();
     }
 }
 
 void Area::cancelAll()
 {
     for (Shared area : getInstances()) {
-        if (area->hasRunningThread())
-            (*area->_processing_pixels)->cancel();
+        (*area->_processing_pixels)->cancel();
     }
 }
 
-void Area::update()
+void Area::_subjectUpdate(Subject const& subject, int event_id)
 {
-    if ((*_processing_pixels)->isPending()) {
-        _current_pixels = _processing_pixels;
-        (*_processing_pixels)->setAsHandled();
-        _changes_pending = true;
-    }
-    _drawIfNeeded();
-    _last_update = std::chrono::steady_clock::now();
-}
-
-bool Area::hasRunningThread() const noexcept
-{
-    return (*_processing_pixels)->isRunning();
+    bool const resize = (*_current_pixels)->sizeDiff(*(*_processing_pixels));
+    _current_pixels = _processing_pixels;
+    _notifyObservers(resize ? Event::Resize : Event::Content);
 }
 
 void const* Area::pixelsGet() const try
@@ -567,9 +551,8 @@ void Area::scroll(int pixels) noexcept
     int tmp = _scrolling;
     _scrolling += pixels;
     _scrollingChanged();
-    if (!_changes_pending) {
-        _changes_pending = tmp != _scrolling;
-    }
+    if (tmp != _scrolling)
+        _notifyObservers(Event::Content);
 }
 
 void Area::resetFocus()
