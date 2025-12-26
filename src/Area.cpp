@@ -66,6 +66,12 @@ Area::Weak Area::_focused{};
 
     // --- Constructor, destructor & clear function ---
 
+void Area::_register()
+{
+    REGISTER_EVENT("SSS_TR_CONTENT");
+    REGISTER_EVENT("SSS_TR_RESIZE");
+}
+
 // Constructor, creates a default Buffer
 Area::Area() try
     : _buffer_infos(std::make_unique<_internal::BufferInfoVector>())
@@ -478,7 +484,7 @@ void Area::_subjectUpdate(Subject const& subject, int event_id)
 {
     bool const resize = (*_current_pixels)->sizeDiff(*(*_processing_pixels));
     _current_pixels = _processing_pixels;
-    _notifyObservers(resize ? Event::Resize : Event::Content);
+    resize ? EMIT_EVENT("SSS_TR_RESIZE") : EMIT_EVENT("SSS_TR_CONTENT");
 }
 
 void const* Area::pixelsGet() const try
@@ -551,8 +557,9 @@ void Area::scroll(int pixels) noexcept
     int tmp = _scrolling;
     _scrolling += pixels;
     _scrollingChanged();
-    if (tmp != _scrolling)
-        _notifyObservers(Event::Content);
+    if (tmp != _scrolling) {
+        EMIT_EVENT("SSS_TR_CONTENT");
+    }
 }
 
 void Area::resetFocus()
