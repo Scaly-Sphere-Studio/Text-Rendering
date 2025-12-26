@@ -5,6 +5,8 @@
 #include <stack>
 #include <nlohmann/json.hpp>
 
+#include <SSS/Commons/eventList.hpp>
+
 /** @file
  *  Defines SSS::TR::Area.
  */
@@ -75,9 +77,10 @@ public:
  * 
  *  @sa Format, init(), loadFont()
  */
-class SSS_TR_API Area : public Observer, public Subject, public InstancedClass<Area> {
+class SSS_TR_API Area : public Observer, public Subject, public InstancedClass<Area>, public _EventRegistry<Area> {
     friend SharedClass;
     friend AreaCommand;
+    friend _EventRegistry<Area>;
 protected:
     // Constructor
     Area();
@@ -91,11 +94,6 @@ public:
 
     static CommandHistory history;
     
-    enum Event {
-        Content,
-        Resize,
-    };
-
     void setWrapping(bool wrapping) noexcept;
     bool getWrapping() const noexcept;
 
@@ -414,6 +412,8 @@ private:
 
     // Draws current area if _draw is set to true
     void _drawIfNeeded();
+
+    static void _register();
 };
 
 class AreaCommand : public CommandBase {

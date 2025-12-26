@@ -152,7 +152,8 @@ private:
         if (!subject.is<SSS::TR::Area>())
             return;
         SSS::TR::Area const& area = static_cast<SSS::TR::Area const&>(subject);
-        if (event_id == SSS::TR::Area::Event::Resize) {
+
+        if (event_id == EVENT_ID("SSS_TR_RESIZE")) {
             area.pixelsGetDimensions(w, h);
             scaling = glm::scale(glm::mat4(1), glm::vec3(w, h, 1));
             MVP = VP * scaling;
@@ -161,6 +162,8 @@ private:
         }
         else
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, area.pixelsGet());
+
+
     };
 
 public:
