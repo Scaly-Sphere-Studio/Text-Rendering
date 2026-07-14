@@ -253,6 +253,8 @@ static void jsonToFmt(nlohmann::json const& json, Format& fmt)
         fmt.effect = json.at("effect").get<Effect>();
     if (has_value("effect_offset"))
         fmt.effect_offset = json.at("effect_offset").get<int>();
+    if (has_value("effect_speed"))
+        fmt.effect_speed = json.at("effect_speed").get<int>();
     // Color
     if (has_value("text_color"))
         fmt.text_color = json.at("text_color").get<Color>();
@@ -409,8 +411,8 @@ static std::string fmtDiff(Format const& parent, Format const& child)
         ret["effect"] = child.effect;
     if (parent.effect_offset != child.effect_offset)
         ret["effect_offset"] = child.effect_offset;
-    if (parent.effect_offset != child.effect_offset)
-        ret["effect_offset"] = child.effect_offset;
+    if (parent.effect_speed != child.effect_speed)
+        ret["effect_speed"] = child.effect_speed;
     if (parent.text_color != child.text_color)
         ret["text_color"] = child.text_color;
     if (parent.outline_color != child.outline_color)

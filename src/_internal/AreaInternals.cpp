@@ -272,15 +272,18 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     case Effect::None:
         break;
     case Effect::Waves:
-    case Effect::FadingWaves: {
+    case Effect::FadingWaves: 
+    {
+        if (buffer_info.fmt.effect_offset == 0) break;
+
         // 2PI
         static const float pi2 = std::acosf(-1.f) * 2.f;
-        // Effect offset & sign
-        int const n = 2 + std::labs(buffer_info.fmt.effect_offset);
-        int const sign = buffer_info.fmt.effect_offset > 0 ? 1 : -1;
+        // Use effect_speed for timing/sign and effect_offset as a pixel offset
+        int const n = 2 + std::labs(buffer_info.fmt.effect_speed);
+        int const sign = buffer_info.fmt.effect_speed > 0 ? 1 : -1;
         // Pen value in real coordinates
         int const x = pen.x >> 6;
-        // Time offset
+        // Time offset (speed control)
         long long const t = _time.count() / 25;
         // Fading factor (1.f when simple waves)
         float fade = 1.f;
@@ -290,12 +293,17 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
         int const x_faded = static_cast<int>(fade * static_cast<float>(x * sign) / 10.f);
         // Final factor based on time, fading, x coordinates and sign
         float const factor = static_cast<float>((t - x_faded) % n) / static_cast<float>(n);
-        // Size factor
-        float const size = static_cast<float>(buffer_info.fmt.charsize) / 3.f;
+        // Size factor: use effect_offset as amplitude (in pixels). If zero, fallback to previous formula.
+        float const size = buffer_info.fmt.effect_offset != 0
+            ? static_cast<float>(std::abs(buffer_info.fmt.effect_offset))
+            : static_cast<float>(buffer_info.fmt.charsize) / 3.f;
         // Compute and add actual offset
         args.y0 += static_cast<int>(std::sinf(pi2 * factor) * size);
     }   break;
-    case Effect::Vibrate: {
+    case Effect::Vibrate: 
+    {
+        if (buffer_info.fmt.effect_offset == 0) break;
+
         int const n = buffer_info.fmt.effect_offset;
         if (n == 0) break;
         args.x0 += (n-1) - (_rng.at(param.effect_cursor).x % (n * 2));

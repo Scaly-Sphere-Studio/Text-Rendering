@@ -30,6 +30,7 @@ inline void lua_setup_TR(sol::state& lua) try
         fmt["alignment"] = &Format::alignment;
         fmt["effect"] = &Format::effect;
         fmt["effect_offset"] = &Format::effect_offset;
+        fmt["effect_speed"] = &Format::effect_speed;
         // Color
         fmt["text_color"] = &Format::text_color;
         fmt["outline_color"] = &Format::outline_color;

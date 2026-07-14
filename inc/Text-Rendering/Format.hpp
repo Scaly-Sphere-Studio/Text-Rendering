@@ -95,6 +95,8 @@ struct SSS_TR_API Format {
     Effect effect{ Effect::None };
     /** */
     int effect_offset{ 4 };
+    /** Speed of the effect (used by wave effects to control period/sign). */
+    int effect_speed{ 50 };
 
     // --- COLOR ---
     
