@@ -207,8 +207,20 @@ void Area::setMarginV(int marginV)
 
 void Area::setClearColor(RGBA32 color)
 {
-    _bg_color = color;
+    _format.clear_color = Color(static_cast<uint32_t>((static_cast<uint32_t>(color.r) << 16)
+        | (static_cast<uint32_t>(color.g) << 8)
+        | static_cast<uint32_t>(color.b)));
     _draw = true;
+}
+
+RGBA32 Area::getClearColor() const noexcept
+{
+    return RGBA32(
+        static_cast<uint8_t>(_format.clear_color.r),
+        static_cast<uint8_t>(_format.clear_color.g),
+        static_cast<uint8_t>(_format.clear_color.b),
+        255u
+    );
 }
 
 static void jsonToFmt(nlohmann::json const& json, Format& fmt)
@@ -250,6 +262,8 @@ static void jsonToFmt(nlohmann::json const& json, Format& fmt)
         fmt.shadow_color = json.at("shadow_color").get<Color>();
     if (has_value("alpha"))
         fmt.alpha = json.at("alpha").get<uint8_t>();
+    if (has_value("clear_color"))
+        fmt.clear_color = json.at("clear_color").get<Color>();
     // Language
     if (has_value("lng_tag"))
         fmt.lng_tag = json.at("lng_tag").get<std::string>();
@@ -405,6 +419,8 @@ static std::string fmtDiff(Format const& parent, Format const& child)
         ret["shadow_color"] = child.shadow_color;
     if (parent.alpha != child.alpha)
         ret["alpha"] = child.alpha;
+    if (parent.clear_color != child.clear_color)
+        ret["clear_color"] = child.clear_color;
     if (parent.lng_tag != child.lng_tag)
         ret["lng_tag"] = child.lng_tag;
     if (parent.lng_script != child.lng_script)
@@ -480,7 +496,7 @@ void Area::cancelAll()
     }
 }
 
-void Area::_subjectUpdate(Subject const& subject, int event_id)
+void Area::_subjectUpdate(Subject const& subject, Event const& event)
 {
     bool const resize = (*_current_pixels)->sizeDiff(*(*_processing_pixels));
     _current_pixels = _processing_pixels;
@@ -1426,7 +1442,6 @@ void Area::_drawIfNeeded()
     }
     data.buffer_infos = *_buffer_infos;
     data.lines = _lines;
-    data.bg_color = _bg_color;
     // Async draw
     (*_processing_pixels)->run(data);
     _draw = false;

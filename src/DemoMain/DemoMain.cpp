@@ -147,8 +147,9 @@ class AreaObserver : public SSS::Observer {
 private:
     int w = 0, h = 0;
 
-    virtual void _subjectUpdate(SSS::Subject const& subject, int event_id) override
+    virtual void _subjectUpdate(SSS::Subject const& subject, SSS::Event const& event) override
     {
+        int const event_id = event.id;
         if (!subject.is<SSS::TR::Area>())
             return;
         SSS::TR::Area const& area = static_cast<SSS::TR::Area const&>(subject);

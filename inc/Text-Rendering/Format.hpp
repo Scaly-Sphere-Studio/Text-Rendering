@@ -117,6 +117,10 @@ struct SSS_TR_API Format {
      *  @default \c 255 <em>(fully opaque)</em>
      */
     uint8_t alpha{ 255 };
+    /** Background color to draw behind the text.
+     *  @default \c 0x00000000 <em>(fully transparent)</em>
+     */
+    Color clear_color{ 0x00000000 };
 
     // --- LANGUAGE ---
     

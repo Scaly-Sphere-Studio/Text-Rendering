@@ -58,7 +58,7 @@ void AreaPixels::_asyncFunction(AreaData data)
     // Resize if needed
     _pixels.resize(_w * _pixels_h);
     // Clear
-    std::fill(_pixels.begin(), _pixels.end(), data.bg_color);
+    std::fill(_pixels.begin(), _pixels.end(), RGBA32(0, 0, 0, 0));
     // Reset time
     _time = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch());
@@ -242,6 +242,31 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
         args.color = buffer_info.fmt.text_color;
     }
     args.alpha = buffer_info.fmt.alpha;
+
+    if (!param.is_shadow && !param.is_outline && !param.is_selected_bg) {
+        RGB24 clear_color;
+        switch (buffer_info.fmt.clear_color.func) {
+        case ColorFunc::None:
+            clear_color = buffer_info.fmt.clear_color;
+            break;
+        case ColorFunc::Rainbow:
+            clear_color = rainbow((_time.count() / 10 - (args.x0 + bitmap.width / 2) - (args.y0 + bitmap.height / 2) * 2) % _w, _w);
+            break;
+        case ColorFunc::RainbowFixed:
+            clear_color = rainbow((args.x0 + args.y0 * 2) % _w, _w);
+            break;
+        }
+        for (FT_Int i = 0; i < bitmap.width; ++i) {
+            for (FT_Int j = 0; j < bitmap.height; ++j) {
+                int const x = args.x0 + i;
+                int const y = args.y0 + j;
+                if (x < 0 || y < 0 || x >= _w || y >= _pixels_h)
+                    continue;
+                RGBA32& pixel = _pixels[(size_t)(x + y * _w)];
+                pixel *= RGBA32(clear_color, buffer_info.fmt.alpha);
+            }
+        }
+    }
 
     switch (buffer_info.fmt.effect) {
     case Effect::None:

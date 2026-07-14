@@ -67,7 +67,6 @@ struct AreaData {
     } selected;
     Line::vector lines;     // Line vector
     BufferInfoVector buffer_infos; // Glyph infos
-    RGBA32 bg_color{ 0 };   // Area's background clear color
 };
 
 class AreaPixels : public SSS::Async<AreaData> {

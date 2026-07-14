@@ -135,7 +135,7 @@ public:
     inline int getMarginH() const noexcept { return _margin_h; };
 
     void setClearColor(RGBA32 color);
-    inline RGBA32 getClearColor() const noexcept { return _bg_color; };
+    RGBA32 getClearColor() const noexcept;
 
     /** Parses a UTF32 string thay may use multiple formats in itself.
      *
@@ -204,7 +204,7 @@ private:
      *  @usage To be called as often as possible in your main loop.
      *  @sa clear(), pixelsGet().
      */
-    virtual void _subjectUpdate(Subject const& subject, int event_id) override;
+    virtual void _subjectUpdate(Subject const& subject, SSS::Event const& event) override;
 
 public:
     /** Returns a const pointer to the internal pixels array.
