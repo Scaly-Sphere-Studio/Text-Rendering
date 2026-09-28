@@ -264,6 +264,8 @@ static void jsonToFmt(nlohmann::json const& json, Format& fmt)
         fmt.shadow_color = json.at("shadow_color").get<Color>();
     if (has_value("alpha"))
         fmt.alpha = json.at("alpha").get<uint8_t>();
+    if (has_value("has_background"))
+        fmt.has_background = json.at("has_background").get<bool>();
     if (has_value("clear_color"))
         fmt.clear_color = json.at("clear_color").get<Color>();
     // Language
@@ -421,6 +423,8 @@ static std::string fmtDiff(Format const& parent, Format const& child)
         ret["shadow_color"] = child.shadow_color;
     if (parent.alpha != child.alpha)
         ret["alpha"] = child.alpha;
+    if (parent.has_background != child.has_background)
+        ret["has_background"] = child.has_background;
     if (parent.clear_color != child.clear_color)
         ret["clear_color"] = child.clear_color;
     if (parent.lng_tag != child.lng_tag)

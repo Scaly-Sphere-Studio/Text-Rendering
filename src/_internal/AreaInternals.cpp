@@ -243,7 +243,8 @@ void AreaPixels::_drawGlyph(DrawParameters const& param, BufferInfo const& buffe
     }
     args.alpha = buffer_info.fmt.alpha;
 
-    if (!param.is_shadow && !param.is_outline && !param.is_selected_bg) {
+    if (buffer_info.fmt.has_background
+        && !param.is_shadow && !param.is_outline && !param.is_selected_bg) {
         RGB24 clear_color;
         switch (buffer_info.fmt.clear_color.func) {
         case ColorFunc::None:

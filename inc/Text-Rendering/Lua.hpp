@@ -36,6 +36,7 @@ inline void lua_setup_TR(sol::state& lua) try
         fmt["outline_color"] = &Format::outline_color;
         fmt["shadow_color"] = &Format::shadow_color;
         fmt["alpha"] = &Format::alpha;
+        fmt["has_background"] = &Format::has_background;
         fmt["clear_color"] = &Format::clear_color;
         // Language
         fmt["lng_tag"] = &Format::lng_tag;

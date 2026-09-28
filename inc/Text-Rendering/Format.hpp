@@ -119,8 +119,14 @@ struct SSS_TR_API Format {
      *  @default \c 255 <em>(fully opaque)</em>
      */
     uint8_t alpha{ 255 };
-    /** Background color to draw behind the text.
-     *  @default \c 0x00000000 <em>(fully transparent)</em>
+    /** Whether a background is drawn behind the glyphs, using #clear_color.
+     *  @default \c false <em>(transparent background)</em>
+     *  @sa #clear_color.
+     */
+    bool has_background{ false };
+    /** Background color drawn behind the glyphs, if #has_background.
+     *  @default \c 0x000000 <em>(plain black)</em>
+     *  @sa #has_background.
      */
     Color clear_color{ 0x00000000 };
 
