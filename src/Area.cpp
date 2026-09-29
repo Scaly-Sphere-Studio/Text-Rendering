@@ -70,6 +70,7 @@ void Area::_register()
 {
     REGISTER_EVENT("SSS_TR_CONTENT");
     REGISTER_EVENT("SSS_TR_RESIZE");
+    REGISTER_EVENT("SSS_TR_TYPEWRITER_DONE");
 }
 
 // Constructor, creates a default Buffer
@@ -1383,6 +1384,11 @@ void Area::_drawIfNeeded()
                 _tw_cursor = new_cursor;
                 _draw = true;
             }
+        }
+
+        // The last glyph has just been revealed
+        if (static_cast<size_t>(_tw_cursor) >= _glyph_count) {
+            EMIT_EVENT("SSS_TR_TYPEWRITER_DONE");
         }
     }
     // Determine if cursor needs to be drawn

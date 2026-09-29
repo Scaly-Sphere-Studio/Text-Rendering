@@ -120,6 +120,32 @@ fmt.text_color.func = SSS::TR::ColorFunc::Rainbow;
 | `tw_short_pauses` | `u32string` | `U",;:"` | Typewriter short-pause characters |
 | `tw_long_pauses` | `u32string` | `U".!?"` | Typewriter long-pause characters |
 
+## Typewriter
+
+`Area::setPrintMode(PrintMode::Typewriter)` reveals the text glyph by glyph, at `setTypeWriterSpeed(cps)` characters per second (60 by default). After a `tw_short_pauses` / `tw_long_pauses` character followed by a space, it waits 6 / 12 characters' worth of time.
+
+When the last glyph is revealed, the area emits `SSS_TR_TYPEWRITER_DONE`. It is emitted from `Area::updateAll()` (called by `pollEverything()`), once per text. It is not emitted for an empty text, or when switching back to `PrintMode::Instant` to show the rest of the text at once.
+
+`parseString()` keeps the typewriter where it was, so appended text continues typing. Call `clear()` first to type a new text from the start.
+
+```cpp
+class TypewriterWatcher : public SSS::Observer {
+public:
+    explicit TypewriterWatcher(SSS::TR::Area& area) { _observe(area); }
+    bool done = false;
+private:
+    void _subjectUpdate(SSS::Subject const&, SSS::Event const& event) override {
+        if (event.id == EVENT_ID("SSS_TR_TYPEWRITER_DONE")) done = true;
+    }
+};
+
+area->setPrintMode(SSS::TR::PrintMode::Typewriter);
+area->setTypeWriterSpeed(40);
+TypewriterWatcher watcher(*area);
+area->clear();
+area->parseString("Hello, world!");
+```
+
 ## Text Effects
 
 Set via `fmt.effect` or the inline `"effect"` JSON key.
