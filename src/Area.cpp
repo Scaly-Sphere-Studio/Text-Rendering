@@ -520,11 +520,14 @@ void const* Area::pixelsGet() const try
     int w, h;
     (*_current_pixels)->getDimensions(w, h);
     size_t size = static_cast<size_t>(w) * static_cast<size_t>(h);
-    // Ensure current scrolling doesn't go past the pixels vector
-    size_t const index = static_cast<size_t>(_scrolling) * static_cast<size_t>(w);
-    if (index > pixels.size() - size) {
+    if (size > pixels.size()) {
         throw_exc("Scrolling error");
     }
+    // _scrolling follows the latest layout, while the current pixels may
+    // still be the previous text's (they are drawn asynchronously, e.g. just
+    // after parseString() + scroll()): clamp to what they hold.
+    size_t const index = std::min(static_cast<size_t>(_scrolling) * static_cast<size_t>(w),
+                                  pixels.size() - size);
     return &pixels.at(index);
 }
 CATCH_AND_RETHROW_METHOD_EXC;
